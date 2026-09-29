@@ -13,11 +13,11 @@ function rows(items, column) {
     sorted.forEach((item, index) => {
       const previous = sorted[index - 1];
       const gap = previous ? item.x - previous.x - previous.width : 0;
-      text += (index && gap > Math.max(1, item.height * .12) ? ' ' : '') + item.text;
+      text += (index && gap > Math.max(1, item.height * .12) && !/\s$/.test(text) && !/^\s/.test(item.text) ? ' ' : '') + item.text;
     });
     const x = Math.min(...sorted.map(item => item.x));
     const y = Math.min(...sorted.map(item => item.y));
-    return { text, x, y, width: Math.max(...sorted.map(item => item.x + item.width)) - x,
+    return { text: text.trim(), x, y, width: Math.max(...sorted.map(item => item.x + item.width)) - x,
       height: Math.max(...sorted.map(item => item.y + item.height)) - y, column, fragmentCount: sorted.length };
   });
 }
@@ -45,7 +45,7 @@ function findGutter(items, width) {
 export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
   const items = fragments.filter(item => item.text?.trim() &&
     [item.x, item.y, item.width, item.height].every(Number.isFinite))
-    .map(item => ({ ...item, text: item.text.trim(), height: Math.max(1, item.height) }));
+    .map(item => ({ ...item, height: Math.max(1, item.height) }));
   const detected = mode === 'single' ? null : findGutter(items, pageWidth);
   const cut = mode === 'two' ? detected ?? pageWidth / 2 : detected;
   let lines;

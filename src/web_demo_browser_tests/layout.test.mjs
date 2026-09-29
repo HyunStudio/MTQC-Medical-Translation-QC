@@ -33,3 +33,7 @@ test('empty and invalid coordinates do not create phantom lines', () => {
   assert.equal(recoverReadingOrder([], 600).text, '');
   assert.equal(recoverReadingOrder([word(' ', 0, 0)], 600).fragmentCount, 0);
 });
+test('explicit PDF whitespace survives adjoining text fragments', () => {
+  const result = recoverReadingOrder([word('The ', 40, 20, 60), word('artery', 100, 20, 40)], 600);
+  assert.equal(result.text, 'The artery');
+});

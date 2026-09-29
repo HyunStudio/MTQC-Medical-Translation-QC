@@ -51,7 +51,9 @@ The .NET and browser regression suites cover recorded specimens, browser-local P
 
 - Working demo or test build: https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/
 - Public repository with top-level Apache-2.0 license and setup README: https://github.com/HyunStudio/MTQC-Medical-Translation-QC
-- Public YouTube video under three minutes, showing operation with English narration: https://youtu.be/RN-KqyxnPPg (18-second authentic browser OCR and one real Arabic model response using an original synthetic diagram)
+- Public YouTube video under three minutes: https://youtu.be/WpYR5XfvPic (118.5-second 1080p demo with English narration/captions, credited anatomy comparisons, original two-column PDF review, and one genuine Arabic model response)
+
+Latest local regression: 46/46 server, 6/6 layout, and 22/22 browser checks. PDF fragments now preserve explicit word spaces; numbered geometry-based reading-order previews remain editable and are not a guarantee of complete layout reconstruction.
 - Track: Best Apps and Agents
 - Testing instructions: open the demo without credentials; inspect either recorded source/target diagram first. In the Document workbench, select only a rights-cleared English PDF (maximum two pages) or image (maximum 10 MiB), review/correct the browser-extracted English text, choose one of 18 targets, and request a server-side AI draft. Compare the source and draft and inspect the scoped QC warnings; do not enter patient data. Free F1 hosting can cold-start; the live endpoint has per-client, hourly, and 100-attempt lifetime limits.
 - Source attributions and modification notices: project `RIGHTS.md` and in-app provenance panel.

@@ -1,0 +1,23 @@
+[
+  {"id":"01-intro","title":"MTQC / Medical document intelligence","minimumSeconds":12,"sentences":[
+    "Medical documents combine language, anatomy, numbers, and visual structure.",
+    "M T Q C brings source comparison, local document extraction, and multilingual A I drafts into one review workspace."
+  ]},
+  {"id":"02-comparison","title":"01 / Compare the evidence","minimumSeconds":23,"sentences":[
+    "Start with a licensed anatomy specimen and inspect the original beside its translated layout.",
+    "These saved examples cover eighteen target languages, including Korean, Spanish, and right to left Arabic.",
+    "Each specimen links to its editable artifact and documented source. These are recorded outputs, not new model calls."
+  ]},
+  {"id":"03-document","title":"02 / Inspect structure, then translate","minimumSeconds":48,"sentences":[
+    "Now we open an original two column demonstration document. The file stays in the browser.",
+    "Numbered regions expose the proposed reading order. A reviewer can switch to row order for tables, inspect the source, and correct the extracted text.",
+    "We select a short passage, choose Arabic, and approve the source before sending it.",
+    "This is a genuine request to an N V I D I A Nemotron model through Nebius Token Factory. The key stays on the server.",
+    "The progress indicator is an estimate. The returned draft shows its model, token usage, and quality review notes."
+  ]},
+  {"id":"04-evidence","title":"03 / Quality is evidence","minimumSeconds":20,"sentences":[
+    "Regression checks cover numeric changes, missing values, lost minus signs, mixed scanned pages, and reading order.",
+    "The current release passes forty six server checks, six layout checks, and twenty two browser checks.",
+    "M T Q C supports expert review. It is not clinically validated, and live translation currently covers reviewed excerpts, not complete textbook reconstruction."
+  ]}
+]

@@ -113,7 +113,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.giti
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitattributes') -Destination (Join-Path $source '.gitattributes')
 $sourceScripts = Join-Path $source 'scripts'
 New-Item -ItemType Directory -Path $sourceScripts -Force | Out-Null
-foreach ($name in @('web_demo_release.ps1','smoke_18_languages.ps1','build_judge_brief.py')) {
+foreach ($name in @('web_demo_release.ps1','smoke_18_languages.ps1','build_judge_brief.py','build_video_narration.ps1','compose_professional_video.py')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot "scripts/$name") -Destination (Join-Path $sourceScripts $name)
 }
 

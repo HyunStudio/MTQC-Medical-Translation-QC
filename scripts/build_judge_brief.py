@@ -24,7 +24,7 @@ from reportlab.platypus import (
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "output/pdf/medical-qc-nebius-final-judge-brief.pdf"
-SCREENSHOT = ROOT / "output/video/submission-final-frame.png"
+SCREENSHOT = ROOT / "output/video/professional-v3/03-document-frame.png"
 if not SCREENSHOT.exists():
     raise SystemExit(f"Record the authentic browser demo first: {SCREENSHOT}")
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,7 @@ def footer(canvas, doc):
     canvas.line(42, 43, width - 42, 43)
     canvas.setFillColor(MUTED)
     canvas.setFont("Helvetica", 8)
-    canvas.drawString(42, 30, "Medical Translation QC  |  Nebius x NVIDIA hackathon candidate")
+    canvas.drawString(42, 30, "Medical Translation QC  |  Nebius x NVIDIA hackathon submission")
     canvas.drawRightString(width - 42, 30, f"{doc.page} / 2")
     canvas.restoreState()
 
@@ -94,13 +94,13 @@ story += [
 image = Image(str(SCREENSHOT))
 image.drawWidth = 528
 image.drawHeight = 528 * ImageReader(str(SCREENSHOT)).getSize()[1] / ImageReader(str(SCREENSHOT)).getSize()[0]
-story += [image, Spacer(1, 5), para("Real OCR and a live Arabic Nemotron response are shown; the progress bar is a time estimate, not provider telemetry.", small)]
+story += [image, Spacer(1, 5), para("Numbered PDF reading-order review and a genuine Arabic Nemotron call. Translation progress is estimated, not provider telemetry.", small)]
 
 story += [PageBreak(), para("Evidence and limits", title), para("Runtime proof, not clinical validation", subtitle)]
 evidence = [
     ("Real model path", "The browser sends only reviewed text. ASP.NET Core calls Nebius with a server-held key and returns the model ID, token usage, and draft. No key is shipped to the browser."),
     ("18-language smoke", "One short real request per supported target returned successfully on 2026-09-29: 2,307 input and 501 output tokens total. At listed Lightning rates, this run estimates USD 0.00025866; this is not the provider billing ledger."),
-    ("Review behavior", "Numeric-format and English directional-term warnings appeared in several outputs. These are conservative review prompts, not automatically corrected text or evidence of clinical accuracy."),
+    ("Regression checks", "Latest local checks passed: 46 server, 6 layout, and 22 browser tests. A reproduced PDF fragment-whitespace bug was fixed. QC warnings remain review prompts, not evidence of clinical accuracy."),
     ("Recorded specimens", "The Servier Medical Art slide has English source plus 18 saved AI-draft targets. The Mueller et al. comparison is limited to Figure 1 title, caption, and four labels - not a complete article translation."),
 ]
 rows = [[para(label, cell), para(detail, cell)] for label, detail in evidence]
@@ -121,9 +121,9 @@ story += [
     para("Responsible use", section),
     para("Educational prototype only. No patient data, unlicensed textbook page, or private manuscript is in the release. OCR reading order can be wrong; model fluency is not medical validity. Every draft requires expert linguistic and medical review. Public live hosting also requires an external spend cap and monitoring."),
     para("Rights and reproducibility", section),
-    para("Recorded Servier and Mueller material is credited under CC BY 4.0 with modification notices. The video uses a separate original synthetic diagram without third-party logos. The source export carries setup instructions, pinned client dependencies, tests, asset hashes, and third-party notices. The older Windows processing engine predates this hackathon and is not presented as the browser runtime."),
+    para("Saved Servier and Mueller material is credited under CC BY 4.0 with modification notices. The new video includes credited Servier anatomy and an original synthetic two-column PDF. Source includes setup instructions, tests, asset hashes, and third-party notices. The older Windows engine predates this hackathon and is not presented as the browser runtime."),
     Spacer(1, 10),
-    para("<b>Judge walkthrough:</b> Open the app or test build, inspect a saved case without credentials, then use the Document workbench only if live credits are enabled on the host. The accompanying short video shows one authentic live call.", small),
+    para('<b>Judge walkthrough:</b> Inspect saved cases, then review an excerpt in the Document workbench. The 1080p narrated video shows one authentic live call: <link href="https://youtu.be/WpYR5XfvPic" color="#0a7890">youtu.be/WpYR5XfvPic</link>.', small),
 ]
 
 doc.build(story)
