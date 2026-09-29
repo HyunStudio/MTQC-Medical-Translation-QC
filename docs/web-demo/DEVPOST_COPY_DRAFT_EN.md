@@ -1,10 +1,10 @@
 # Devpost copy — draft, not submitted
 
-Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Last checked 2026-09-29 against https://nebiusglobalaihackathon.devpost.com/rules. Replace every `[PENDING ...]` field and recheck the live submission form before posting. A public YouTube video now exists; this draft does not assert that public app access or an open-source release exists.
+Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Last checked 2026-09-29 against https://nebiusglobalaihackathon.devpost.com/rules. Recheck the live submission form before posting. The app, public source, and video exist; this draft is **not** a submitted Devpost entry.
 
 ## Project name
 
-Medical Translation QC — Evidence Workbench
+MTQC — Medical Textbook Translation & Quality Control
 
 ## Elevator pitch
 
@@ -45,15 +45,15 @@ The Token Factory API was straightforward to connect to a server-side .NET clien
 
 ## Testing and limitations
 
-The local .NET and browser regression suites cover recorded specimens, browser-local PDF/OCR, 18-target acceptance, live response handling, and request limits; exact final counts should be inserted only after final release verification. The saved 18-language visual case is separate from the 18 short live Nemotron smoke calls. No independent medical or native-speaker validation has been recorded. The browser demo is not the full Windows document engine and cannot be used for patient care. A public deployment still needs separate uptime, spending, access, license, and secret-exposure checks.
+The .NET and browser regression suites cover recorded specimens, browser-local PDF/OCR, 18-target acceptance, live response handling, and request limits (45/45 and 20/20 locally after the terminology-prompt update; the previous public commit passed 44/44 and 20/20 from an anonymous clone). The saved 18-language visual case is separate from the 18 short live Nemotron smoke calls. No independent medical or native-speaker validation has been recorded. A real hosted Korean call substituted `대정맥` for `femoral vein`; a narrow QC review warning now catches the observed substitution, and the terminology instruction was strengthened. The browser demo is not the full Windows document engine and cannot be used for patient care. The public F1 host is accessible now but long-term uptime and credit usage require monitoring.
 
 ## Required links and submission fields
 
-- Working demo or test build: `[PENDING judge-accessible URL]`
-- Public repository with top-level open-source license and setup README: `[PENDING public URL]`
+- Working demo or test build: https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/
+- Public repository with top-level Apache-2.0 license and setup README: https://github.com/HyunStudio/MTQC-Medical-Translation-QC
 - Public YouTube video under three minutes, showing operation: https://youtu.be/-TZlAbJm_7E (18-second authentic browser OCR and one real Arabic model response using an original synthetic diagram)
 - Track: Best Apps and Agents
-- Testing instructions: inspect a recorded case without credentials; in the Document workbench, use only a rights-cleared English PDF/image and request a live draft if the host enables credits. `[PENDING exact deployed behavior]`
+- Testing instructions: open the demo without credentials; inspect either recorded source/target diagram first. In the Document workbench, select only a rights-cleared English PDF (maximum two pages) or image (maximum 10 MiB), review/correct the browser-extracted English text, choose one of 18 targets, and request a server-side AI draft. Compare the source and draft and inspect the scoped QC warnings; do not enter patient data. Free F1 hosting can cold-start; the live endpoint has per-client, hourly, and 100-attempt lifetime limits.
 - Source attributions and modification notices: project `RIGHTS.md` and in-app provenance panel.
 
 Do not paste this draft into Devpost until all placeholders are resolved and the release owner approves public publication.

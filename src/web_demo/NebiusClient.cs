@@ -29,7 +29,7 @@ public sealed class NebiusClient
         if (source.EnumerateRunes().Count() is < 1 or > 3000) throw new InvalidDataException("Excerpt exceeds limit");
         var targetInstruction = language switch
         {
-            "ko" => "Target language: Korean (ko). Required terminology: proximal extremity = 근위부; distal extremity = 원위부. Preserve the source term proximal even if the anatomy seems unusual.",
+            "ko" => "Target language: Korean (ko). Required terminology: proximal extremity = 근위부; distal extremity = 원위부; femoral vein = 대퇴정맥; femoral artery = 대퇴동맥. Preserve the source term proximal even if the anatomy seems unusual.",
             "es" => "Target language: Spanish (es).",
             "ar" => "Target language: Arabic (ar). Required terminology: proximal extremity = الطرف القريب; distal extremity = الطرف البعيد. Translate anatomical direction terms into Arabic; do not leave proximal or distal in English.",
             "zh-CN" => "Target language: Simplified Chinese (zh-CN). Use Simplified Chinese characters.",

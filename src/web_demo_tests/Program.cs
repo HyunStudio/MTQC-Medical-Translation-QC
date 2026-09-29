@@ -54,6 +54,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("user excerpt route is disabled without a server key", UserExcerptRouteIsDisabled),
     ("user excerpt route rejects a body above 64 KiB", UserExcerptRejectsOversizedBody),
     ("Chinese target variants are explicit in the provider prompt", ChineseVariantsAreExplicit),
+    ("Korean prompt pins femoral vessel terms", KoreanPromptPinsFemoralTerms),
     ("all live targets name the intended language in the provider prompt", AllTargetsHaveExplicitNames),
     ("user excerpt QC flags numbers and leftover English directions", UserExcerptQcFlagsRisks),
     ("Korean femoral vein substitution prompts review", KoreanFemoralVeinSubstitutionPromptsReview),
@@ -431,6 +432,23 @@ async Task ChineseVariantsAreExplicit()
     Assert(handler.LastBody?.Contains("Simplified Chinese", StringComparison.Ordinal) == true, "zh-CN was not disambiguated");
     await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-TW"), "judge-a", CancellationToken.None);
     Assert(handler.LastBody?.Contains("Traditional Chinese", StringComparison.Ordinal) == true, "zh-TW was not disambiguated");
+}
+
+async Task KoreanPromptPinsFemoralTerms()
+{
+    var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+    {
+        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"대퇴정맥\"}}]}")
+    });
+    var service = NewUserService(handler, perClientLimit: 1);
+    await service.ExecuteAsync(new UserExcerptRequest("The femoral vein and femoral artery are visible.", "ko"),
+        "judge-a", CancellationToken.None);
+    var request = JsonNode.Parse(handler.LastBody!);
+    var prompt = (string?)request?["messages"]?[1]?["content"];
+    Assert(prompt?.Contains("femoral vein = 대퇴정맥", StringComparison.Ordinal) == true,
+        "Korean femoral vein terminology was not pinned");
+    Assert(prompt?.Contains("femoral artery = 대퇴동맥", StringComparison.Ordinal) == true,
+        "Korean femoral artery terminology was not pinned");
 }
 
 async Task AllTargetsHaveExplicitNames()
