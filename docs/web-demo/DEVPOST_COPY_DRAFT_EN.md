@@ -1,6 +1,6 @@
-# Devpost copy — ready for form, not submitted
+# Devpost submission copy — published reference
 
-Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Last checked 2026-09-29 against https://nebiusglobalaihackathon.devpost.com/rules. Recheck the live submission form before posting. The app, public source, and video exist; this draft is **not** a submitted Devpost entry.
+Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Submitted 2026-09-29 at https://devpost.com/software/mtqc-medical-textbook-translation-quality-control. This file preserves planning copy; the live Devpost page is the authoritative published version.
 
 ## Project name
 
@@ -56,4 +56,4 @@ The .NET and browser regression suites cover recorded specimens, browser-local P
 - Testing instructions: open the demo without credentials; inspect either recorded source/target diagram first. In the Document workbench, select only a rights-cleared English PDF (maximum two pages) or image (maximum 10 MiB), review/correct the browser-extracted English text, choose one of 18 targets, and request a server-side AI draft. Compare the source and draft and inspect the scoped QC warnings; do not enter patient data. Free F1 hosting can cold-start; the live endpoint has per-client, hourly, and 100-attempt lifetime limits.
 - Source attributions and modification notices: project `RIGHTS.md` and in-app provenance panel.
 
-All required public links are present. The entry remains unsubmitted until the live Devpost form is completed and its published page is verified.
+The submitted Devpost page was verified in the logged-in UI: it displayed “Project submitted!” and “SUBMITTED TO Nebius x NVIDIA Global AI Hackathon.” A separate unauthenticated HTTP GET returned 200 with the project title, video ID, and public repository link.

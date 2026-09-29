@@ -5,6 +5,7 @@ An English-first medical-document review demo: inspect recorded, rights-cleared 
 - [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
 - [Narrated 18-second live video](https://youtu.be/RN-KqyxnPPg) (local OCR and one real Arabic model call)
 - [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
+- [Submitted Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control) (Nebius × NVIDIA Global AI Hackathon)
 
 ## Quick start
 
