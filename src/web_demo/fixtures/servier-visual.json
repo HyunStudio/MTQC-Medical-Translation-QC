@@ -1,0 +1,916 @@
+{
+  "id": "servier-visual",
+  "title": "Visual system · anatomical chart",
+  "mode": "recorded",
+  "generatedUtc": "2026-09-28T02:57:35Z",
+  "generator": "Recorded gpt-6-sol Codex CLI batch; structure/package validation and native PowerPoint visual review completed. No independent medical review.",
+  "scope": "One editable anatomical PowerPoint chart, 14 visible strings, 18 translated target languages.",
+  "source": {
+    "citation": "Servier Medical Art (SMART), Educational Tools: Visual System. © Les Laboratoires Servier.",
+    "url": "https://smart.servier.com/educational-tools/",
+    "license": "CC BY 4.0",
+    "modifications": "Diagram text translated into 18 languages; shape positions and dimensions retained; long labels fitted by text-size changes only. Original attribution remains in each PowerPoint.",
+    "preview": "/assets/servier-visual-en.png",
+    "sections": [
+      {
+        "id": "title",
+        "label": "Diagram title",
+        "text": "VISUAL SYSTEM"
+      },
+      {
+        "id": "caption",
+        "label": "System overview",
+        "text": "The visual system captures light from the environment and converts it into electrical signals, which are then interpreted by the brain to produce images, enabling the perception of color, shape, depth, and movement."
+      },
+      {
+        "id": "labels",
+        "label": "Anatomical labels",
+        "text": "CORNEA · IRIS · PUPIL · LENS · SCLERA · CHOROID · RETINA · RETINAL BLOOD VESSELS · OPTIC NERVE · MACULA · VITREOUS HUMOR · CANAL OF SCHLEMM"
+      }
+    ]
+  },
+  "translations": [
+    {
+      "language": "ko",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-ko.png",
+      "download": "/assets/servier-visual-ko.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "시각계"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "시각계는 주변 환경의 빛을 받아 전기 신호로 변환하고, 뇌가 이 신호를 해석해 영상을 형성함으로써 색, 형태, 깊이, 움직임을 지각할 수 있게 합니다."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "각막 · 홍채 · 동공 · 수정체 · 공막 · 맥락막 · 망막 · 망막 혈관 · 시신경 · 황반 · 유리체 · 슐렘관"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The ko package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-es.png",
+      "download": "/assets/servier-visual-es.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SISTEMA VISUAL"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "El sistema visual capta la luz del entorno y la convierte en señales eléctricas que el cerebro interpreta para formar imágenes, lo que permite percibir el color, la forma, la profundidad y el movimiento."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "CÓRNEA · IRIS · PUPILA · CRISTALINO · ESCLERÓTICA · COROIDES · RETINA · VASOS SANGUÍNEOS RETINIANOS · NERVIO ÓPTICO · MÁCULA · HUMOR VÍTREO · CANAL DE SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The es package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "ar",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-ar.png",
+      "download": "/assets/servier-visual-ar.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "الجهاز البصري"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "يلتقط الجهاز البصري الضوء من البيئة ويحوّله إلى إشارات كهربائية يفسرها الدماغ لتكوين الصور، مما يتيح إدراك اللون والشكل والعمق والحركة."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "القرنية · القزحية · الحدقة · العدسة · الصلبة · المشيمية · الشبكية · الأوعية الدموية الشبكية · العصب البصري · البقعة الصفراء · الخلط الزجاجي · قناة شليم"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The ar package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "zh-CN",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-zh-CN.png",
+      "download": "/assets/servier-visual-zh-CN.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "视觉系统"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "视觉系统接收环境中的光线并将其转化为电信号，随后由大脑解读形成图像，使人能够感知颜色、形状、深度和运动。"
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "角膜 · 虹膜 · 瞳孔 · 晶状体 · 巩膜 · 脉络膜 · 视网膜 · 视网膜血管 · 视神经 · 黄斑 · 玻璃体 · 巩膜静脉窦"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The zh-CN package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "zh-TW",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-zh-TW.png",
+      "download": "/assets/servier-visual-zh-TW.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "視覺系統"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "視覺系統接收環境中的光線並將其轉換為電訊號，再由大腦解讀形成影像，使人能感知顏色、形狀、深度及動態。"
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "角膜 · 虹膜 · 瞳孔 · 水晶體 · 鞏膜 · 脈絡膜 · 視網膜 · 視網膜血管 · 視神經 · 黃斑部 · 玻璃體 · 施萊姆氏管"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The zh-TW package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-ja.png",
+      "download": "/assets/servier-visual-ja.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "視覚系"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "視覚系は周囲の光を取り込んで電気信号に変換し、その信号を脳が画像として解釈することで、色、形、奥行き、動きを知覚できるようにします。"
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "角膜 · 虹彩 · 瞳孔 · 水晶体 · 強膜 · 脈絡膜 · 網膜 · 網膜血管 · 視神経 · 黄斑 · 硝子体 · シュレム管"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The ja package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-fr.png",
+      "download": "/assets/servier-visual-fr.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SYSTÈME VISUEL"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Le système visuel capte la lumière de l’environnement et la convertit en signaux électriques, ensuite interprétés par le cerveau pour former des images et permettre la perception des couleurs, des formes, de la profondeur et du mouvement."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "CORNÉE · IRIS · PUPILLE · CRISTALLIN · SCLÈRE · CHOROÏDE · RÉTINE · VAISSEAUX SANGUINS RÉTINIENS · NERF OPTIQUE · MACULA · HUMEUR VITRÉE · CANAL DE SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The fr package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "de",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-de.png",
+      "download": "/assets/servier-visual-de.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SEHSYSTEM"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Das Sehsystem nimmt Licht aus der Umgebung auf und wandelt es in elektrische Signale um, die das Gehirn zu Bildern verarbeitet und so die Wahrnehmung von Farbe, Form, Tiefe und Bewegung ermöglicht."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "HORNHAUT · IRIS · PUPILLE · LINSE · LEDERHAUT · ADERHAUT · NETZHAUT · NETZHAUTGEFÄSSE · SEHNERV · MAKULA · GLASKÖRPER · SCHLEMM-KANAL"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The de package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "it",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-it.png",
+      "download": "/assets/servier-visual-it.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SISTEMA VISIVO"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Il sistema visivo capta la luce dall'ambiente e la converte in segnali elettrici, che il cervello interpreta per formare immagini e consentire la percezione di colori, forme, profondità e movimento."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "CORNEA · IRIDE · PUPILLA · CRISTALLINO · SCLERA · COROIDE · RETINA · VASI SANGUIGNI RETINICI · NERVO OTTICO · MACULA · UMOR VITREO · CANALE DI SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The it package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "pt",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-pt.png",
+      "download": "/assets/servier-visual-pt.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SISTEMA VISUAL"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "O sistema visual capta a luz do ambiente e converte-a em sinais elétricos, que são interpretados pelo cérebro para formar imagens e permitir a perceção de cores, formas, profundidade e movimento."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "CÓRNEA · ÍRIS · PUPILA · CRISTALINO · ESCLERA · COROIDE · RETINA · VASOS SANGUÍNEOS DA RETINA · NERVO ÓTICO · MÁCULA · HUMOR VÍTREO · CANAL DE SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The pt package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "ru",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-ru.png",
+      "download": "/assets/servier-visual-ru.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "ЗРИТЕЛЬНАЯ СИСТЕМА"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Зрительная система воспринимает свет из окружающей среды и преобразует его в электрические сигналы, которые затем обрабатываются мозгом с формированием изображений, позволяя воспринимать цвет, форму, глубину и движение."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "РОГОВИЦА · РАДУЖНАЯ ОБОЛОЧКА · ЗРАЧОК · ХРУСТАЛИК · СКЛЕРА · СОСУДИСТАЯ ОБОЛОЧКА · СЕТЧАТКА · КРОВЕНОСНЫЕ СОСУДЫ СЕТЧАТКИ · ЗРИТЕЛЬНЫЙ НЕРВ · ЖЁЛТОЕ ПЯТНО · СТЕКЛОВИДНОЕ ТЕЛО · ШЛЕММОВ КАНАЛ"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The ru package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "hi",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-hi.png",
+      "download": "/assets/servier-visual-hi.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "दृष्टि तंत्र"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "दृष्टि तंत्र वातावरण से प्रकाश ग्रहण करके उसे विद्युत संकेतों में बदलता है, जिनकी व्याख्या मस्तिष्क छवियाँ बनाने के लिए करता है और इस तरह रंग, आकार, गहराई तथा गति का बोध संभव होता है।"
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "कॉर्निया · परितारिका · पुतली · लेंस · श्वेतपटल · रंजितपटल · रेटिना · रेटिना की रक्त वाहिकाएँ · दृष्टि तंत्रिका · मैक्युला · काचाभ द्रव · श्लेम की नलिका"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The hi package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "id",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-id.png",
+      "download": "/assets/servier-visual-id.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "SISTEM PENGLIHATAN"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Sistem penglihatan menangkap cahaya dari lingkungan dan mengubahnya menjadi sinyal listrik yang kemudian ditafsirkan oleh otak menjadi gambar, sehingga memungkinkan persepsi warna, bentuk, kedalaman, dan gerakan."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "KORNEA · IRIS · PUPIL · LENSA · SKLERA · KOROID · RETINA · PEMBULUH DARAH RETINA · SARAF OPTIK · MAKULA · BADAN KACA · KANAL SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The id package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "nl",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-nl.png",
+      "download": "/assets/servier-visual-nl.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "VISUELE SYSTEEM"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Het visuele systeem vangt licht uit de omgeving op en zet dit om in elektrische signalen, die vervolgens door de hersenen worden geïnterpreteerd tot beelden en zo de waarneming van kleur, vorm, diepte en beweging mogelijk maken."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "HOORNVLIES · IRIS · PUPIL · OOGLENS · HARDE OOGROK · VAATVLIES · NETVLIES · BLOEDVATEN VAN HET NETVLIES · OOGZENUW · MACULA · GLASACHTIG LICHAAM · KANAAL VAN SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The nl package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "pl",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-pl.png",
+      "download": "/assets/servier-visual-pl.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "NARZĄD WZROKU"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Układ wzrokowy odbiera światło z otoczenia i przekształca je w sygnały elektryczne, które mózg interpretuje, tworząc obrazy i umożliwiając postrzeganie barw, kształtów, głębi i ruchu."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "ROGÓWKA · TĘCZÓWKA · ŹRENICA · SOCZEWKA · TWARDÓWKA · NACZYNIÓWKA · SIATKÓWKA · NACZYNIA KRWIONOŚNE SIATKÓWKI · NERW WZROKOWY · PLAMKA ŻÓŁTA · CIAŁO SZKLISTE · KANAŁ SCHLEMMA"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The pl package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "th",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-th.png",
+      "download": "/assets/servier-visual-th.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "ระบบการมองเห็น"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "ระบบการมองเห็นรับแสงจากสิ่งแวดล้อมและแปลงเป็นสัญญาณไฟฟ้า ซึ่งสมองนำไปแปลผลเป็นภาพ ทำให้รับรู้สี รูปร่าง ความลึก และการเคลื่อนไหวได้"
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "กระจกตา · ม่านตา · รูม่านตา · เลนส์ตา · ตาขาว · ชั้นคอรอยด์ · จอตา · หลอดเลือดจอตา · เส้นประสาทตา · จุดภาพชัด · น้ำวุ้นตา · คลองชเลมม์"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The th package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "tr",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-tr.png",
+      "download": "/assets/servier-visual-tr.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "GÖRME SİSTEMİ"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Görme sistemi, çevreden gelen ışığı algılayıp elektrik sinyallerine dönüştürür; beyin bu sinyalleri görüntü oluşturacak şekilde yorumlayarak renk, şekil, derinlik ve hareketin algılanmasını sağlar."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "KORNEA · İRİS · GÖZ BEBEĞİ · GÖZ MERCEĞİ · SKLERA · KOROİD · RETİNA · RETİNA KAN DAMARLARI · OPTİK SİNİR · MAKULA · CAMSI CİSİM · SCHLEMM KANALI"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The tr package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    },
+    {
+      "language": "vi",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/servier-visual-vi.png",
+      "download": "/assets/servier-visual-vi.pptx",
+      "sections": [
+        {
+          "id": "title",
+          "label": "Diagram title",
+          "text": "HỆ THỊ GIÁC"
+        },
+        {
+          "id": "caption",
+          "label": "System overview",
+          "text": "Hệ thị giác thu nhận ánh sáng từ môi trường và chuyển thành tín hiệu điện, sau đó não diễn giải các tín hiệu này để tạo ra hình ảnh, giúp nhận biết màu sắc, hình dạng, chiều sâu và chuyển động."
+        },
+        {
+          "id": "labels",
+          "label": "Anatomical labels",
+          "text": "GIÁC MẠC · MỐNG MẮT · ĐỒNG TỬ · THỦY TINH THỂ · CỦNG MẠC · MẠCH MẠC · VÕNG MẠC · MẠCH MÁU VÕNG MẠC · DÂY THẦN KINH THỊ GIÁC · HOÀNG ĐIỂM · DỊCH KÍNH · ỐNG SCHLEMM"
+        }
+      ],
+      "findings": [
+        {
+          "id": "coverage",
+          "title": "All 14 visible strings accounted for",
+          "status": "passed",
+          "basis": "The vi package audit records 14 visible slide strings for this diagram; all have output IDs.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        },
+        {
+          "id": "geometry",
+          "title": "Diagram geometry preserved",
+          "status": "passed",
+          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "sourceSection": "caption",
+          "targetSection": "caption"
+        },
+        {
+          "id": "medical-review",
+          "title": "Independent terminology review pending",
+          "status": "needs-review",
+          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
+          "sourceSection": "labels",
+          "targetSection": "labels"
+        }
+      ]
+    }
+  ]
+}

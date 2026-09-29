@@ -1,0 +1,21 @@
+.live-progress-copy #live-percent {
+  color: var(--teal-deep);
+  font: 800 18px Manrope, 'Segoe UI', sans-serif;
+}
+
+.live-progress-copy #live-elapsed {
+  margin-left: auto;
+}
+
+.live-progress-fill {
+  display: block;
+  height: 100%;
+  width: 1%;
+  border-radius: 999px;
+  background: var(--teal);
+  transition: width .24s linear;
+}
+
+@media (max-width: 760px) {
+  .live-progress-copy #live-elapsed { margin-left: 0; }
+}

@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/TestResults/
+**/__pycache__/
+*.pyc
+*.pyo
+output/
+.vs/
+.env
+.env.*
+*.user
+*.suo
+*.log
+*.pfx
+*.pem
+*.key

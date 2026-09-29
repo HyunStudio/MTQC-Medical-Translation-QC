@@ -1,0 +1,70 @@
+{
+  "id": "mueller-figure1",
+  "title": "Arterial–venous anatomy · Figure 1",
+  "mode": "recorded",
+  "generatedUtc": "2026-09-28T04:08:00Z",
+  "generator": "Assistant-generated translation draft; no successful Codex CLI model run for this specimen",
+  "scope": "Figure 1 title, caption, and four labels only. The two-column article body remains English.",
+  "source": {
+    "citation": "Müller LO, Watanabe SM, Toro EF, Feijóo RA, Blanco PJ (2023). Frontiers in Physiology 14:1162391. DOI: 10.3389/fphys.2023.1162391.",
+    "url": "https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2023.1162391/full",
+    "license": "CC BY 4.0",
+    "modifications": "Publisher PDF page 4 rendered as a preview; Figure 1 caption and labels translated separately in the comparison draft. English body unchanged.",
+    "preview": "/assets/source-page04.png",
+    "sections": [
+      { "id": "title", "label": "Article title", "text": "An anatomically detailed arterial-venous network model. Cerebral and coronary circulation" },
+      { "id": "caption", "label": "Figure 1 caption", "text": "Vascular anatomy of the ADAVN model. (A) arterial vascular anatomy with over 2,185 vessels. (B) venous vascular anatomy with 189 vessels. Insets show details of the circulation circuits in the head and in the heart. Veins colored in cyan contain a venous valve at its proximal extremity." },
+      { "id": "labels", "label": "Figure labels", "text": "Arterial vascularization of the head · Venous vascularization of the head · Coronary arteries · Coronary veins" }
+    ]
+  },
+  "translations": [
+    {
+      "language": "ko",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/sample-ko.png",
+      "download": "/assets/Mueller_Figure1_Translation_Comparison_DRAFT.pdf",
+      "sections": [
+        { "id": "title", "label": "Translated title", "text": "해부학적으로 상세한 동맥-정맥 네트워크 모델: 뇌 및 관상순환" },
+        { "id": "caption", "label": "Translated Figure 1 caption", "text": "ADAVN 모델의 혈관 해부 구조. (A) 2,185개가 넘는 혈관을 포함한 동맥 혈관 해부 구조. (B) 189개 혈관을 포함한 정맥 혈관 해부 구조. 삽입 그림은 머리와 심장의 순환 회로를 자세히 보여준다. 청록색으로 표시된 정맥은 근위 말단에 정맥 판막이 있다." },
+        { "id": "labels", "label": "Translated labels", "text": "머리의 동맥 혈관 분포 · 머리의 정맥 혈관 분포 · 관상동맥 · 관상정맥" }
+      ],
+      "findings": [
+        { "id": "scope", "title": "Partial translation scope", "status": "needs-review", "basis": "The source body remains English in the released three-page comparison PDF; only the Figure 1 title, caption, and four labels were translated.", "sourceSection": "caption", "targetSection": "caption" },
+        { "id": "medical-review", "title": "Clinical terminology review pending", "status": "needs-review", "basis": "The sample manifest records no independent clinician or native-speaker terminology review.", "sourceSection": "labels", "targetSection": "labels" },
+        { "id": "visual-qa", "title": "Scoped visual QA passed", "status": "passed", "basis": "The 2026-09-28 visual QA record reports no clipping or overlap on the three rendered comparison pages; this does not validate medical accuracy.", "sourceSection": "caption", "targetSection": "caption" }
+      ]
+    },
+    {
+      "language": "es",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/sample-es.png",
+      "download": "/assets/Mueller_Figure1_Translation_Comparison_DRAFT.pdf",
+      "sections": [
+        { "id": "title", "label": "Translated title", "text": "Modelo anatómicamente detallado de la red arterial y venosa: circulación cerebral y coronaria" },
+        { "id": "caption", "label": "Translated Figure 1 caption", "text": "Anatomía vascular del modelo ADAVN. (A) Anatomía arterial con más de 2.185 vasos. (B) Anatomía venosa con 189 vasos. Los recuadros muestran detalles de los circuitos circulatorios de la cabeza y el corazón. Las venas coloreadas en cian presentan una válvula venosa en su extremo proximal." },
+        { "id": "labels", "label": "Translated labels", "text": "Vascularización arterial de la cabeza · Vascularización venosa de la cabeza · Arterias coronarias · Venas coronarias" }
+      ],
+      "findings": [
+        { "id": "scope", "title": "Partial translation scope", "status": "needs-review", "basis": "The source body remains English in the released three-page comparison PDF; only the Figure 1 title, caption, and four labels were translated.", "sourceSection": "caption", "targetSection": "caption" },
+        { "id": "medical-review", "title": "Clinical terminology review pending", "status": "needs-review", "basis": "The sample manifest records no independent clinician or native-speaker terminology review.", "sourceSection": "labels", "targetSection": "labels" },
+        { "id": "visual-qa", "title": "Scoped visual QA passed", "status": "passed", "basis": "The 2026-09-28 visual QA record reports no clipping or overlap on the three rendered comparison pages; this does not validate medical accuracy.", "sourceSection": "caption", "targetSection": "caption" }
+      ]
+    },
+    {
+      "language": "ar",
+      "status": "AI_DRAFT_UNREVIEWED",
+      "preview": "/assets/sample-ar.png",
+      "download": "/assets/Mueller_Figure1_Translation_Comparison_DRAFT.pdf",
+      "sections": [
+        { "id": "title", "label": "Translated title", "text": "نموذج مفصل تشريحياً للشبكة الشريانية الوريدية: الدوران الدماغي والتاجي" },
+        { "id": "caption", "label": "Translated Figure 1 caption", "text": "التشريح الوعائي لنموذج ADAVN. (A) التشريح الوعائي الشرياني الذي يضم أكثر من 2,185 وعاءً. (B) التشريح الوعائي الوريدي الذي يضم 189 وعاءً. تُظهر الصور المُدرجة تفاصيل الدوائر الدورانية في الرأس والقلب. تحتوي الأوردة الملوّنة بالأزرق السماوي على صمام وريدي عند نهايتها القريبة." },
+        { "id": "labels", "label": "Translated labels", "text": "التروية الشريانية للرأس · التروية الوريدية للرأس · الشرايين التاجية · الأوردة التاجية" }
+      ],
+      "findings": [
+        { "id": "scope", "title": "Partial translation scope", "status": "needs-review", "basis": "The source body remains English in the released three-page comparison PDF; only the Figure 1 title, caption, and four labels were translated.", "sourceSection": "caption", "targetSection": "caption" },
+        { "id": "medical-review", "title": "Clinical terminology review pending", "status": "needs-review", "basis": "The sample manifest records no independent clinician or native-speaker terminology review.", "sourceSection": "labels", "targetSection": "labels" },
+        { "id": "visual-qa", "title": "Scoped visual QA passed", "status": "passed", "basis": "The 2026-09-28 visual QA record reports no clipping or overlap on the three rendered comparison pages; this does not validate medical accuracy.", "sourceSection": "caption", "targetSection": "caption" }
+      ]
+    }
+  ]
+}

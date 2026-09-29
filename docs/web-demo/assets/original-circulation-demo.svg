@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Original fictional vessel teaching diagram for the demo">
+  <rect width="1280" height="720" fill="#f7fafb"/>
+  <rect x="36" y="32" width="1208" height="656" rx="20" fill="#ffffff" stroke="#c8d7de" stroke-width="2"/>
+  <rect x="36" y="32" width="1208" height="16" rx="8" fill="#0c5370"/>
+  <text x="88" y="111" fill="#15364d" font-family="Arial, sans-serif" font-size="40" font-weight="700">Proximal and distal vessel anatomy</text>
+  <text x="90" y="155" fill="#526e7b" font-family="Arial, sans-serif" font-size="21">Original synthetic teaching specimen · for software demonstration only</text>
+  <line x1="95" y1="184" x2="1185" y2="184" stroke="#dce8ec" stroke-width="2"/>
+  <rect x="86" y="215" width="665" height="392" rx="18" fill="#f2f8fa" stroke="#d8e9ed" stroke-width="2"/>
+  <path d="M 205 414 C 300 320, 395 340, 480 400 S 640 495, 700 420" fill="none" stroke="#c8e8ef" stroke-width="84" stroke-linecap="round"/>
+  <path d="M 205 414 C 300 320, 395 340, 480 400 S 640 495, 700 420" fill="none" stroke="#0b7f9f" stroke-width="62" stroke-linecap="round"/>
+  <path d="M 205 414 C 300 320, 395 340, 480 400 S 640 495, 700 420" fill="none" stroke="#fbe8df" stroke-width="33" stroke-linecap="round"/>
+  <circle cx="245" cy="382" r="19" fill="#c84f44" stroke="#ffffff" stroke-width="5"/>
+  <circle cx="650" cy="467" r="19" fill="#c84f44" stroke="#ffffff" stroke-width="5"/>
+  <line x1="245" y1="345" x2="245" y2="280" stroke="#c84f44" stroke-width="3"/>
+  <line x1="650" y1="504" x2="650" y2="548" stroke="#c84f44" stroke-width="3"/>
+  <text x="161" y="271" fill="#15364d" font-family="Arial, sans-serif" font-size="27" font-weight="700">PROXIMAL</text>
+  <text x="586" y="579" fill="#15364d" font-family="Arial, sans-serif" font-size="27" font-weight="700">DISTAL</text>
+  <text x="789" y="261" fill="#0c5370" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2">SOURCE EXCERPT</text>
+  <text x="789" y="317" fill="#15364d" font-family="Arial, sans-serif" font-size="27">The proximal artery measures</text>
+  <text x="789" y="357" fill="#15364d" font-family="Arial, sans-serif" font-size="27">2.5 mm. The distal vein</text>
+  <text x="789" y="397" fill="#15364d" font-family="Arial, sans-serif" font-size="27">measures 1.8 mm.</text>
+  <rect x="789" y="453" width="368" height="108" rx="12" fill="#fff8ec" stroke="#e2bb79" stroke-width="2"/>
+  <text x="813" y="488" fill="#6a4a24" font-family="Arial, sans-serif" font-size="19" font-weight="700">REVIEW FOCUS</text>
+  <text x="813" y="522" fill="#6a4a24" font-family="Arial, sans-serif" font-size="18">Direction terms and numbers</text>
+  <text x="90" y="644" fill="#718994" font-family="Arial, sans-serif" font-size="17">Not patient data. Anatomical abstraction, not a clinical reference.</text>
+</svg>

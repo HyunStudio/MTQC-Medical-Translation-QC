@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Medical Translation QC — Evidence Workbench</title>
+  <meta name="description" content="Review medical-document translation drafts beside source visuals, or extract a short PDF/image excerpt locally and request one of 18 Nebius/NVIDIA language drafts.">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/progress.css">
+  <link rel="stylesheet" href="/document-workbench.css">
+  <script src="/app.js" defer></script>
+  <script type="module" src="/document-workbench.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Product navigation">
+      <a class="brand" href="/" aria-label="Medical Translation QC home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span><strong>MEDICAL<span class="brand-accent">/</span>QC</strong><small>DOCUMENT INTELLIGENCE</small></span>
+      </a>
+      <div class="sidebar-group-label">WORKSPACE</div>
+      <nav aria-label="Sections">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">◫</span> Overview</a>
+        <a class="nav-link" href="#workbench"><span class="nav-icon">▤</span> Workbench</a>
+        <a class="nav-link" href="#try-document"><span class="nav-icon">⧉</span> Try a document</a>
+        <a class="nav-link" href="#evidence"><span class="nav-icon">◇</span> QC evidence</a>
+        <a class="nav-link" href="#provenance"><span class="nav-icon">⌁</span> Provenance</a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-note"><span class="note-dot"></span><div><strong>Research prototype</strong><span>Not for clinical decisions</span></div></div>
+      <p class="sidebar-credit">© 2026 Medical Translation QC</p>
+    </aside>
+
+    <div class="content-shell">
+      <header class="topbar">
+        <div class="breadcrumb"><span>WORKSPACE</span><span aria-hidden="true">/</span><strong>Medical document review</strong></div>
+        <div class="top-actions"><span class="top-project">DEMO ENVIRONMENT</span><button id="theme-toggle" class="icon-button" type="button" aria-label="Switch color theme" title="Switch color theme"><span aria-hidden="true">◐</span></button><div class="avatar" aria-label="Demo workspace">MD</div></div>
+      </header>
+      <nav id="mobile-sections" class="mobile-nav" aria-label="Mobile sections">
+        <a href="#overview">Overview</a><a href="#workbench">Workbench</a><a href="#try-document">Try a document</a><a href="#evidence">QC evidence</a><a href="#provenance">Provenance</a>
+      </nav>
+
+      <main id="main">
+        <section id="overview" class="intro" aria-labelledby="page-title">
+          <div class="eyebrow"><span class="eyebrow-line"></span> TRANSLATION QUALITY WORKBENCH <span class="edition">/ PUBLIC DEMO</span></div>
+          <div class="intro-row"><div><h1 id="page-title">Complex medical content.<br><em>Clear, traceable outcomes.</em></h1><p class="intro-copy">Inspect a documented, rights-cleared translation specimen alongside its source, visual output, and the quality evidence behind it.</p></div><div class="recorded-card"><span class="live-dot"></span><div><strong>Recorded run</strong><span>Real output · no API key required</span></div></div></div>
+        </section>
+
+        <section class="summary-grid" aria-label="Demo at a glance">
+          <div class="summary-card"><span class="summary-icon">◈</span><div><span class="summary-label">FORMAT</span><strong id="format-title">Anatomical chart</strong><small id="format-sub">Editable PowerPoint · eye anatomy</small></div></div>
+          <div class="summary-card"><span class="summary-icon">◎</span><div><span class="summary-label">PRODUCT RANGE</span><strong>19 languages total</strong><small>English + 18 translated targets</small></div></div>
+          <div class="summary-card"><span class="summary-icon">▧</span><div><span class="summary-label">THIS CASE</span><strong id="case-count">18 target decks</strong><small id="case-languages">Real slides and editable files</small></div></div>
+          <div class="summary-card"><span class="summary-icon">✓</span><div><span class="summary-label">QUALITY SIGNAL</span><strong id="quality-title">Structure verified</strong><small id="quality-sub">Medical review still pending</small></div></div>
+        </section>
+
+        <section id="workbench" class="workbench-section" aria-labelledby="workbench-title">
+          <div class="section-heading"><div><span class="section-kicker">01 / DOCUMENT WORKBENCH</span><h2 id="workbench-title">Source meets translation</h2><p id="scope-note">Select a verified recorded specimen and inspect its exact review scope.</p></div><div class="case-controls"><div><label for="case-select">DEMO CASE</label><select id="case-select" aria-label="Demo case"><option value="servier-visual">Visual system · anatomical chart</option><option value="mueller-figure1">Arterial–venous anatomy · Figure 1</option></select></div><div><label for="language-select">TARGET LANGUAGE</label><select id="language-select" aria-label="Target language"><option value="ko">Korean</option><option value="es">Spanish</option><option value="ar">Arabic</option></select></div></div></div>
+          <div class="status-strip"><span class="status-pill mode-pill">● Recorded run</span><span class="status-pill draft-pill">AI draft · unreviewed</span><span class="status-strip-text" id="case-date">Prepared 28 Sep 2026</span><a class="status-strip-link" href="#provenance">View provenance <span aria-hidden="true">↗</span></a></div>
+          <div id="recorded-workflow" class="workflow-strip" aria-label="Recorded workflow evidence">
+            <div class="workflow-intro"><strong>Recorded workflow</strong><span>Completed before this page was opened · not a live progress estimate</span></div>
+            <ol class="workflow-steps"><li><span class="workflow-mark complete" aria-hidden="true">✓</span><span id="workflow-prepared">18 target slides prepared</span></li><li><span class="workflow-mark complete" aria-hidden="true">✓</span><span id="workflow-qc">Visible-text and layout checks recorded</span></li><li><span class="workflow-mark pending" aria-hidden="true">!</span><span id="workflow-review">Medical review pending</span></li></ol>
+          </div>
+          <div id="case-error" class="error-banner" role="alert" hidden></div>
+          <div class="comparison-grid">
+            <article class="document-panel" aria-labelledby="source-title"><div class="panel-header"><div><span class="panel-overline">ORIGINAL · ENGLISH</span><h3 id="source-title">Source document</h3></div><span id="source-type" class="file-chip">PPTX / SLIDE 01</span></div><div class="document-preview"><a id="source-full-link" class="preview-link" href="#" target="_blank" rel="noopener" aria-label="Open full-size source image"><img id="source-preview" alt="Original medical source" loading="eager"></a></div><div class="panel-caption"><span class="caption-dot"></span><span id="source-caption">Licensed original illustration</span><span class="preview-hint">Open image ↗</span></div><div id="source-sections" class="section-list"></div></article>
+            <article class="document-panel target-panel" aria-labelledby="target-title"><div class="panel-header"><div><span class="panel-overline">TRANSLATED · <span id="target-code">KO</span></span><h3 id="target-title">Translation specimen</h3></div><span id="target-type" class="file-chip target-chip">DRAFT / SLIDE 01</span></div><div class="document-preview"><a id="target-full-link" class="preview-link" href="#" target="_blank" rel="noopener" aria-label="Open full-size translated image"><img id="target-preview" alt="Translated medical specimen" loading="eager"></a></div><div class="panel-caption"><span class="caption-dot target-dot"></span><span id="target-caption">Translated labels and overview</span><span class="preview-hint">Open image ↗</span></div><div id="target-sections" class="section-list"></div></article>
+          </div>
+          <div class="download-row"><div><span class="download-icon" aria-hidden="true">↓</span><div><strong>Review the actual artifact</strong><span id="download-description">Editable translated PowerPoint slide</span></div></div><a id="download-link" class="download-button" href="#" target="_blank" rel="noopener"><span id="download-heading">Open translated PPTX</span> <span aria-hidden="true">↗</span></a></div>
+        </section>
+
+        <section id="try-document" class="document-intake" aria-labelledby="document-intake-title">
+          <div class="section-heading"><div><span class="section-kicker">02 / TRY YOUR DOCUMENT</span><h2 id="document-intake-title">Review an English excerpt</h2><p>Choose a small rights-cleared PDF or image. Extraction stays in your browser; only text you approve is sent for a model draft.</p></div></div>
+          <div class="document-intake-controls"><div><label for="document-file-trigger">SOURCE FILE · ENGLISH</label><input id="document-file" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" hidden><div class="document-file-control"><button id="document-file-trigger" type="button">Choose PDF or image</button><span id="document-file-selected">No file selected</span></div></div><div><label for="document-language">TARGET LANGUAGE</label><select id="document-language" aria-label="Document target language"><option value="ko">Korean</option><option value="es">Spanish</option><option value="ar">Arabic</option><option value="zh-CN">Chinese (Simplified)</option><option value="zh-TW">Chinese (Traditional)</option><option value="ja">Japanese</option><option value="fr">French</option><option value="de">German</option><option value="it">Italian</option><option value="pt">Portuguese</option><option value="ru">Russian</option><option value="hi">Hindi</option><option value="id">Indonesian</option><option value="nl">Dutch</option><option value="pl">Polish</option><option value="th">Thai</option><option value="tr">Turkish</option><option value="vi">Vietnamese</option></select></div></div>
+          <p id="document-status" class="document-status" role="status">Choose a PDF (up to 2 pages) or PNG/JPEG (up to 10 MiB). No file is uploaded to this server.</p>
+          <div id="document-preview" class="document-source-preview" aria-label="Source preview" hidden></div>
+          <label for="document-text">REVIEW EXTRACTED TEXT BEFORE SENDING</label><textarea id="document-text" rows="5" maxlength="12000" placeholder="Extracted text appears here. Review and correct it before translation." disabled></textarea>
+          <div class="document-review-row"><label><input id="document-reviewed" type="checkbox" disabled> I reviewed this English source excerpt and have the right to use it.</label><button id="document-translate" type="button" disabled>Translate reviewed excerpt</button></div>
+          <div id="document-progress" class="document-progress" hidden><div class="document-progress-heading"><strong id="document-progress-title">Nebius model request in progress</strong><span id="document-progress-percent">1%</span></div><div id="document-progress-track" class="document-progress-track" role="progressbar" aria-label="Estimated document translation request progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="1" aria-valuetext="Estimated 1 percent; model progress is unavailable"><span id="document-progress-fill"></span></div><small id="document-progress-elapsed">Elapsed 0s · Estimated, not model telemetry</small></div>
+          <p id="document-live-status" class="document-live-status" role="status" aria-live="polite">No document excerpt sent.</p>
+          <div id="document-result" class="document-result" role="status" aria-live="polite" hidden><div id="document-result-grid" class="document-result-grid"><div><span class="document-result-label">REVIEWED ENGLISH SOURCE</span><p id="document-result-source" dir="ltr"></p></div><div><span class="document-result-label">MODEL DRAFT · HUMAN REVIEW REQUIRED</span><p id="document-result-translation"></p></div></div><p id="document-result-error" hidden></p><div class="document-result-evidence"><span id="document-result-model"></span><span id="document-result-usage"></span></div><p id="document-result-qc" class="document-result-qc"></p></div>
+        </section>
+
+        <section class="live-section" aria-labelledby="live-title"><div class="live-card"><div class="live-card-copy"><span class="section-kicker">OPTIONAL / SERVER-SIDE INFERENCE</span><h2 id="live-title">Live model excerpt</h2><p>In the Müller Figure 1 case only, a short fixed caption can be sent to an NVIDIA Nemotron model on Nebius when credits and live mode are enabled. This does not process the full document.</p><p id="live-status" class="live-status" role="status">Checking live availability…</p></div><div class="live-card-action"><button id="live-run" type="button" disabled>Translate fixed excerpt <span aria-hidden="true">↗</span></button><small>No browser API key · bounded request</small></div></div><div id="live-progress" class="live-progress" hidden><div class="live-progress-copy"><strong id="live-progress-title">Model request in progress</strong><span id="live-percent">1%</span><span id="live-elapsed">Elapsed 0s · Estimated, not model telemetry</span></div><div id="live-progress-track" class="live-progress-track" role="progressbar" aria-label="Estimated live model request progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="1" aria-valuetext="Estimated 1 percent; model progress is unavailable"><span id="live-progress-fill" class="live-progress-fill"></span></div></div><div id="live-result" class="live-result" role="status" aria-live="polite" hidden></div></section>
+
+        <section id="evidence" class="evidence-section" aria-labelledby="evidence-title"><div class="section-heading"><div><span class="section-kicker">03 / QUALITY EVIDENCE</span><h2 id="evidence-title">What the checks actually say</h2><p>Automated and visual observations are kept separate from medical validation.</p></div></div><div class="evidence-layout"><div class="gates-card"><div class="card-topline"><strong>QC gates</strong><span class="subtle">SCOPED DRAFT</span></div><div class="gate-row"><span class="gate-icon passed">✓</span><div><strong>Visual legibility</strong><span id="gate-visual-detail">Rendered slides reviewed for clipping and overlap</span></div><span class="gate-state passed-text">Passed</span></div><div class="gate-row"><span class="gate-icon review">!</span><div><strong>Terminology validation</strong><span>No independent clinician or native-speaker review</span></div><span class="gate-state review-text">Needs review</span></div><div class="gate-row"><span id="gate-complete-icon" class="gate-icon passed">✓</span><div><strong id="gate-complete-title">Visible-text coverage</strong><span id="gate-complete-detail">All 14 visible strings accounted for in this slide</span></div><span id="gate-complete-state" class="gate-state passed-text">Passed</span></div></div><div class="findings-card"><div class="card-topline"><strong>Evidence linked to content</strong><span class="subtle">SELECT TO LOCATE</span></div><div id="finding-list" class="finding-list" aria-live="polite"></div></div></div></section>
+
+        <section id="provenance" class="provenance-section" aria-labelledby="provenance-title"><div class="section-heading"><div><span class="section-kicker">04 / PROVENANCE &amp; LIMITS</span><h2 id="provenance-title">Trust is part of the workflow</h2></div></div><div class="provenance-grid"><div><span class="provenance-label">SOURCE</span><p id="source-citation">Müller et al. (2023), Frontiers in Physiology.</p><a id="source-link" href="https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2023.1162391/full" target="_blank" rel="noopener">Read original article ↗</a></div><div><span class="provenance-label">RIGHTS &amp; METHOD</span><p><span id="source-license">CC BY 4.0</span> · <span id="source-modifications">Adapted comparison specimen</span></p><p id="generator-note" class="muted">Assistant-generated draft; no clinical review.</p></div><div><span class="provenance-label">BOUNDARY</span><p>This browser demo displays a recorded specimen. The full Word/PDF processing engine is a separate Windows application. Neither output is clinical advice or a certified translation.</p></div></div></section>
+        <footer class="footer"><span>MEDICAL / QC <span class="footer-divider">—</span> RESEARCH PROTOTYPE</span><span>Evidence before claims.</span></footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

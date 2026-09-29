@@ -1,0 +1,38 @@
+.document-intake { margin: 1.5rem 0; padding: 1.5rem; border: 1px solid var(--border, #dce7ee); border-radius: 1rem; background: var(--surface, #fff); }
+.document-intake-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem); gap: 1rem; margin: 1rem 0; }
+.document-intake-controls > div { display: grid; gap: .4rem; min-width: 0; }
+.document-intake label { display: block; margin-bottom: .4rem; font-size: .78rem; font-weight: 700; letter-spacing: .05em; }
+.document-intake input[type=file], .document-intake select, .document-intake textarea { width: 100%; box-sizing: border-box; }
+.document-file-control { display: flex; align-items: center; gap: .8rem; min-height: 2.5rem; flex-wrap: wrap; }
+#document-file-trigger { border: 1px solid var(--teal); border-radius: .55rem; background: var(--teal-soft); color: var(--teal-deep); padding: .58rem .85rem; font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; }
+#document-file-trigger:hover { background: var(--teal); color: var(--surface); }
+#document-file-selected { color: var(--muted); font-size: .75rem; }
+.document-intake textarea { resize: vertical; min-height: 7rem; padding: .75rem; border: 1px solid #9eafbc; border-radius: .6rem; background: transparent; color: inherit; font: inherit; }
+.document-status { margin: .8rem 0; }
+.document-source-preview { min-height: 12rem; max-height: 25rem; overflow: auto; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface-soft); }
+.document-source-preview img { display: block; max-width: 100%; max-height: 25rem; height: auto; margin: auto; }
+.document-source-preview canvas { display: block; max-width: 100%; height: auto; margin: 0 auto 1rem; box-shadow: 0 3px 14px #10293d21; }
+.document-review-row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 1rem; }
+.document-review-row label { margin: 0; font-size: .88rem; letter-spacing: 0; }
+.document-review-row button { border: 0; border-radius: .6rem; background: #0b6c7d; color: white; padding: .7rem 1rem; font: inherit; font-weight: 700; }
+.document-review-row button:disabled { opacity: .5; cursor: not-allowed; }
+.document-intake input:focus-visible, .document-intake textarea:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+.document-progress { margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--surface-soft); }
+.document-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .6rem; font-size: .9rem; }
+.document-progress-heading span { color: var(--teal-deep); font-weight: 800; }
+.document-progress-track { height: .55rem; background: var(--teal-soft); border-radius: 2rem; overflow: hidden; }
+#document-progress-fill { display: block; width: 1%; height: 100%; background: var(--teal); border-radius: inherit; transition: width .2s linear; }
+#document-progress-elapsed { display: block; margin-top: .5rem; color: var(--muted); }
+.document-live-status { color: var(--muted); font-size: .8rem; }
+.document-result { border: 1px solid var(--line); border-radius: .8rem; overflow: hidden; background: var(--surface); }
+.document-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.document-result-grid > div { min-width: 0; padding: 1rem 1.2rem; }
+.document-result-grid > div + div { border-left: 1px solid var(--line); }
+.document-result-label { color: var(--teal-deep); font-size: .7rem; font-weight: 800; letter-spacing: .1em; }
+.document-result-grid p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: .95rem; }
+#document-result-translation[dir=rtl] { text-align: right; font-size: 1.08rem; line-height: 1.9; }
+.document-result-evidence { display: flex; gap: 1rem; flex-wrap: wrap; padding: .7rem 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .7rem; }
+.document-result-qc { margin: 0; padding: .9rem 1.2rem; color: var(--amber); background: var(--amber-soft); font-size: .83rem; line-height: 1.6; }
+#document-result-error { padding: 1rem 1.2rem; color: var(--red); background: var(--red-soft); }
+@media (max-width: 640px) { .document-intake-controls { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .document-result-grid { grid-template-columns: 1fr; } .document-result-grid > div + div { border-left: 0; border-top: 1px solid var(--line); } }
