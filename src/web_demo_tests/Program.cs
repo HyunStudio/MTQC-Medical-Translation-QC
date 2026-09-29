@@ -58,6 +58,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("all live targets name the intended language in the provider prompt", AllTargetsHaveExplicitNames),
     ("user excerpt QC flags numbers and leftover English directions", UserExcerptQcFlagsRisks),
     ("Korean femoral vein substitution prompts review", KoreanFemoralVeinSubstitutionPromptsReview),
+    ("numeric QC detects substituted and repeated values", NumericQcDetectsSubstitutions),
     ("both live endpoints share the same client credit limit", LiveEndpointsShareBudget),
     ("live budget permits one upstream call at a time", LiveBudgetSerializesUpstream),
     ("durable live attempt cap survives a budget restart", DurableLiveCapSurvivesRestart),
@@ -483,6 +484,19 @@ Task UserExcerptQcFlagsRisks()
     var portuguese = ExcerptQc.Summarize("The distal vein measures 1.8 mm.", "A veia distal mede 1,8 mm.", "pt");
     Assert(!portuguese.Contains("Untranslated English directional term", StringComparison.Ordinal), "Portuguese medical cognate was falsely labeled English");
     Assert(summary.Contains("medical and linguistic review", StringComparison.Ordinal), "human-review boundary was omitted");
+    return Task.CompletedTask;
+}
+
+Task NumericQcDetectsSubstitutions()
+{
+    Assert(ExcerptQc.Summarize("Dose 2 mg", "Dose 20 mg", "fr").Contains("2", StringComparison.Ordinal), "numeric substring substitution was missed");
+    Assert(ExcerptQc.Summarize("Dose 2 mg", "Dose 20 mg", "fr").Contains("Numeric", StringComparison.Ordinal), "numeric substitution must produce a specific finding");
+    Assert(ExcerptQc.Summarize("2 mg and 2 mg", "2 mg", "fr").Contains("Numeric", StringComparison.Ordinal), "missing repeated value was missed");
+    Assert(!ExcerptQc.Summarize("2.5 mm", "2,5 mm", "es").Contains("Numeric value", StringComparison.Ordinal), "valid decimal localization was treated as changed value");
+    Assert(!ExcerptQc.Summarize("2.5 mm", "٢٫٥ مم", "ar").Contains("Numeric value", StringComparison.Ordinal), "Arabic digits were treated as changed value");
+    Assert(ExcerptQc.Summarize("2 mg", "2 mg and 7 mg", "fr").Contains("Numeric", StringComparison.Ordinal), "added value was missed");
+    Assert(ExcerptQc.Summarize("Temperature -2 C", "Temperature 2 C", "fr").Contains("Numeric", StringComparison.Ordinal), "lost minus sign was missed");
+    Assert(!ExcerptQc.Summarize("Temperature -2 C", "Temperature −2 C", "fr").Contains("Numeric value", StringComparison.Ordinal), "equivalent Unicode minus was treated as a changed value");
     return Task.CompletedTask;
 }
 

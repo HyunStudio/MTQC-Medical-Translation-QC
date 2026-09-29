@@ -18,6 +18,12 @@ This is the 2026-09-29 evidence ledger for the [submitted Devpost project](https
 
 ## What changed after real-language evidence
 
+### Post-submission quality improvement
+
+The workbench now retains PDF text-fragment coordinates, proposes column-aware reading order, and overlays numbered lines on the source. Reviewers may preview single-row or two-column order without losing edits; explicitly applying the proposal resets approval. Scanned pages inside mixed text/image PDFs now receive OCR instead of being silently skipped. Numeric QC compares token values and multiplicities, catches sign loss, and recognizes Arabic digit forms and simple localized decimal separators.
+
+Verification: .NET 46/46; reading-order unit cases 5/5; browser regression 22/22 including two-column PDF extraction, mixed searchable/scanned PDF coverage, edit preservation, and responsive reading-order controls. Light, dark, and mobile screenshots were inspected. No provider calls were made for these changes. The geometric proposal is not proof of arbitrary table/figure semantics, and this release still translates a reviewed excerpt rather than rebuilding a complete translated PDF/DOCX.
+
 The initial 18-call QC report flagged decimal separator changes in nine targets. This is an exact-format **review prompt**, not an assertion that `2,5` is numerically wrong for a locale. It also called the legitimate Spanish and Portuguese anatomical terms `proximal` and `distal` untranslated English. That false positive was reproduced in a failing unit test and corrected for Spanish, Portuguese, and French cognates. Indonesian `proximal` remains a human-review prompt; the code does not assert it is wrong. No additional provider call was needed to fix or test the QC rule.
 
 ## Submission verification and ongoing operations

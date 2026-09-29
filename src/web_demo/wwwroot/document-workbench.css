@@ -9,6 +9,16 @@
 #document-file-selected { color: var(--muted); font-size: .75rem; }
 .document-intake textarea { resize: vertical; min-height: 7rem; padding: .75rem; border: 1px solid #9eafbc; border-radius: .6rem; background: transparent; color: inherit; font: inherit; }
 .document-status { margin: .8rem 0; }
+.document-layout { padding: 1rem; margin: 1rem 0; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface-soft); }
+.document-layout-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.document-layout-controls label { margin: 0; letter-spacing: 0; }
+.document-layout-controls select { margin-top: .4rem; }
+.document-layout-controls button { padding: .6rem .8rem; border: 1px solid var(--teal); border-radius: .5rem; color: var(--teal-deep); background: var(--teal-soft); cursor: pointer; }
+#document-layout-summary, .document-text-count { font-size: .78rem; color: var(--muted); line-height: 1.6; }
+.document-page-frame { position: relative; max-width: 100%; margin: 0 auto 1rem; }
+.document-source-preview .document-page-frame canvas { width: 100%; margin: 0; }
+.document-order-box { display: none; position: absolute; box-sizing: border-box; border: 1px solid #087f8c80; background: #00aabc0d; font: 700 9px/1 sans-serif; color: #063f47; text-indent: -15px; }
+.show-reading-order .document-order-box { display: block; }
 .document-source-preview { min-height: 12rem; max-height: 25rem; overflow: auto; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface-soft); }
 .document-source-preview img { display: block; max-width: 100%; max-height: 25rem; height: auto; margin: auto; }
 .document-source-preview canvas { display: block; max-width: 100%; height: auto; margin: 0 auto 1rem; box-shadow: 0 3px 14px #10293d21; }

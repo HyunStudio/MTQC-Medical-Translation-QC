@@ -1,9 +1,13 @@
+import { recoverReadingOrder } from './document-layout.mjs';
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_EXCERPT_CODEPOINTS = 3000;
 
 function refreshButton(text, reviewed, translate) {
   const length = Array.from(text.value.trim()).length;
   translate.disabled = !reviewed.checked || length === 0 || length > MAX_EXCERPT_CODEPOINTS;
+  const counter = document.querySelector('#document-text-count');
+  if (counter) counter.textContent = `${length.toLocaleString()} / 3,000 characters${length > MAX_EXCERPT_CODEPOINTS ? ' · Select a shorter excerpt before translation.' : ''}`;
 }
 
 async function readSignature(file) {
@@ -56,7 +60,7 @@ async function readImageWithOcr(file, status, text, token, isCurrent) {
   }
 }
 
-async function readPdf(file, preview, status, text, reviewed, token, isCurrent) {
+async function readPdf(file, preview, status, text, reviewed, token, isCurrent, onPages) {
   let pdf;
   try {
     const pdfjs = await import('/vendor/pdfjs/pdf.mjs');
@@ -67,7 +71,7 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent) 
       status.textContent = 'PDF exceeds the 2-page limit. Choose only one or two pages.';
       return;
     }
-    const extracted = [];
+    const records = [];
     const canvases = [];
     for (let index = 1; index <= pdf.numPages; index++) {
       const page = await pdf.getPage(index);
@@ -81,23 +85,33 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent) 
       if (!isCurrent(token)) return;
       canvases.push(canvas);
       const content = await page.getTextContent();
-      extracted.push(content.items.map(item => item.str ?? '').join(' ').trim());
+      const fragments = content.items.filter(item => item.str?.trim()).map(item => {
+        const transform = pdfjs.Util.transform(viewport.transform, item.transform);
+        const height = Math.hypot(transform[2], transform[3]);
+        return { text: item.str, x: transform[4], y: transform[5] - height,
+          width: item.width * viewport.scale, height };
+      });
+      records.push({ canvas, width: canvas.width, height: canvas.height, fragments, ocrText: '' });
     }
     preview.replaceChildren(...canvases);
     preview.hidden = false;
-    text.value = extracted.filter(Boolean).join('\n\n');
+    let ocrPages = 0;
+    for (const record of records) {
+      if (record.fragments.length) continue;
+      status.textContent = 'A page has no PDF text layer. Running local English OCR for that page…';
+      const blob = await new Promise(resolve => record.canvas.toBlob(resolve, 'image/png'));
+      const result = await recognizeEnglish([blob]);
+      if (!isCurrent(token)) return;
+      record.ocrText = result.text;
+      ocrPages++;
+    }
+    if (!isCurrent(token)) return;
+    onPages(records);
     text.disabled = false;
     reviewed.disabled = false;
-    if (text.value.trim()) {
-      status.textContent = `Text layer extracted locally from ${pdf.numPages} PDF page(s). Check reading order and correct the excerpt before sending.`;
-      return;
-    }
-    status.textContent = 'No PDF text layer found. Running local English OCR; review the result before sending.';
-    const blobs = await Promise.all(canvases.map(canvas => new Promise(resolve => canvas.toBlob(resolve, 'image/png'))));
-    const result = await recognizeEnglish(blobs);
-    if (!isCurrent(token)) return;
-    if (!text.value.trim()) text.value = result.text;
-    status.textContent = 'Scanned PDF OCR completed locally. Text and reading order are unverified; correct the excerpt before sending.';
+    status.textContent = ocrPages
+      ? `Scanned PDF OCR completed locally for ${ocrPages} page(s); other text layers retained. Check every page before sending.`
+      : `Text layer extracted locally from ${pdf.numPages} PDF page(s). Review the numbered reading order below.`;
   } catch {
     if (isCurrent(token)) status.textContent = 'This PDF could not be read locally. Choose a valid PDF or an image.';
   } finally {
@@ -211,15 +225,63 @@ export function mountDocumentWorkbench({ onTranslate }) {
   if (!input || !fileTrigger || !fileSelected || !status || !text || !reviewed || !translate || !language || !preview) return;
   let generation = 0;
   let objectUrl;
+  let pdfPages = [];
+  const layout = document.querySelector('#document-layout');
+  const orderMode = document.querySelector('#document-order-mode');
+  const layoutSummary = document.querySelector('#document-layout-summary');
+  const overlayToggle = document.querySelector('#document-show-order');
+  const applyOrder = document.querySelector('#document-apply-order');
+  function renderOrder(applyText = false) {
+    const texts = [];
+    const summaries = [];
+    const frames = [];
+    pdfPages.forEach((record, pageIndex) => {
+      const recovered = recoverReadingOrder(record.fragments, record.width, orderMode.value);
+      texts.push(record.fragments.length ? recovered.text : record.ocrText);
+      summaries.push(`Page ${pageIndex + 1}: ${record.fragments.length ? `${recovered.columns} column(s), ${recovered.lines.length} lines` : 'OCR · review order manually'}`);
+      const frame = document.createElement('div');
+      frame.className = 'document-page-frame';
+      frame.style.width = `${record.width}px`;
+      frame.append(record.canvas);
+      recovered.lines.forEach((line, index) => {
+        const box = document.createElement('span');
+        box.className = 'document-order-box';
+        box.style.left = `${100 * line.x / record.width}%`;
+        box.style.top = `${100 * line.y / record.height}%`;
+        box.style.width = `${100 * line.width / record.width}%`;
+        box.style.height = `${100 * line.height / record.height}%`;
+        box.title = `${index + 1}. ${line.text}`;
+        box.textContent = String(index + 1);
+        frame.append(box);
+      });
+      frames.push(frame);
+    });
+    preview.replaceChildren(...frames);
+    preview.classList.toggle('show-reading-order', overlayToggle.checked);
+    layoutSummary.textContent = `${summaries.join(' · ')}. Numbers propose reading sequence; check tables and figure labels against the original.`;
+    if (applyText) {
+      text.value = texts.join('\n\n');
+      reviewed.checked = false;
+      clearLiveDocument();
+      refreshButton(text, reviewed, translate);
+    }
+  }
+  orderMode.addEventListener('change', () => renderOrder());
+  overlayToggle.addEventListener('change', () => preview.classList.toggle('show-reading-order', overlayToggle.checked));
+  applyOrder.addEventListener('click', () => renderOrder(true));
   fileTrigger.addEventListener('click', () => input.click());
 
   input.addEventListener('change', async () => {
     clearLiveDocument();
+    pdfPages = [];
+    layout.hidden = true;
+    orderMode.value = 'auto';
     const current = ++generation;
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     preview.replaceChildren();
     preview.hidden = true;
     text.value = '';
+    refreshButton(text, reviewed, translate);
     text.disabled = true;
     reviewed.checked = false;
     reviewed.disabled = true;
@@ -243,7 +305,11 @@ export function mountDocumentWorkbench({ onTranslate }) {
     }
     if (isPdf(signature)) {
       status.textContent = 'Reading PDF locally…';
-      readPdf(file, preview, status, text, reviewed, current, value => value === generation);
+      readPdf(file, preview, status, text, reviewed, current, value => value === generation, records => {
+        pdfPages = records;
+        layout.hidden = false;
+        renderOrder(true);
+      });
       return;
     }
     objectUrl = URL.createObjectURL(file);
@@ -255,7 +321,8 @@ export function mountDocumentWorkbench({ onTranslate }) {
     text.disabled = false;
     reviewed.disabled = false;
     status.textContent = 'Source image loaded locally. Running English OCR; review and correct its text.';
-    readImageWithOcr(file, status, text, current, value => value === generation);
+    await readImageWithOcr(file, status, text, current, value => value === generation);
+    if (current === generation) refreshButton(text, reviewed, translate);
   });
 
   text.addEventListener('input', () => {

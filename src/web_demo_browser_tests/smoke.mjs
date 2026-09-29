@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -193,6 +193,55 @@ try {
     await page.locator('#document-preview canvas').first().waitFor();
     await page.waitForFunction(() => document.querySelector('#document-text')?.value.includes('proximal artery'));
     assert(await page.locator('#document-text').isEnabled(), 'Extracted PDF text is not editable');
+    await page.close();
+  });
+
+  await check('two-column PDF order is visible and reviewer edits survive order preview', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    page.setDefaultTimeout(12000);
+    await page.setContent('<style>body{font:18px Arial;margin:35px;color:#183746}h1{font-size:26px}main{display:grid;grid-template-columns:1fr 1fr;gap:55px}p{margin:0 0 20px}</style><h1>Vascular anatomy — QA specimen</h1><main><section><p>Left first artery.</p><p>Left second vein.</p><p>Left third capillary.</p></section><section><p>Right first reference.</p><p>Right second reference.</p><p>Right third reference.</p></section></main>');
+    const pdf = await page.pdf({ format: 'A4' });
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'two-column.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await page.waitForFunction(() => document.querySelector('#document-text')?.value.includes('Right third'));
+    const extracted = await page.locator('#document-text').inputValue();
+    assert(extracted.indexOf('Left third') < extracted.indexOf('Right first'), 'Two columns were interleaved');
+    assert((await page.locator('#document-layout-summary').textContent()).includes('2 column(s)'), 'Column detection was not shown');
+    assert(await page.locator('.document-order-box').count() >= 7, 'Source reading-order overlay missing');
+    await page.locator('#document-text').fill('Reviewer corrected excerpt.');
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-order-mode').selectOption('single');
+    assert(await page.locator('#document-text').inputValue() === 'Reviewer corrected excerpt.', 'Previewing order overwrote a reviewer edit');
+    await page.locator('#document-apply-order').click();
+    assert(!(await page.locator('#document-reviewed').isChecked()), 'Replacing text retained old approval');
+    const rowwise = await page.locator('#document-text').inputValue();
+    assert(rowwise.indexOf('Right first') < rowwise.indexOf('Left second'), 'Explicit row ordering did not apply');
+    await page.locator('#document-order-mode').selectOption('auto');
+    await page.locator('#document-apply-order').click();
+    const qaDir = path.resolve(here, '../../output/layout-qa');
+    mkdirSync(qaDir, { recursive: true });
+    await page.locator('#try-document').screenshot({ path: path.join(qaDir, 'reading-order-light.png') });
+    await page.locator('#theme-toggle').click();
+    await page.locator('#try-document').screenshot({ path: path.join(qaDir, 'reading-order-dark.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= 392), 'Reading-order controls overflow the mobile viewport');
+    await page.locator('#try-document').screenshot({ path: path.join(qaDir, 'reading-order-mobile.png') });
+    await page.close();
+  });
+
+  await check('mixed text and scanned PDF retains text from both pages', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(30000);
+    await page.setContent('<div id="scan" style="width:680px;height:150px;background:white;color:black;font:bold 56px Arial;padding:30px">PROXIMAL ARTERY 2185</div>');
+    const image = await page.locator('#scan').screenshot();
+    await page.setContent(`<div style="break-after:page">TEXT PAGE FEMORAL VEIN</div><img style="width:680px" src="data:image/png;base64,${image.toString('base64')}">`);
+    const pdf = await page.pdf({ format: 'A4' });
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'mixed.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await page.locator('#document-status').getByText(/Scanned PDF OCR completed locally/).waitFor();
+    const text = await page.locator('#document-text').inputValue();
+    assert(text.includes('FEMORAL VEIN') && text.includes('2185'), 'One page of a mixed PDF was silently dropped');
+    assert(await page.locator('#document-translate').isDisabled(), 'Mixed PDF skipped review');
     await page.close();
   });
 

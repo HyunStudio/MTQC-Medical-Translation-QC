@@ -19,6 +19,12 @@ Open the local address printed by ASP.NET Core. The recorded cases require no ac
 
 The Document workbench can accept a user-selected PDF (up to two pages) or image (up to 10 MiB), extract selectable text or perform English OCR in the **browser**, and show an editable excerpt beside the draft. The file is not uploaded. Only the excerpt that the user submits for live translation is sent to the server and onward to Nebius. Do not enter patient-identifiable or other restricted data without appropriate authorization and privacy review. The local PDF.js/Tesseract assets are built from pinned npm packages; there is no runtime CDN dependency.
 
+## Reading-order review
+
+PDF text layers retain fragment coordinates. The workbench proposes one- or two-column reading order and shows numbered lines over the original page. Choose across-row order for tables or left-then-right order for columns, inspect the overlay, and use **Replace excerpt with this order** to apply it. Previewing another order preserves manual edits; applying it resets source approval. Full-width text separates column bands. This is a geometric heuristic, not a learned layout model: irregular figures, rotated text, and complex tables still require correction. Every page without a text layer receives local OCR, including scanned pages inside otherwise searchable PDFs.
+
+Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus `20`, lost repeated values, added values, and lost minus signs produce findings. Arabic digits and unambiguous comma decimals are normalized for value comparison; exact-format differences remain visible for review. Numeric counts do not prove that each value remains attached to the correct structure or unit.
+
 ## Enable live inference deliberately
 
 Live requests are disabled by default. A server operator may set `NEBIUS_API_KEY` and `DEMO_LIVE_ENABLED=true` in the **server process environment**, then restart. Never place the key in a browser bundle, source file, published ZIP, or screenshot. The default model is `nvidia/Nemotron-3_5-Lightning`; `DEMO_NEBIUS_MODEL` can override its ID. An enabled status means only that a key is configured; it does not prove provider credit, entitlement, quality, or uptime.
