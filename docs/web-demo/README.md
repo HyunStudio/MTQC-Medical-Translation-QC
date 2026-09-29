@@ -3,7 +3,7 @@
 An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
 - [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
-- [Authentic 18-second video](https://youtu.be/-TZlAbJm_7E) (local OCR and one real Arabic model call)
+- [Narrated 18-second live video](https://youtu.be/RN-KqyxnPPg) (local OCR and one real Arabic model call)
 - [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
 
 ## Quick start

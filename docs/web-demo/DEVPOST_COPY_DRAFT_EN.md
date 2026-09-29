@@ -1,4 +1,4 @@
-# Devpost copy — draft, not submitted
+# Devpost copy — ready for form, not submitted
 
 Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Last checked 2026-09-29 against https://nebiusglobalaihackathon.devpost.com/rules. Recheck the live submission form before posting. The app, public source, and video exist; this draft is **not** a submitted Devpost entry.
 
@@ -51,9 +51,9 @@ The .NET and browser regression suites cover recorded specimens, browser-local P
 
 - Working demo or test build: https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/
 - Public repository with top-level Apache-2.0 license and setup README: https://github.com/HyunStudio/MTQC-Medical-Translation-QC
-- Public YouTube video under three minutes, showing operation: https://youtu.be/-TZlAbJm_7E (18-second authentic browser OCR and one real Arabic model response using an original synthetic diagram)
+- Public YouTube video under three minutes, showing operation with English narration: https://youtu.be/RN-KqyxnPPg (18-second authentic browser OCR and one real Arabic model response using an original synthetic diagram)
 - Track: Best Apps and Agents
 - Testing instructions: open the demo without credentials; inspect either recorded source/target diagram first. In the Document workbench, select only a rights-cleared English PDF (maximum two pages) or image (maximum 10 MiB), review/correct the browser-extracted English text, choose one of 18 targets, and request a server-side AI draft. Compare the source and draft and inspect the scoped QC warnings; do not enter patient data. Free F1 hosting can cold-start; the live endpoint has per-client, hourly, and 100-attempt lifetime limits.
 - Source attributions and modification notices: project `RIGHTS.md` and in-app provenance panel.
 
-Do not paste this draft into Devpost until all placeholders are resolved and the release owner approves public publication.
+All required public links are present. The entry remains unsubmitted until the live Devpost form is completed and its published page is verified.
