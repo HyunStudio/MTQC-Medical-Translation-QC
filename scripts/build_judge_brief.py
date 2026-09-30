@@ -23,7 +23,7 @@ from reportlab.platypus import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "output/pdf/medical-qc-nebius-corpus-judge-brief-20260930.pdf"
+OUT = ROOT / "output/pdf/medical-qc-nebius-judge-brief-refresh-20260930.pdf"
 SCREENSHOT = ROOT / "output/video/professional-v3/03-document-frame.png"
 if not SCREENSHOT.exists():
     raise SystemExit(f"Record the authentic browser demo first: {SCREENSHOT}")
@@ -100,7 +100,7 @@ story += [PageBreak(), para("Evidence and limits", title), para("Runtime proof, 
 evidence = [
     ("Real model path", "The browser sends only reviewed text. ASP.NET Core calls Nebius with a server-held key and returns the model ID, token usage, and draft. No key is shipped to the browser."),
     ("18-language smoke", "One short real request per supported target returned successfully on 2026-09-29: 2,307 input and 501 output tokens total. At listed Lightning rates, this run estimates USD 0.00025866; this is not the provider billing ledger."),
-    ("Regression + corpus", "46 server, 8 layout and 26 browser checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors improved 51/54 to 52/54; order edges 23/26 to 25/26. No extra model calls. These are narrow engineering checks, not clinical accuracy."),
+    ("Regression + corpus", "46 server, 9 layout, 5 corpus-policy and 30 browser checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors are 52/54; order edges 25/26. Mixed-PDF anchors improved 5/9 to 8/9. Known table/OCR failures remain. No extra model calls; these are engineering checks, not clinical accuracy."),
     ("Recorded specimens", "The Servier Medical Art slide has English source plus 18 saved AI-draft targets. The Mueller et al. comparison is limited to Figure 1 title, caption, and four labels - not a complete article translation."),
 ]
 rows = [[para(label, cell), para(detail, cell)] for label, detail in evidence]
@@ -117,13 +117,13 @@ table.setStyle(TableStyle([
 ]))
 story += [table, para("Technical design", section)]
 story += [
-    para("Browser-local PDF.js/Tesseract extraction  ->  editable excerpt  ->  bounded ASP.NET Core API  ->  Nebius Token Factory / NVIDIA Nemotron  ->  draft plus scoped QC. Requests are disabled by default, serial at the provider boundary, limited per client and globally in-process, and never automatically retried."),
+    para("Browser-local extraction -> editable excerpt -> bounded server API -> Nebius / NVIDIA Nemotron -> draft plus scoped QC. Duplicate submits are locked. Cancel, source edits and withdrawn source approval invalidate drafts; provider usage may already have occurred. Requests are serial, bounded and never automatically retried."),
     para("Responsible use", section),
     para("Educational prototype only. No patient data or private manuscript. Complex table cells and OCR still require correction; raster labels in searchable PDFs are not extracted automatically. Document/diagram OCR profiles are reviewer choices. Every draft requires expert linguistic and medical review. Hosting needs spend monitoring."),
     para("Rights and reproducibility", section),
     para("Saved Servier and Mueller material is credited under CC BY 4.0. The intake pilot uses Liu et al. (10.3389/fmed.2024.1403423), Xue et al. (10.3389/fbioe.2024.1439499), Jansen et al. (10.1371/journal.pone.0242596) and Servier charts. Source includes licenses, hashes, test code and <link href=\"https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/CORPUS_EVALUATION_20260930.md\" color=\"#0a7890\">full corpus results and limitations</link>. The older Windows engine is separate."),
     Spacer(1, 10),
-    para('<b>Judge walkthrough:</b> Inspect saved cases, then review an excerpt in the Document workbench. The 1080p narrated video shows one authentic live call: <link href="https://youtu.be/WpYR5XfvPic" color="#0a7890">youtu.be/WpYR5XfvPic</link>.', small),
+    para('<b>Video boundary:</b> The 118.5-second narrated video shows one authentic live call: <link href="https://youtu.be/WpYR5XfvPic" color="#0a7890">youtu.be/WpYR5XfvPic</link>. Later cancellation/approval, OCR-resolution and stricter retention-gate repairs are documented in the current report, not shown as footage. Configured live mode does not prove current provider credit or entitlement.', small),
 ]
 
 doc.build(story)
