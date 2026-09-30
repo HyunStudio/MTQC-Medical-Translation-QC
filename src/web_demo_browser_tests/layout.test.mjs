@@ -65,3 +65,16 @@ test('split ligatures stay with their body column below a full-width figure capt
   assert(result.text.includes('efficacy'));
   assert(result.text.indexOf('efficacy') < result.text.indexOf('Right 0'), result.text);
 });
+test('adjacent abstract fragments stay on one line when a fragment crosses a two-column gutter', () => {
+  const fragments = [word('Article title', 50, 30, 650), word('Metadata', 50, 90, 110),
+    word('work', 272, 90, 28), word('fl', 300, 90, 7), word('ows continue', 307, 90, 395)];
+  for (let row = 0; row < 12; row++) {
+    fragments.push(word(`Left ${row}`, 50, 200 + row * 15, 318));
+    fragments.push(word(`Right ${row}`, 383, 200 + row * 15, 318));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 2);
+  assert(result.text.includes('workflows continue'), result.text);
+  assert(!result.lines.some(line => line.text.includes('Metadata') && line.text.includes('work')), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});

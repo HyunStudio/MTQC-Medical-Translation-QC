@@ -58,8 +58,25 @@ export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
   let lines;
   if (!cut) lines = rows(items, 'full');
   else {
-    const spanning = rows(items.filter(item => item.x < cut && item.x + item.width > cut), 'full');
-    let remaining = items.filter(item => item.x + item.width <= cut || item.x >= cut);
+    // A PDF text layer may split one word into separate glyph fragments. If
+    // one fragment crosses the gutter, carry its touching neighbors with it;
+    // otherwise words such as "workflow" are split across reading bands.
+    const spanningItems = new Set(items.filter(item => item.x < cut && item.x + item.width > cut));
+    const pending = [...spanningItems];
+    while (pending.length) {
+      const other = pending.pop();
+      for (const item of items) {
+        if (spanningItems.has(item)) continue;
+        const sameLine = Math.abs(item.y - other.y) < Math.min(item.height, other.height) * .45;
+        const gap = Math.min(Math.abs(item.x - other.x - other.width), Math.abs(other.x - item.x - item.width));
+        if (sameLine && gap <= Math.max(1, Math.min(item.height, other.height) * .12)) {
+          spanningItems.add(item);
+          pending.push(item);
+        }
+      }
+    }
+    const spanning = rows([...spanningItems], 'full');
+    let remaining = items.filter(item => !spanningItems.has(item));
     lines = [];
     const appendBand = band => {
       lines.push(...rows(band.filter(item => item.x < cut), 'left'), ...rows(band.filter(item => item.x >= cut), 'right'));

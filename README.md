@@ -1,4 +1,4 @@
-﻿# MTQC — Medical Textbook Translation & Quality Control (judge demo)
+# MTQC — Medical Textbook Translation & Quality Control (judge demo)
 
 An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
@@ -32,6 +32,8 @@ PDF text layers retain fragment coordinates. The workbench proposes one- or two-
 Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus `20`, lost repeated values, added values, and lost minus signs produce findings. Arabic digits and unambiguous comma decimals are normalized for value comparison; exact-format differences remain visible for review. Numeric counts do not prove that each value remains attached to the correct structure or unit.
 
 The [2026-09-30 corpus evaluation](docs/web-demo/CORPUS_EVALUATION_20260930.md) adds real two-column medical pages, mixed-width figures, dense/rotated tables, scans and three anatomy charts. Its [provenance and reproduction instructions](docs/web-demo/CORPUS_SOURCES.md) identify reusable sources. Narrow journal gutters and centered footers have dedicated regressions. OCR now uses automatic page segmentation rather than a single text block. Searchable PDFs with embedded images display an explicit warning that image labels are not included in the text layer; enter any required labels manually. These changes do not imply full-page transcription or table-cell reconstruction.
+
+The [complex medical image pilot](docs/web-demo/COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md) tests a separately licensed two-column neuroanatomy paper, multi-panel figures and dense anatomy labels. It records a corrected split-glyph reading-order case and the remaining figure OCR misses, with an actual source-review screenshot. A Johns Hopkins Biomedical Engineering coauthor appears on the paper; MTQC has no institutional affiliation or endorsement from Johns Hopkins.
 
 ## Enable live inference deliberately
 

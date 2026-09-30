@@ -33,6 +33,8 @@ Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus
 
 The [2026-09-30 corpus evaluation](CORPUS_EVALUATION_20260930.md) adds real two-column medical pages, mixed-width figures, dense/rotated tables, scans and three anatomy charts. Its [provenance and reproduction instructions](CORPUS_SOURCES.md) identify reusable sources. Narrow journal gutters and centered footers have dedicated regressions. OCR now uses automatic page segmentation rather than a single text block. Searchable PDFs with embedded images display an explicit warning that image labels are not included in the text layer; enter any required labels manually. These changes do not imply full-page transcription or table-cell reconstruction.
 
+The [complex medical image pilot](COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md) tests a separately licensed two-column neuroanatomy paper, multi-panel figures and dense anatomy labels. It records a corrected split-glyph reading-order case and the remaining figure OCR misses, with an actual source-review screenshot. A Johns Hopkins Biomedical Engineering coauthor appears on the paper; MTQC has no institutional affiliation or endorsement from Johns Hopkins.
+
 ## Enable live inference deliberately
 
 Live requests are disabled by default. A server operator may set `NEBIUS_API_KEY` and `DEMO_LIVE_ENABLED=true` in the **server process environment**, then restart. Never place the key in a browser bundle, source file, published ZIP, or screenshot. The default model is `nvidia/Nemotron-3_5-Lightning`; `DEMO_NEBIUS_MODEL` can override its ID. An enabled status means only that a key is configured; it does not prove provider credit, entitlement, quality, or uptime.

@@ -102,6 +102,8 @@ try {
         }
       }
       if (specimen.id === 'spine-p03' || specimen.id === 'ear-p03' || specimen.id === 'spine-p09' || specimen.id === 'servier-visual') await page.locator('#try-document').screenshot({path:path.join(out,specimen.id+'.png')});
+      if ((process.env.MTQC_CORPUS_CAPTURE || '').split(',').includes(specimen.id))
+        await page.locator('#try-document').screenshot({path:path.join(out,specimen.id+'-workbench.png')});
       results.push(record);
       console.log(`${specimen.id}: ${record.characters} chars; anchors ${(record.anchors||[]).filter(a=>a.found).length}/${(record.anchors||[]).length}; order ${(record.order||[]).filter(a=>a.pass).length}/${(record.order||[]).length}; ${record.elapsedMs}ms`);
     } catch(error) { results.push({id:specimen.id,error:error.message,errors}); console.log(`FAIL ${specimen.id}: ${error.message}`); }
