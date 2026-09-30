@@ -40,3 +40,11 @@ Final 22-input replay: all runtime/privacy/review/fragment-retention gates pass.
 ![Actual source-page review and image-label omission warning](assets/corpus-spine-review-20260930.png)
 
 Source figure: Liu et al. (2024), Frontiers in Medicine, DOI [10.3389/fmed.2024.1403423](https://doi.org/10.3389/fmed.2024.1403423), PDF page 3 / Figure 1, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). MTQC adds the review interface, numbered overlay and warning; the screenshot is not a translated figure or publisher endorsement.
+
+## Release record
+
+The public-code milestone is `c0b2e8c`. Its scoped export was independently rebuilt and passed .NET 46/46, layout 8/8 and browser 26/26. The existing Azure Free F1 app was redeployed; HTTP checks confirmed the new OCR selector, image-label warning, loading-task cleanup and narrow-gutter code. No live provider request was made during deployment verification.
+
+The Devpost story now includes the corpus design, measured improvements, remaining limitations and report link. Its gallery includes the credited source-review screenshot. The two-page judge brief was refreshed, rendered and visually inspected; after saving, the finalization page again displayed **Project submitted!**. The existing 118.5-second authentic narrated video is retained; its core workflow is unchanged, while the new intake choices and warnings are documented in the current report/screenshot.
+
+Judge-build ZIP SHA-256: `F435264270969C4070FB9A6950F21CD690F999D1A3AC655B664DB9362A7720A1`. Updated source ZIP SHA-256: `9E8EA8FF11422DBBF09D3409D21C71E8ED7AB636B4DFB314B94947DAF0DC34C5`. These hashes identify the generated app/source snapshot; later evidence-only documentation and judge-PDF script updates are separate commits. Previous archives and PDFs remain available locally for rollback/reference.
