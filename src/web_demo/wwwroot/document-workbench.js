@@ -363,7 +363,13 @@ export function mountDocumentWorkbench({ onTranslate }) {
     reviewed.checked = false;
     refreshButton(text, reviewed, translate);
   });
-  reviewed.addEventListener('change', () => refreshButton(text, reviewed, translate));
+  reviewed.addEventListener('change', () => {
+    if (!reviewed.checked) {
+      clearLiveDocument();
+      document.querySelector('#document-live-status').textContent = 'Source review withdrawn; no draft accepted. Any in-flight provider usage may already have occurred.';
+    }
+    refreshButton(text, reviewed, translate);
+  });
   language.addEventListener('change', clearLiveDocument);
   document.querySelector('#document-cancel').addEventListener('click', () => {
     clearLiveDocument();

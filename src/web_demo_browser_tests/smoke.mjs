@@ -407,6 +407,33 @@ try {
     await page.close();
   });
 
+  await check('revoking source review invalidates pending and completed drafts', async () => {
+    const page = await browser.newPage();
+    await page.route('**/api/live/document-excerpt', async route => {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      await route.fulfill({json:{status:'ok',translation:'검수 초안',model:'test-model',qcSummary:'review'}}).catch(() => {});
+    });
+    await page.setContent('<p>The artery measures 12 mm.</p>');
+    const pdf = await page.pdf({format:'A4'});
+    await page.goto(base, {waitUntil:'networkidle'});
+    await page.locator('#document-file').setInputFiles({name:'review.pdf',mimeType:'application/pdf',buffer:pdf});
+    await page.locator('#document-status').getByText(/Text layer extracted locally/).waitFor();
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-translate').click();
+    await page.locator('#document-reviewed').uncheck();
+    assert(await page.locator('#document-progress').isHidden(), 'Revoked review leaves request active');
+    await page.waitForTimeout(800);
+    assert(await page.locator('#document-result').isHidden(), 'Revoked review accepted a late draft');
+    assert(await page.locator('#document-translate').isDisabled(), 'Revoked review permits translation');
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-translate').click();
+    await page.locator('#document-result-translation').getByText('검수 초안').waitFor();
+    await page.locator('#document-reviewed').uncheck();
+    assert(await page.locator('#document-result').isHidden(), 'Revoked review retains a completed draft');
+    assert(await page.locator('#document-text').inputValue() === 'The artery measures 12 mm.', 'Revoked review lost source text');
+    await page.close();
+  });
+
   await check('failed document request preserves source and never shows completion', async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(8000);
