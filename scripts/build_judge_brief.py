@@ -63,6 +63,8 @@ def footer(canvas, doc):
 
 
 doc = BaseDocTemplate(str(OUT), pagesize=(612, 792), leftMargin=42, rightMargin=42, topMargin=43, bottomMargin=54)
+doc.title = "MTQC - Nebius x NVIDIA judge brief"
+doc.author = "HyunStudio"
 frame = Frame(42, 54, 528, 695, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
 doc.addPageTemplates(PageTemplate(id="brief", frames=frame, onPage=footer))
 story = []
@@ -100,7 +102,7 @@ story += [PageBreak(), para("Evidence and limits", title), para("Runtime proof, 
 evidence = [
     ("Real model path", "The browser sends only reviewed text. ASP.NET Core calls Nebius with a server-held key and returns the model ID, token usage, and draft. No key is shipped to the browser."),
     ("18-language smoke", "One short real request per supported target returned successfully on 2026-09-29: 2,307 input and 501 output tokens total. At listed Lightning rates, this run estimates USD 0.00025866; this is not the provider billing ledger."),
-    ("Regression + corpus", "46 server, 9 layout, 5 corpus-policy and 30 browser checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors are 52/54; order edges 25/26. Mixed-PDF anchors improved 5/9 to 8/9. Known table/OCR failures remain. No extra model calls; these are engineering checks, not clinical accuracy."),
+    ("Regression + corpus", "46 server, 9 layout, 5 corpus-policy and 31 browser checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors are 52/54; order edges 25/26. Mixed-PDF anchors improved 5/9 to 8/9. Known table/OCR failures remain. No extra model calls; these are engineering checks, not clinical accuracy."),
     ("Recorded specimens", "The Servier Medical Art slide has English source plus 18 saved AI-draft targets. The Mueller et al. comparison is limited to Figure 1 title, caption, and four labels - not a complete article translation."),
 ]
 rows = [[para(label, cell), para(detail, cell)] for label, detail in evidence]
@@ -117,7 +119,7 @@ table.setStyle(TableStyle([
 ]))
 story += [table, para("Technical design", section)]
 story += [
-    para("Browser-local extraction -> editable excerpt -> bounded server API -> Nebius / NVIDIA Nemotron -> draft plus scoped QC. Duplicate submits are locked. Cancel, source edits and withdrawn source approval invalidate drafts; provider usage may already have occurred. Requests are serial, bounded and never automatically retried."),
+    para("Browser-local extraction -> editable excerpt -> bounded server API -> Nebius / NVIDIA Nemotron -> draft plus scoped QC. OCR replacement resets approval; duplicate submits are locked. Cancel, source edits and approval withdrawal invalidate drafts; usage may already have occurred. Requests are serial, bounded and never automatically retried."),
     para("Responsible use", section),
     para("Educational prototype only. No patient data or private manuscript. Complex table cells and OCR still require correction; raster labels in searchable PDFs are not extracted automatically. Document/diagram OCR profiles are reviewer choices. Every draft requires expert linguistic and medical review. Hosting needs spend monitoring."),
     para("Rights and reproducibility", section),

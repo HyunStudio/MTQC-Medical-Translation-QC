@@ -53,11 +53,15 @@ async function recognizeEnglish(blobs, profile = 'page') {
   }
 }
 
-async function readImageWithOcr(file, status, text, token, isCurrent, profile) {
+async function readImageWithOcr(file, status, text, reviewed, token, isCurrent, profile) {
   try {
     const result = await recognizeEnglish([file], profile);
     if (!isCurrent(token)) return;
-    if (!text.value.trim()) text.value = result.text;
+    if (!text.value.trim()) {
+      text.value = result.text;
+      reviewed.checked = false;
+      clearLiveDocument();
+    }
     status.textContent = `Local English OCR ${result.confidence === null ? 'completed' : `confidence ${result.confidence}%`}. Review and correct all text; OCR order and accuracy are unverified.`;
   } catch {
     if (isCurrent(token)) status.textContent = 'Local OCR could not read this image. Type the English excerpt manually and review it before sending.';
@@ -354,7 +358,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     text.disabled = false;
     reviewed.disabled = false;
     status.textContent = 'Source image loaded locally. Running English OCR; review and correct its text.';
-    await readImageWithOcr(file, status, text, current, value => value === generation, ocrProfile);
+    await readImageWithOcr(file, status, text, reviewed, current, value => value === generation, ocrProfile);
     if (current === generation) refreshButton(text, reviewed, translate);
   });
 

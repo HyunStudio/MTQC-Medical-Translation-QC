@@ -45,6 +45,8 @@ The progress bar is a time-derived **estimate**, not model telemetry or a promis
 
 Pending document requests lock the submit button. **Cancel request** aborts the browser request and discards late results; it does not guarantee that the provider incurred no usage. Selecting another source, editing text, or changing language also invalidates a pending draft. Scanned PDF pages are rendered at scale 3 (~216 dpi) for local OCR, with a 12-million-pixel per-page bound; searchable pages retain scale 1.25. Larger pages are rejected before canvas allocation. This improves some observed captions but is not complete diagram transcription.
 
+Automatic image OCR insertion resets source approval. Approval of an empty input never approves text that arrives later; reviewers must inspect the recovered text and approve it explicitly.
+
 The corpus runner now permits only individually documented missing anchors/order edges in `src/web_demo_browser_tests/corpus.allowed-failures.json`, not whole-case exemptions. Any new failure, empty extraction or unannotated case fails. Output-line fragment IDs are checked for missing, duplicate and foreign identities, independently of input/output counts. These are engineering retention checks, not semantic or clinical validation.
 
 ```powershell

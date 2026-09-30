@@ -171,6 +171,29 @@ try {
     await page.close();
   });
 
+  await check('automatic image OCR invalidates approval of an empty source', async () => {
+    const page = await browser.newPage({viewport:{width:1000,height:400}});
+    await page.setContent('<body style="margin:0;background:white"><p style="font:44px Arial;color:black">The artery measures 12 mm.</p></body>');
+    const image = await page.screenshot();
+    // Delay transport only; the real local OCR worker still recognizes this image.
+    await page.route('**/vendor/tesseract/worker.min.js', async route => {
+      await new Promise(resolve => setTimeout(resolve,1500));
+      await route.continue();
+    });
+    await page.goto(base,{waitUntil:'networkidle'});
+    await page.locator('#document-file').setInputFiles({name:'synthetic-artery.png',mimeType:'image/png',buffer:image});
+    await page.locator('#document-preview img').waitFor();
+    assert(await page.locator('#document-text').inputValue() === '', 'OCR delay did not establish an empty initial source');
+    await page.locator('#document-reviewed').check();
+    await page.waitForFunction(() => /Local English OCR/.test(document.querySelector('#document-status').textContent),null,{timeout:45000});
+    assert((await page.locator('#document-text').inputValue()).includes('12 mm'), 'Actual local OCR did not recognize the controlled source');
+    assert(!await page.locator('#document-reviewed').isChecked(), 'OCR replacement inherited approval of an empty source');
+    assert(await page.locator('#document-translate').isDisabled(), 'Unreviewed OCR replacement permits translation');
+    await page.locator('#document-reviewed').check();
+    assert(await page.locator('#document-translate').isEnabled(), 'Explicit review of recovered text does not enable translation');
+    await page.close();
+  });
+
   await check('three-page PDF is rejected without extracting a partial excerpt', async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(8000);
