@@ -6,6 +6,8 @@
 *.pyc
 *.pyo
 output/
+qa/
+src/web_demo/wwwroot/vendor/
 .vs/
 .env
 .env.*

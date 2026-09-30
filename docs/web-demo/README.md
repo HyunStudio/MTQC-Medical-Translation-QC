@@ -9,11 +9,17 @@ An English-first medical-document review demo: inspect recorded, rights-cleared 
 
 ## Quick start
 
-Requires the .NET 10 SDK. From the exported web-demo repository root:
+Requires the .NET 10 SDK and Node.js 24 LTS (with npm). From the exported web-demo repository root, build the local PDF/OCR workers **before the first app run**:
 
 ```powershell
+Push-Location "src/web_demo_client"
+npm.cmd ci
+npm.cmd run build
+Pop-Location
 dotnet run --project "src/web_demo/MedicalQcWebDemo.csproj"
 ```
+
+Without the client build, recorded cases still open, but PDF/OCR worker URLs return 404. The generated workers are deliberately excluded from the source repository. Repeat the client build after changing its dependencies; do not configure an API key merely to use recorded cases or local extraction.
 
 Open the local address printed by ASP.NET Core. The recorded cases require no account, model key, or provider charge. The Servier Medical Art visual-system specimen has an English source and 18 saved, editable draft slides (19 displayed languages). The Müller et al. comparison covers only the Figure 1 title, caption, and four labels in Korean, Spanish, and Arabic; it is **not** a complete translation of the two-column article.
 
@@ -36,6 +42,10 @@ The Document workbench supports an English source excerpt to each of these 18 ta
 The progress bar is a time-derived **estimate**, not model telemetry or a promised ETA. It remains below 100% while waiting and reaches 100% only on a successful response. Errors/cancellation do not claim completion. Draft outputs display returned model/token metadata and scoped QC flags. The numeric, directional, and narrow Korean `femoral vein` checks catch some discrepancies but cannot establish medical correctness. The last check was added after a real hosted model call substituted `대정맥` for `femoral vein`; it is only a review prompt, not a general terminology validator. Arabic uses right-to-left presentation. No content is silently marked medically approved.
 
 ## Build, verify, release
+
+Pending document requests lock the submit button. **Cancel request** aborts the browser request and discards late results; it does not guarantee that the provider incurred no usage. Selecting another source, editing text, or changing language also invalidates a pending draft. Scanned PDF pages are rendered at scale 3 (~216 dpi) for local OCR, with a 12-million-pixel per-page bound; searchable pages retain scale 1.25. Larger pages are rejected before canvas allocation. This improves some observed captions but is not complete diagram transcription.
+
+The corpus runner now permits only individually documented missing anchors/order edges in `src/web_demo_browser_tests/corpus.allowed-failures.json`, not whole-case exemptions. Any new failure, empty extraction or unannotated case fails. Output-line fragment IDs are checked for missing, duplicate and foreign identities, independently of input/output counts. These are engineering retention checks, not semantic or clinical validation.
 
 ```powershell
 cd "src/web_demo_client"

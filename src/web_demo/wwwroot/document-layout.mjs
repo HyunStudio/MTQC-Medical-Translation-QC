@@ -18,7 +18,8 @@ function rows(items, column) {
     const x = Math.min(...sorted.map(item => item.x));
     const y = Math.min(...sorted.map(item => item.y));
     return { text: text.trim(), x, y, width: Math.max(...sorted.map(item => item.x + item.width)) - x,
-      height: Math.max(...sorted.map(item => item.y + item.height)) - y, column, fragmentCount: sorted.length };
+      height: Math.max(...sorted.map(item => item.y + item.height)) - y, column,
+      fragmentIds: sorted.map(item => item.fragmentId), fragmentCount: sorted.length };
   });
 }
 
@@ -49,7 +50,7 @@ function findGutter(items, width) {
 }
 
 export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
-  const items = fragments.filter(item => item.text?.trim() &&
+  const items = fragments.map((item, fragmentId) => ({ ...item, fragmentId })).filter(item => item.text?.trim() &&
     [item.x, item.y, item.width, item.height].every(Number.isFinite))
     .map(item => ({ ...item, height: Math.max(1, item.height) }));
   const detected = mode === 'single' ? null : findGutter(items, pageWidth);
@@ -71,5 +72,5 @@ export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
     appendBand(remaining);
   }
   return { columns: cut ? 2 : 1, lines, text: lines.map(line => line.text).join('\n'),
-    fragmentCount: items.length };
+    fragmentCount: lines.reduce((total, line) => total + line.fragmentIds.length, 0) };
 }

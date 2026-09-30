@@ -2,10 +2,11 @@ import { recoverReadingOrder } from './document-layout.mjs';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_EXCERPT_CODEPOINTS = 3000;
+const MAX_PAGE_PIXELS = 12_000_000;
 
 function refreshButton(text, reviewed, translate) {
   const length = Array.from(text.value.trim()).length;
-  translate.disabled = !reviewed.checked || length === 0 || length > MAX_EXCERPT_CODEPOINTS;
+  translate.disabled = Boolean(liveController) || !reviewed.checked || length === 0 || length > MAX_EXCERPT_CODEPOINTS;
   const counter = document.querySelector('#document-text-count');
   if (counter) counter.textContent = `${length.toLocaleString()} / 3,000 characters${length > MAX_EXCERPT_CODEPOINTS ? ' · Select a shorter excerpt before translation.' : ''}`;
 }
@@ -81,7 +82,14 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
     for (let index = 1; index <= pdf.numPages; index++) {
       const page = await pdf.getPage(index);
       if (!isCurrent(token)) return;
-      const viewport = page.getViewport({ scale: 1.25 });
+      const content = await page.getTextContent();
+      // Keep searchable-page geometry stable; scan OCR benefits from ~216 dpi.
+      const hasText = content.items.some(item => item.str?.trim());
+      const viewport = page.getViewport({ scale: hasText ? 1.25 : 3 });
+      if (Math.ceil(viewport.width) * Math.ceil(viewport.height) > MAX_PAGE_PIXELS) {
+        status.textContent = 'Page dimensions exceed the local rendering limit. Choose a smaller or cropped page.';
+        return;
+      }
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
@@ -89,7 +97,6 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
       if (!isCurrent(token)) return;
       canvases.push(canvas);
-      const content = await page.getTextContent();
       const fragments = content.items.filter(item => item.str?.trim()).map(item => {
         const transform = pdfjs.Util.transform(viewport.transform, item.transform);
         const height = Math.hypot(transform[2], transform[3]);
@@ -121,6 +128,8 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
     status.textContent = ocrPages
       ? `Scanned PDF OCR completed locally for ${ocrPages} page(s); other text layers retained. Check every page before sending.`
       : `Text layer extracted locally from ${pdf.numPages} PDF page(s). Review the numbered reading order below.`;
+    const emptyPages = records.flatMap((record, index) => !record.fragments.length && !record.ocrText.trim() ? [index + 1] : []);
+    if (emptyPages.length) status.textContent += ` No text recovered from page(s): ${emptyPages.join(', ')}. They may be blank or unreadable; compare and transcribe any required content manually.`;
     if (records.some(record => record.fragments.length && record.hasImages)) {
       status.textContent += ' Figure labels inside images are not included in the text layer. Compare each diagram and enter any needed labels manually; this is not complete page transcription.';
     }
@@ -134,6 +143,11 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
 let liveController;
 let liveRequestId = 0;
 let liveTimer;
+
+function refreshRequestControls() {
+  refreshButton(document.querySelector('#document-text'), document.querySelector('#document-reviewed'), document.querySelector('#document-translate'));
+  document.querySelector('#document-cancel').hidden = !liveController;
+}
 
 function updateDocumentProgress(percent, elapsedSeconds) {
   const track = document.querySelector('#document-progress-track');
@@ -152,6 +166,7 @@ function clearLiveDocument() {
   document.querySelector('#document-progress').hidden = true;
   document.querySelector('#document-result').hidden = true;
   document.querySelector('#document-live-status').textContent = 'No document excerpt sent.';
+  refreshRequestControls();
 }
 
 function showDocumentResult(sourceText, targetLanguage, data, successful) {
@@ -180,9 +195,11 @@ function showDocumentResult(sourceText, targetLanguage, data, successful) {
 }
 
 async function runLiveDocument({ sourceText, targetLanguage }) {
+  if (liveController) return;
   clearLiveDocument();
   const requestId = liveRequestId;
   liveController = new AbortController();
+  refreshRequestControls();
   const progress = document.querySelector('#document-progress');
   progress.hidden = false;
   document.querySelector('#document-progress-title').textContent = 'Nebius model request in progress';
@@ -220,7 +237,10 @@ async function runLiveDocument({ sourceText, targetLanguage }) {
     document.querySelector('#document-live-status').textContent = 'Live request did not complete; no draft was produced.';
     showDocumentResult(sourceText, targetLanguage, { message: 'Network or model service unavailable. Review the source and try again later.' }, false);
   } finally {
-    if (requestId === liveRequestId) liveController = null;
+    if (requestId === liveRequestId) {
+      liveController = null;
+      refreshRequestControls();
+    }
   }
 }
 
@@ -345,6 +365,10 @@ export function mountDocumentWorkbench({ onTranslate }) {
   });
   reviewed.addEventListener('change', () => refreshButton(text, reviewed, translate));
   language.addEventListener('change', clearLiveDocument);
+  document.querySelector('#document-cancel').addEventListener('click', () => {
+    clearLiveDocument();
+    document.querySelector('#document-live-status').textContent = 'Request cancelled; no draft accepted. The provider may already have incurred usage.';
+  });
 
   translate.addEventListener('click', () => {
     if (translate.disabled || !reviewed.checked) return;

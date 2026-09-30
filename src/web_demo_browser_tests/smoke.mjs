@@ -183,6 +183,19 @@ try {
     await page.close();
   });
 
+  await check('oversized PDF page geometry is rejected before canvas allocation', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(8000);
+    await page.setContent('<p>Large drawing sheet</p>');
+    const pdf = await page.pdf({width:'70in',height:'70in'});
+    await page.goto(base, {waitUntil:'networkidle'});
+    await page.locator('#document-file').setInputFiles({name:'oversized-page.pdf',mimeType:'application/pdf',buffer:pdf});
+    await page.locator('#document-status').getByText(/Page dimensions exceed/).waitFor();
+    assert(await page.locator('#document-translate').isDisabled(), 'Oversized page enabled translation');
+    assert(await page.locator('#document-preview').isHidden(), 'Oversized page allocated a visible preview');
+    await page.close();
+  });
+
   await check('two-page text PDF renders locally and yields editable English text', async () => {
     const page = await browser.newPage();
     const pageErrors = [];
@@ -303,6 +316,20 @@ try {
     await page.close();
   });
 
+  await check('empty OCR page is explicitly reported while searchable text survives', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(30000);
+    await page.setContent('<div style="break-after:page">The artery measures 12 mm.</div><div style="width:100px;height:100px;background:black"></div>');
+    const pdf = await page.pdf({format:'A4'});
+    await page.goto(base, {waitUntil:'networkidle'});
+    await page.locator('#document-file').setInputFiles({name:'empty-ocr.pdf',mimeType:'application/pdf',buffer:pdf});
+    await page.locator('#document-status').getByText(/Scanned PDF OCR completed locally/).waitFor();
+    assert((await page.locator('#document-text').inputValue()).includes('The artery measures 12 mm.'), 'Empty scan discarded searchable text');
+    assert((await page.locator('#document-status').textContent()).includes('No text recovered from page(s): 2'), 'Empty OCR page silently disappeared');
+    assert(await page.locator('#document-translate').isDisabled(), 'Empty OCR bypassed review');
+    await page.close();
+  });
+
   await check('scanned PDF is marked as local OCR requiring review', async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(30000);
@@ -349,6 +376,37 @@ try {
     await page.close();
   });
 
+  await check('pending document translation locks duplicate submissions and supports cancellation', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(8000);
+    let requests = 0;
+    await page.route('**/api/live/document-excerpt', async route => {
+      requests++;
+      await new Promise(resolve => setTimeout(resolve, 900));
+      await route.fulfill({json:{status:'ok',translation:'검수 초안',model:'test-model',qcSummary:'review'}}).catch(() => {});
+    });
+    await page.setContent('<p>The artery measures 12 mm.</p>');
+    const pdf = await page.pdf({format:'A4'});
+    await page.goto(base, {waitUntil:'networkidle'});
+    await page.locator('#document-file').setInputFiles({name:'review.pdf',mimeType:'application/pdf',buffer:pdf});
+    await page.locator('#document-status').getByText(/Text layer extracted locally/).waitFor();
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-translate').click();
+    assert(await page.locator('#document-translate').isDisabled(), 'Pending request permits another submission');
+    await page.locator('#document-translate').dispatchEvent('click');
+    await page.waitForTimeout(100);
+    assert(requests === 1, 'Duplicate click sent another request');
+    await page.locator('#document-cancel').click();
+    assert(await page.locator('#document-progress').isHidden(), 'Cancelled request keeps progress active');
+    assert(await page.locator('#document-translate').isEnabled(), 'Cancel does not release request lock');
+    await page.waitForTimeout(1000);
+    assert(await page.locator('#document-result').isHidden(), 'Cancelled request displayed its late result');
+    await page.locator('#document-translate').click();
+    await page.locator('#document-result-translation').getByText('검수 초안').waitFor();
+    assert(await page.locator('#document-translate').isEnabled(), 'Successful request does not release lock');
+    await page.close();
+  });
+
   await check('failed document request preserves source and never shows completion', async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(8000);
@@ -366,6 +424,7 @@ try {
     assert(await page.locator('#document-result-grid').isHidden(), 'Failed request displayed a stale translation');
     assert((await page.locator('#document-text').inputValue()) === 'The artery measures 2.5 mm.', 'Source text was lost on failure');
     assert(await page.locator('#document-preview img').isVisible(), 'Source image was lost on failure');
+    assert(await page.locator('#document-translate').isEnabled(), 'Failed request does not release lock');
     await page.close();
   });
 

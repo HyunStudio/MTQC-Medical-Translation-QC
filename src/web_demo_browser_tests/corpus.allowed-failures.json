@@ -1,0 +1,8 @@
+{
+  "spine-p09": {"anchors":["First author","Publication year"],"order":[["First author","Caliskan"]]},
+  "spine-p02-scan": {"anchors":["KEYWORDS"],"order":[["KEYWORDS","Background"]]},
+  "ear-p03-scan": {"anchors":["FIGURE 1"],"order":[["FIGURE 1","filaments under"]]},
+  "spine-p02-lowres": {"anchors":["KEYWORDS"],"order":[["KEYWORDS","Background"]]},
+  "spine-mixed": {"anchors":["Schematic diagram"],"order":[]},
+  "servier-visual": {"anchors":["VISUAL SYSTEM"],"order":[]}
+}

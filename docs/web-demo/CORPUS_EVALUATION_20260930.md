@@ -29,11 +29,11 @@ After the text-layer correction, the twelve unique PDF pages retain 52/54 select
 - **Anatomy chart OCR:** diagram mode retains 3/4 Visual System anchors, 4/4 circulation anchors and 4/4 venous anchors. In the visual chart, the title is not retained as an exact contiguous string. A good-looking source/draft preview does not prove all labels were extracted or translated.
 - **Diagram text:** raster labels in searchable PDFs are not extracted automatically. A page text layer can retain every selectable fragment while still omitting important visible information.
 
-The runner explicitly identifies these unresolved OCR/table cases. Runtime/privacy gates are strict; known semantic shortcomings are reported, not converted into passing quality scores. Real medical/native-language review remains unperformed.
+The initial runner identified these unresolved OCR/table cases but exempted whole case IDs from content-failure gating. The repair rounds below replace that exemption with individually documented failures. Real medical/native-language review remains unperformed.
 
 ## Verification and public evidence
 
-Regression suite: .NET 46/46, layout 8/8, browser 26/26. Corpus gates require no browser error, no third-party request, no POST, no approval bypass, no dropped selectable fragment and no unexpected annotated failure. Each test run makes zero billable calls.
+Initial release regression suite: .NET 46/46, layout 8/8, browser 26/26. Corpus gates require no browser error, no third-party request, no POST, no approval bypass and no unexpected annotated failure. The initial fragment-count proxy did not independently validate output identities; the repair rounds below replace it. Each test run makes zero billable calls.
 
 Final 22-input replay: all runtime/privacy/review/fragment-retention gates pass. Known OCR/table shortcomings above remain visible in the per-case scores. The loopback run explicitly disabled live inference; zero POST requests and zero external requests were observed. The source files were not sent to Nebius.
 
@@ -48,3 +48,15 @@ The public-code milestone is `c0b2e8c`. Its scoped export was independently rebu
 The Devpost story now includes the corpus design, measured improvements, remaining limitations and report link. Its gallery includes the credited source-review screenshot. The two-page judge brief was refreshed, rendered and visually inspected; after saving, the finalization page again displayed **Project submitted!**. The existing 118.5-second authentic narrated video is retained; its core workflow is unchanged, while the new intake choices and warnings are documented in the current report/screenshot.
 
 Judge-build ZIP SHA-256: `F435264270969C4070FB9A6950F21CD690F999D1A3AC655B664DB9362A7720A1`. Updated source ZIP SHA-256: `9E8EA8FF11422DBBF09D3409D21C71E8ED7AB636B4DFB314B94947DAF0DC34C5`. These hashes identify the generated app/source snapshot; later evidence-only documentation and judge-PDF script updates are separate commits. Previous archives and PDFs remain available locally for rollback/reference.
+
+## Submission-readiness repair rounds — September 30
+
+The subsequent audit reproduced two engineering problems: a fresh public clone started recorded cases but returned 404 for PDF/OCR modules when following only Quick start; the live excerpt button remained enabled while a request was pending. Quick start now includes Node/npm and the local client build. In the fresh clone, those module URLs changed from 404 to 200 after the documented build. Pending requests now lock submit, offer explicit cancellation, and release the lock after success/error/cancellation. Late cancelled drafts are discarded; provider usage may already have occurred.
+
+The content gate now allows only named missing anchors/order edges in `corpus.allowed-failures.json`, never an entire case ID. Empty or unannotated extractions fail closed, and newly missing headings or order edges fail even in known OCR cases. Output line fragment IDs are compared against source fragment identities for omissions, duplicates and foreign IDs; accepted-input counts are no longer the retention proof. The summary explicitly lists observed content limitations separately from engineering gates.
+
+Scanned PDF pages now render at scale 3 (~216 dpi), versus the initial scale 1.25. A controlled replay of the same mixed PDF improves selected anchors from **5/9 to 8/9**; `Schematic diagram` still does not survive as an exact contiguous phrase. This is not full diagram recognition. Searchable pages retain their earlier geometry. A 12-million-pixel per-page guard rejects large sheets before canvas allocation. Another replay found that empty OCR pages were silently omitted; those page numbers are now explicitly reported while searchable-page text remains available.
+
+Fresh regression at this milestone: **46 server, 9 layout, 5 corpus-policy, 29 browser checks**. The 22-input replay with the stricter policy passes runtime/privacy/review/fragment-identity gates and has no unpermitted annotated degradation. Known table/scan/chart limitations remain. The twelve unique searchable-page scores are unchanged at 52/54 anchors and 25/26 order edges. No billable model calls are made by these checks. Medical/native-language quality is still unvalidated, and the original preview is not a reconstructed translated document.
+
+The earlier video and PDF describe the core workflow; their older test totals do not certify this later repair milestone. Use this report and the current source for the latest behavior. This section is implementation/verification evidence, not a claim that the Devpost form or judge PDF has been re-uploaded after the repairs.

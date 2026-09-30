@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { recoverReadingOrder } from '../web_demo/wwwroot/document-layout.mjs';
 
 const word = (text, x, y, width = 180) => ({ text, x, y, width, height: 12 });
+test('output lines identify each retained source fragment exactly once', () => {
+  const result = recoverReadingOrder([word('Same', 330, 60), word('Same', 40, 60), word(' ', 0, 0), word('End', 40, 80)], 600, 'two');
+  assert.deepEqual(result.lines.flatMap(line => line.fragmentIds), [1, 3, 0]);
+  assert.equal(result.fragmentCount, result.lines.reduce((n, line) => n + line.fragmentIds.length, 0));
+});
 test('interleaved PDF stream becomes left column then right column without losing fragments', () => {
   const result = recoverReadingOrder([
     word('Right first', 330, 60), word('Left second', 40, 80),

@@ -9,6 +9,7 @@
 #document-file-selected { color: var(--muted); font-size: .75rem; }
 .document-intake textarea { resize: vertical; min-height: 7rem; padding: .75rem; border: 1px solid #9eafbc; border-radius: .6rem; background: transparent; color: inherit; font: inherit; }
 .document-status { margin: .8rem 0; }
+.document-intake-warning { padding: .8rem; border-left: 3px solid var(--amber); background: var(--amber-soft); color: var(--ink); font-size: .8rem; line-height: 1.65; }
 .document-layout { padding: 1rem; margin: 1rem 0; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface-soft); }
 .document-layout-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .document-layout-controls label { margin: 0; letter-spacing: 0; }

@@ -1,4 +1,7 @@
-"""Build the two-page, evidence-bounded judge brief for the web demo.
+"""HISTORICAL builder, retained for reproduction of the early local demo.
+
+Do not use its fixed early-stage metrics for a current submission.
+The maintained judge brief builder is scripts/build_judge_brief.py.
 
 Usage: python build_submission_brief.py SCREENSHOT OUTPUT.pdf
 The screenshot is captured from the running local demo, not synthesized.
