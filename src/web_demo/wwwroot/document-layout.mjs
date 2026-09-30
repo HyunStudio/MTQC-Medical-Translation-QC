@@ -23,15 +23,21 @@ function rows(items, column) {
 }
 
 function findGutter(items, width) {
+  const percentile = (values, fraction) => {
+    const sorted = values.sort((a, b) => a - b);
+    return sorted[Math.round((sorted.length - 1) * fraction)];
+  };
   let best = null;
   for (let fraction = .35; fraction <= .65; fraction += .01) {
     const cut = width * fraction;
     const left = items.filter(item => item.x + item.width <= cut);
     const right = items.filter(item => item.x >= cut);
     if (left.length < 2 || right.length < 2) continue;
-    const gapStart = Math.max(...left.map(item => item.x + item.width));
-    const gapEnd = Math.min(...right.map(item => item.x));
-    if (gapEnd - gapStart < width * .025) continue;
+    // Isolated page numbers and short header fragments must not close a real
+    // body gutter. Journal gutters can be narrower than 2.5% of page width.
+    const gapStart = percentile(left.map(item => item.x + item.width), .9);
+    const gapEnd = percentile(right.map(item => item.x), .1);
+    if (gapEnd - gapStart < width * .015) continue;
     const overlap = Math.min(Math.max(...left.map(i => i.y)), Math.max(...right.map(i => i.y))) -
       Math.max(Math.min(...left.map(i => i.y)), Math.min(...right.map(i => i.y)));
     if (overlap <= 0) continue;

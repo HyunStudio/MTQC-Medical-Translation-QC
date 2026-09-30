@@ -37,3 +37,26 @@ test('explicit PDF whitespace survives adjoining text fragments', () => {
   const result = recoverReadingOrder([word('The ', 40, 20, 60), word('artery', 100, 20, 40)], 600);
   assert.equal(result.text, 'The artery');
 });
+test('narrow journal gutter and centered page number do not interleave body columns', () => {
+  const fragments = [word('Journal header', 50, 35, 620), word('02', 367, 999, 10)];
+  for (let row = 0; row < 12; row++) {
+    fragments.push(word(`Left ${row}`, 62, 150 + row * 15, 301));
+    fragments.push(word(`Right ${row}`, 381, 150 + row * 15, 301));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 2);
+  assert(result.text.indexOf('Left 11') < result.text.indexOf('Right 0'), result.text);
+  assert(!result.lines.some(line => line.text.includes('Left') && line.text.includes('Right')));
+  assert.equal(result.fragmentCount, 26);
+});
+test('split ligatures stay with their body column below a full-width figure caption', () => {
+  const fragments = [word('Figure caption', 62, 50, 620), word('03', 367, 999, 10)];
+  for (let row = 0; row < 12; row++) {
+    fragments.push(word(`Left ${row}`, 62, 150 + row * 15, 301));
+    fragments.push(word(`Right ${row}`, 381, 150 + row * 15, 301));
+  }
+  fragments.push(word('ef', 62, 400, 12), word('fi', 74, 400, 6), word('cacy', 80, 400, 25));
+  const result = recoverReadingOrder(fragments, 744);
+  assert(result.text.includes('efficacy'));
+  assert(result.text.indexOf('efficacy') < result.text.indexOf('Right 0'), result.text);
+});

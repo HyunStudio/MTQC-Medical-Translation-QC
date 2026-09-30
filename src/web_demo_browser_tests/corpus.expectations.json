@@ -1,0 +1,14 @@
+{
+  "spine-p02":{"anchors":["KEYWORDS","Background","Materials and methods","Basic materials","Student grouping"],"order":[["KEYWORDS","Background"],["Basic materials","and percutaneous vertebroplasty surgery"],["and percutaneous vertebroplasty surgery","Student grouping"]]},
+  "spine-p03":{"anchors":["FIGURE 1","FIGURE 2","Schematic diagram","program medical students"],"order":[["FIGURE 1","FIGURE 2"],["FIGURE 2","program medical students"]],"imageLabels":["Data Preparation and Processing","AR surgical teaching"]},
+  "spine-p06":{"anchors":["FIGURE 5","FIGURE 6","second survey","Opinions and feasible improvement"],"order":[["FIGURE 5","FIGURE 6"],["FIGURE 6","second survey"],["second survey","spread of spinal malignancies"]]},
+  "spine-p09":{"anchors":["TABLE 4","First author","Publication year","Caliskan","Bian"],"order":[["First author","Caliskan"],["Caliskan","Bian"]],"table":true,"rotated":true},
+  "ear-p02":{"anchors":["2 Tympanic membrane wound healing","2.1 Tympanic membrane structures and compositions","2.2 Tympanic membrane perforation","2.3 Current treatments and limitations","3 Strategies of 3D printing"],"order":[["2.1 Tympanic membrane","2.2 Tympanic membrane"],["2.3 Current treatments","3 Strategies"]]},
+  "ear-p03":{"anchors":["FIGURE 1","Schematic diagram of frontal anatomy","3.1 Construct design","0.1 mm","65 nm"],"order":[["FIGURE 1","filaments under"],["polymers and biological components","with the current achievable resolution"],["with the current achievable resolution","3.1 Construct design"]]},
+  "ear-p08":{"anchors":["5 Biopolymers","KerMA","GelMA","collagen"],"order":[]},
+  "ear-p09":{"anchors":["TABLE 1","Scaffold structure","Bioink ingredients","Printing methods","References"],"order":[["Scaffold structure","Bioink ingredients"],["Bioink ingredients","Printing methods"]],"table":true},
+  "vascular-p02":{"anchors":["Introduction","Materials and methods","Human cadavers","Cadaveric specimen","74.4"],"order":[["Introduction","Materials and methods"],["Human cadavers","Cadaveric specimen"]]},
+  "vascular-p03":{"anchors":["Fig 1.","Schematic overview of the torso","Cadaver preparation and storage","Computed tomography"],"order":[["Fig 1.","Cadaver preparation and storage"],["Cadaver preparation and storage","Computed tomography"]]},
+  "vascular-p05":{"anchors":["Results","Pre-procedural unenhanced computed tomography","Endovascular interventions","68%"],"order":[["Results","Pre-procedural unenhanced computed tomography"],["Pre-procedural unenhanced computed tomography","Endovascular interventions"]]},
+  "vascular-p08":{"anchors":["Conclusions","Supporting information","Acknowledgments","Author Contributions"],"order":[["Conclusions","Supporting information"],["Supporting information","Acknowledgments"],["Acknowledgments","Author Contributions"]]}
+}

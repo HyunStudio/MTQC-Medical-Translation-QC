@@ -3,7 +3,7 @@
 An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
 - [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
-- [Narrated 18-second live video](https://youtu.be/RN-KqyxnPPg) (local OCR and one real Arabic model call)
+- [Professional narrated 1080p demo](https://youtu.be/WpYR5XfvPic) (118.5 seconds: saved anatomy, PDF reading-order review, and one genuine Arabic model call)
 - [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
 - [Submitted Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control) (Nebius × NVIDIA Global AI Hackathon)
 
@@ -24,6 +24,8 @@ The Document workbench can accept a user-selected PDF (up to two pages) or image
 PDF text layers retain fragment coordinates. The workbench proposes one- or two-column reading order and shows numbered lines over the original page. Choose across-row order for tables or left-then-right order for columns, inspect the overlay, and use **Replace excerpt with this order** to apply it. Previewing another order preserves manual edits; applying it resets source approval. Full-width text separates column bands. This is a geometric heuristic, not a learned layout model: irregular figures, rotated text, and complex tables still require correction. Every page without a text layer receives local OCR, including scanned pages inside otherwise searchable PDFs.
 
 Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus `20`, lost repeated values, added values, and lost minus signs produce findings. Arabic digits and unambiguous comma decimals are normalized for value comparison; exact-format differences remain visible for review. Numeric counts do not prove that each value remains attached to the correct structure or unit.
+
+The [2026-09-30 corpus evaluation](docs/web-demo/CORPUS_EVALUATION_20260930.md) adds real two-column medical pages, mixed-width figures, dense/rotated tables, scans and three anatomy charts. Its [provenance and reproduction instructions](docs/web-demo/CORPUS_SOURCES.md) identify reusable sources. Narrow journal gutters and centered footers have dedicated regressions. OCR now uses automatic page segmentation rather than a single text block. Searchable PDFs with embedded images display an explicit warning that image labels are not included in the text layer; enter any required labels manually. These changes do not imply full-page transcription or table-cell reconstruction.
 
 ## Enable live inference deliberately
 
@@ -55,4 +57,4 @@ The optional `scripts/smoke_18_languages.ps1` launches only a loopback server, m
 
 ## Rights and scope
 
-[RIGHTS.md](RIGHTS.md) inventories the recorded Servier and Müller source permissions, modifications, and unreviewed status. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists local PDF/OCR dependencies. Users retain responsibility for the rights and privacy of anything they select in the Document workbench. The browser demo is not the older Windows Word/PDF processing engine; the two should not be represented as the same runtime capability. No Harrison textbook page, patient record, private manuscript, or secret belongs in the public release.
+[RIGHTS.md](docs/web-demo/RIGHTS.md) inventories the recorded Servier and Müller source permissions, modifications, and unreviewed status. [THIRD_PARTY_NOTICES.md](docs/web-demo/THIRD_PARTY_NOTICES.md) lists local PDF/OCR dependencies. Users retain responsibility for the rights and privacy of anything they select in the Document workbench. The browser demo is not the older Windows Word/PDF processing engine; the two should not be represented as the same runtime capability. No Harrison textbook page, patient record, private manuscript, or secret belongs in the public release.

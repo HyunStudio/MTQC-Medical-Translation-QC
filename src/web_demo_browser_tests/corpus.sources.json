@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "documents": [
+    {"id":"spine","file":"mtqc-frontiers-spine-1403423.pdf","doi":"10.3389/fmed.2024.1403423","url":"https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2024.1403423/full","authors":"Liu et al.","year":2024,"license":"CC BY 4.0","pages":[2,3,6,9],"pair":[2,3],"note":"Original spinal reconstruction figures; inspect all credits before reproducing. Table page tests row order."},
+    {"id":"ear","file":"mtqc-frontiers-ear-1439499.pdf","doi":"10.3389/fbioe.2024.1439499","url":"https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2024.1439499/full","authors":"Xue et al.","year":2024,"license":"CC BY 4.0","pages":[2,3,8,9],"pair":[2,3],"note":"Ear schematic and full-width otology table; no separate figure credit found in selected captions."},
+    {"id":"vascular","file":"mtqc-plos-vascular-0242596.pdf","doi":"10.1371/journal.pone.0242596","url":"https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0242596","authors":"Jansen et al.","year":2020,"license":"CC BY 4.0","pages":[2,3,5,8],"pair":[2,3],"note":"Different publisher layout; public visual evidence restricted to Fig. 1 schematic and text, not cadaver photographs."}
+  ],
+  "images": [
+    {"id":"servier-visual","file":"servier-visual-en.png","url":"https://smart.servier.com/educational-tools/","license":"CC BY 4.0","anchors":["VISUAL SYSTEM","CORNEA","RETINA","LENS"]},
+    {"id":"servier-circulation","file":"servier-circulation-en.png","url":"https://smart.servier.com/educational-tools/","license":"CC BY 4.0","anchors":["Blood Circulation Pathway","Pulmonary circulation","Kidney circulation","Capillaries"]},
+    {"id":"servier-venous","file":"servier-venous-en.png","url":"https://smart.servier.com/educational-tools/","license":"CC BY 4.0","anchors":["VENOUS SYSTEM","FEMORAL","POPLITEAL","SUBCLAVIAN"]}
+  ]
+}

@@ -20,6 +20,8 @@ This is the 2026-09-29 evidence ledger for the [submitted Devpost project](https
 
 ### Post-submission quality improvement
 
+2026-09-30 follow-up: a [22-input medical corpus evaluation](CORPUS_EVALUATION_20260930.md) found and corrected a PDF.js cleanup error, narrow-gutter/ligature reading-order issues and scanned-prose OCR segmentation. An explicit diagram OCR profile avoids the observed anatomy-label regression; searchable pages containing raster figures now warn about unextracted labels. Local checks: .NET 46/46, layout 8/8, browser 26/26. Full-public refresh status is recorded in the corpus report; no additional provider calls were made. This is intake evidence, not clinically validated translation or whole-document reconstruction.
+
 The workbench now retains PDF text-fragment coordinates, proposes column-aware reading order, and overlays numbered lines on the source. Reviewers may preview single-row or two-column order without losing edits; explicitly applying the proposal resets approval. Scanned pages inside mixed text/image PDFs now receive OCR instead of being silently skipped. Numeric QC compares token values and multiplicities, catches sign loss, and recognizes Arabic digit forms and simple localized decimal separators.
 
 Verification: .NET 46/46; reading-order unit cases 5/5; browser regression 22/22 including two-column PDF extraction, mixed searchable/scanned PDF coverage, edit preservation, and responsive reading-order controls. Light, dark, and mobile screenshots were inspected. No provider calls were made for these changes. The geometric proposal is not proof of arbitrary table/figure semantics, and this release still translates a reviewed excerpt rather than rebuilding a complete translated PDF/DOCX.

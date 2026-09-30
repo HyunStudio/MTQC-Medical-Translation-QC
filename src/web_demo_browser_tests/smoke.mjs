@@ -185,6 +185,8 @@ try {
 
   await check('two-page text PDF renders locally and yields editable English text', async () => {
     const page = await browser.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
     page.setDefaultTimeout(8000);
     await page.setContent('<div style="break-after:page">The proximal artery is 2.5 mm.</div><div>Page two reference.</div>');
     const pdf = await page.pdf({ format: 'A4' });
@@ -193,6 +195,38 @@ try {
     await page.locator('#document-preview canvas').first().waitFor();
     await page.waitForFunction(() => document.querySelector('#document-text')?.value.includes('proximal artery'));
     assert(await page.locator('#document-text').isEnabled(), 'Extracted PDF text is not editable');
+    assert(pageErrors.length === 0, `PDF lifecycle raised a browser error: ${pageErrors.join('; ')}`);
+    await page.close();
+  });
+
+  await check('PDF text layer with a raster diagram warns that labels are not extracted', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(10000);
+    await page.setContent('<div id="diagram" style="background:white;color:black;font:48px Arial">FEMORAL ARTERY 2185</div>');
+    const image = await page.locator('#diagram').screenshot();
+    await page.setContent(`<h1>Searchable medical paragraph</h1><img width="550" src="data:image/png;base64,${image.toString('base64')}">`);
+    const pdf = await page.pdf({ format: 'A4' });
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'diagram.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await page.locator('#document-status').getByText(/Text layer extracted locally/).waitFor();
+    const text = await page.locator('#document-text').inputValue();
+    assert(text.includes('Searchable medical paragraph'), 'Searchable body text was dropped');
+    assert(!text.includes('2185'), 'Raster diagram unexpectedly entered the text layer');
+    assert((await page.locator('#document-status').textContent()).includes('Figure labels inside images are not included'), 'Missing raster text was silently presented as complete extraction');
+    assert(await page.locator('#document-translate').isDisabled(), 'Diagram input bypassed review');
+    await page.close();
+  });
+
+  await check('corrupt PDF with a valid signature fails safely without browser errors', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(10000);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'corrupt.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nnot a document') });
+    await page.locator('#document-status').getByText(/could not be read locally/).waitFor();
+    assert(await page.locator('#document-translate').isDisabled(), 'Invalid PDF permitted translation');
+    assert(errors.length === 0, `Invalid PDF raised a browser error: ${errors.join('; ')}`);
     await page.close();
   });
 
@@ -226,6 +260,30 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= 392), 'Reading-order controls overflow the mobile viewport');
     await page.locator('#try-document').screenshot({ path: path.join(qaDir, 'reading-order-mobile.png') });
+    await page.close();
+  });
+
+  await check('OCR layout choice is explicit and does not discard reviewer text', async () => {
+    const page = await browser.newPage();
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-ocr-profile').selectOption('diagram');
+    await page.locator('#document-text').evaluate(element => { element.disabled = false; element.value = 'Reviewer corrected anatomy'; });
+    await page.locator('#document-ocr-profile').selectOption('page');
+    assert(await page.locator('#document-text').inputValue() === 'Reviewer corrected anatomy', 'OCR preference silently replaced reviewer text');
+    await page.close();
+  });
+
+  await check('scanned two-column prose does not interleave the left and right columns', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(30000);
+    await page.setContent('<div id="scan" style="display:flex;gap:80px;padding:30px;background:white;color:black;font:24px Arial;width:840px"><div style="width:380px">LEFT FIRST artery supplies tissue.<br>LEFT SECOND vein returns blood.<br>LEFT THIRD capillary exchanges gas.<br>LEFT FOURTH oxygen moves locally.</div><div style="width:380px">RIGHT FIRST heart pumps blood.<br>RIGHT SECOND kidney filters fluid.<br>RIGHT THIRD vessels carry nutrients.<br>RIGHT FOURTH tissues need oxygen.</div></div>');
+    const image = await page.locator('#scan').screenshot();
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'columns.png', mimeType: 'image/png', buffer: image });
+    await page.locator('#document-status').getByText(/Local English OCR .*Review and correct/).waitFor();
+    const text = await page.locator('#document-text').inputValue();
+    assert(text.includes('LEFT FOURTH') && text.includes('RIGHT FIRST'), 'OCR omitted the test column anchors');
+    assert(text.indexOf('LEFT FOURTH') < text.indexOf('RIGHT FIRST'), 'Scanned body columns were interleaved');
     await page.close();
   });
 

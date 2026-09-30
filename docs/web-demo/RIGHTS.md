@@ -21,6 +21,8 @@ This inventory covers the two recorded cases in `src/web_demo/fixtures`. Public 
 
 ## Use restrictions for this demo
 
+The expanded medical-document intake evaluation has a separate [corpus provenance record](CORPUS_SOURCES.md). It links three CC-licensed publisher papers and three Servier charts; originals and local test excerpts are not bundled. The public Liu et al. Figure 1 workbench screenshot is credited there with its source, license and overlay modifications. This evaluation is not a full-paper translation or a medical validation.
+
 The submission walkthrough also uses `docs/web-demo/assets/original-circulation-demo.svg`, an original abstract vessel teaching diagram created for this software demo. It is not a patient image, a clinical reference, or a copied medical illustration. The recording script renders it to a local PNG for the browser OCR demonstration; the PNG is not part of the recorded Servier/Müller specimen set.
 
 No Harrison textbook page, patient material, private manuscript, or private API credential is included. The optional Nebius/NVIDIA feature can send either a bounded, user-reviewed excerpt from a locally selected PDF/image or the fixed Müller caption when the server operator explicitly enables it. The browser extracts source files locally; it does not upload the file. The user must confirm the right to use any selected source and must not submit protected health information without a suitable privacy/legal basis. Attribution, license links, modification disclosures, and draft-review labels must remain visible in any redistributed copy or submission video.

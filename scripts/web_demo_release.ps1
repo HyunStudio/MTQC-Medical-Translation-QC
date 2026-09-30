@@ -108,6 +108,13 @@ foreach ($tree in $allowedTrees) {
     }
 }
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/README.md') -Destination (Join-Path $source 'README.md')
+$exportReadme = Join-Path $source 'README.md'
+$readmeText = Get-Content -LiteralPath $exportReadme -Raw
+foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md')) {
+    $readmeText = $readmeText.Replace("]($docName)", "](docs/web-demo/$docName)")
+    if (-not (Test-Path -LiteralPath (Join-Path $source "docs/web-demo/$docName"))) { throw "Missing linked source document: $docName" }
+}
+Set-Content -LiteralPath $exportReadme -Value $readmeText -Encoding utf8 -NoNewline
 Copy-Item -LiteralPath (Join-Path $projectRoot 'src/web_demo/LICENSE') -Destination (Join-Path $source 'LICENSE')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitignore') -Destination (Join-Path $source '.gitignore')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitattributes') -Destination (Join-Path $source '.gitattributes')

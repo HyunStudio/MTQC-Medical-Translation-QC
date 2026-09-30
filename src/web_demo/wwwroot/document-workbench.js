@@ -24,7 +24,7 @@ function isPdf(bytes) {
   return bytes.length >= 5 && [37, 80, 68, 70, 45].every((part, index) => bytes[index] === part);
 }
 
-async function recognizeEnglish(blobs) {
+async function recognizeEnglish(blobs, profile = 'page') {
   let worker;
   try {
     const { default: Tesseract } = await import('/vendor/tesseract/tesseract.esm.min.js');
@@ -36,6 +36,9 @@ async function recognizeEnglish(blobs) {
       cacheMethod: 'none',
       gzip: true
     });
+    // The default single-block segmentation merges facing prose columns.
+    // Automatic page segmentation proposes column order; it remains review-only.
+    await worker.setParameters({ tessedit_pageseg_mode: profile === 'diagram' ? Tesseract.PSM.SINGLE_BLOCK : Tesseract.PSM.AUTO });
     const parts = [];
     const confidences = [];
     for (const blob of blobs) {
@@ -49,9 +52,9 @@ async function recognizeEnglish(blobs) {
   }
 }
 
-async function readImageWithOcr(file, status, text, token, isCurrent) {
+async function readImageWithOcr(file, status, text, token, isCurrent, profile) {
   try {
-    const result = await recognizeEnglish([file]);
+    const result = await recognizeEnglish([file], profile);
     if (!isCurrent(token)) return;
     if (!text.value.trim()) text.value = result.text;
     status.textContent = `Local English OCR ${result.confidence === null ? 'completed' : `confidence ${result.confidence}%`}. Review and correct all text; OCR order and accuracy are unverified.`;
@@ -60,12 +63,14 @@ async function readImageWithOcr(file, status, text, token, isCurrent) {
   }
 }
 
-async function readPdf(file, preview, status, text, reviewed, token, isCurrent, onPages) {
+async function readPdf(file, preview, status, text, reviewed, token, isCurrent, onPages, profile) {
   let pdf;
+  let loadingTask;
   try {
     const pdfjs = await import('/vendor/pdfjs/pdf.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
-    pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+    pdf = await loadingTask.promise;
     if (!isCurrent(token)) return;
     if (pdf.numPages > 2) {
       status.textContent = 'PDF exceeds the 2-page limit. Choose only one or two pages.';
@@ -91,7 +96,11 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
         return { text: item.str, x: transform[4], y: transform[5] - height,
           width: item.width * viewport.scale, height };
       });
-      records.push({ canvas, width: canvas.width, height: canvas.height, fragments, ocrText: '' });
+      const operators = await page.getOperatorList();
+      const hasImages = operators.fnArray.some(op => [pdfjs.OPS.paintImageXObject,
+        pdfjs.OPS.paintInlineImageXObject, pdfjs.OPS.paintImageMaskXObject,
+        pdfjs.OPS.paintImageXObjectRepeat, pdfjs.OPS.paintImageMaskXObjectRepeat].includes(op));
+      records.push({ canvas, width: canvas.width, height: canvas.height, fragments, hasImages, ocrText: '' });
     }
     preview.replaceChildren(...canvases);
     preview.hidden = false;
@@ -100,7 +109,7 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
       if (record.fragments.length) continue;
       status.textContent = 'A page has no PDF text layer. Running local English OCR for that page…';
       const blob = await new Promise(resolve => record.canvas.toBlob(resolve, 'image/png'));
-      const result = await recognizeEnglish([blob]);
+      const result = await recognizeEnglish([blob], profile);
       if (!isCurrent(token)) return;
       record.ocrText = result.text;
       ocrPages++;
@@ -112,10 +121,13 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
     status.textContent = ocrPages
       ? `Scanned PDF OCR completed locally for ${ocrPages} page(s); other text layers retained. Check every page before sending.`
       : `Text layer extracted locally from ${pdf.numPages} PDF page(s). Review the numbered reading order below.`;
+    if (records.some(record => record.fragments.length && record.hasImages)) {
+      status.textContent += ' Figure labels inside images are not included in the text layer. Compare each diagram and enter any needed labels manually; this is not complete page transcription.';
+    }
   } catch {
     if (isCurrent(token)) status.textContent = 'This PDF could not be read locally. Choose a valid PDF or an image.';
   } finally {
-    await pdf?.destroy().catch(() => {});
+    await loadingTask?.destroy().catch(() => {});
   }
 }
 
@@ -277,6 +289,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     layout.hidden = true;
     orderMode.value = 'auto';
     const current = ++generation;
+    const ocrProfile = document.querySelector('#document-ocr-profile')?.value || 'page';
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     preview.replaceChildren();
     preview.hidden = true;
@@ -309,7 +322,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
         pdfPages = records;
         layout.hidden = false;
         renderOrder(true);
-      });
+      }, ocrProfile);
       return;
     }
     objectUrl = URL.createObjectURL(file);
@@ -321,7 +334,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     text.disabled = false;
     reviewed.disabled = false;
     status.textContent = 'Source image loaded locally. Running English OCR; review and correct its text.';
-    await readImageWithOcr(file, status, text, current, value => value === generation);
+    await readImageWithOcr(file, status, text, current, value => value === generation, ocrProfile);
     if (current === generation) refreshButton(text, reviewed, translate);
   });
 

@@ -25,6 +25,8 @@ PDF text layers retain fragment coordinates. The workbench proposes one- or two-
 
 Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus `20`, lost repeated values, added values, and lost minus signs produce findings. Arabic digits and unambiguous comma decimals are normalized for value comparison; exact-format differences remain visible for review. Numeric counts do not prove that each value remains attached to the correct structure or unit.
 
+The [2026-09-30 corpus evaluation](CORPUS_EVALUATION_20260930.md) adds real two-column medical pages, mixed-width figures, dense/rotated tables, scans and three anatomy charts. Its [provenance and reproduction instructions](CORPUS_SOURCES.md) identify reusable sources. Narrow journal gutters and centered footers have dedicated regressions. OCR now uses automatic page segmentation rather than a single text block. Searchable PDFs with embedded images display an explicit warning that image labels are not included in the text layer; enter any required labels manually. These changes do not imply full-page transcription or table-cell reconstruction.
+
 ## Enable live inference deliberately
 
 Live requests are disabled by default. A server operator may set `NEBIUS_API_KEY` and `DEMO_LIVE_ENABLED=true` in the **server process environment**, then restart. Never place the key in a browser bundle, source file, published ZIP, or screenshot. The default model is `nvidia/Nemotron-3_5-Lightning`; `DEMO_NEBIUS_MODEL` can override its ID. An enabled status means only that a key is configured; it does not prove provider credit, entitlement, quality, or uptime.
