@@ -7,7 +7,7 @@ import { chromium } from 'playwright-core';
 
 // Authentic UI capture. No intercepted, fabricated, or replayed model response.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const output = path.join(root, 'output/video/professional-v3');
+const output = path.join(root, 'output/video/professional-v4');
 const story = JSON.parse(readFileSync(path.join(output, 'timing.json'), 'utf8'));
 if (!process.env.NEBIUS_API_KEY?.trim()) throw new Error('A process-held Nebius key is required; it is never recorded.');
 const app = path.join(root, 'src/web_demo');
@@ -19,13 +19,15 @@ const port = socket.address().port;
 await new Promise(resolve => socket.close(resolve));
 const base = `http://127.0.0.1:${port}`;
 const ledger = path.join(output, `attempt-ledger-${Date.now()}.json`);
+mkdirSync(path.join(output, 'raw'), { recursive: true });
 const server = spawn('dotnet', [path.join(app, 'bin/Release/net10.0/MedicalQcWebDemo.dll'), '--urls', base], {
-  cwd: app, stdio: 'ignore', env: { ...process.env, DEMO_LIVE_ENABLED: 'true', DEMO_LIVE_PER_CLIENT_LIMIT: '1',
-    DEMO_LIVE_TOTAL_ATTEMPTS: '1', DEMO_LIVE_LEDGER_PATH: ledger }
+  cwd: app, stdio: 'ignore', env: { ...process.env, DEMO_LIVE_ENABLED: 'true', DEMO_LIVE_PER_CLIENT_LIMIT: '2',
+    DEMO_LIVE_TOTAL_ATTEMPTS: '2', DEMO_LIVE_LEDGER_PATH: ledger }
 });
 const chrome = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe'].find(candidate => candidate && existsSync(candidate));
 let browser;
-const evidence = { capturedAt: new Date().toISOString(), providerCalls: 0, scenes: [], source: 'Original synthetic teaching specimen; not clinical reference' };
+const evidence = { capturedAt: new Date().toISOString(), browserRequests: 0, reservedProviderAttempts: 2,
+  scenes: [], source: 'Original synthetic teaching specimen; not clinical reference' };
 
 const card = (body) => `<!doctype html><html><style>
 *{box-sizing:border-box}body{margin:0;background:#0b1d29;color:#edf6f7;font-family:Arial,sans-serif;width:1920px;height:1080px;overflow:hidden}
@@ -43,7 +45,7 @@ async function scene(index, prepare, perform) {
   const started = Date.now();
   const until = async seconds => page.waitForTimeout(Math.max(0, seconds * 1000 - (Date.now() - started)));
   if (index === 0 || index === 3) await highlightCards(page, config, until);
-  await perform(page, config, until);
+  await perform(page, config, until, () => (Date.now() - started) / 1000);
   await until(config.duration);
   const elapsed = (Date.now() - started) / 1000;
   if (elapsed > config.duration + 2) throw new Error(`Scene ${config.id} overran narration: ${elapsed}s`);
@@ -82,7 +84,7 @@ try {
   await scene(1, async page => {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('#workbench').evaluate(element => element.scrollIntoView());
-  }, async (page, config, until) => {
+  }, async (page, config, until, elapsed) => {
     await until(5);
     await page.locator('#language-select').selectOption('es');
     await until(10);
@@ -95,7 +97,7 @@ try {
   await scene(2, async page => {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('#try-document').evaluate(element => element.scrollIntoView());
-  }, async (page, config, until) => {
+  }, async (page, config, until, elapsed) => {
     await page.locator('#document-file').setInputFiles({ name: 'vascular-teaching-specimen.pdf', mimeType: 'application/pdf', buffer: pdf });
     await page.waitForFunction(() => document.querySelector('#document-layout-summary')?.textContent.includes('column(s)'));
     await until(config.sentenceStarts[1]);
@@ -107,18 +109,37 @@ try {
     await page.locator('#document-language').selectOption('ar');
     await page.locator('#document-reviewed').check();
     await until(config.sentenceStarts[3]);
-    const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/live/document-excerpt') && response.request().method() === 'POST');
+    const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/live/document-excerpt') && response.request().method() === 'POST', { timeout: 90000 });
     await page.locator('#document-translate').click();
     await page.locator('#document-progress').scrollIntoViewIfNeeded();
-    evidence.providerCalls++;
+    evidence.browserRequests++;
     const response = await responsePromise;
     const result = await response.json();
-    if (!response.ok() || result.status !== 'ok' || !result.translation) throw new Error('Genuine model call failed; no staged replacement is allowed.');
-    evidence.liveResult = result;
-    await page.locator('#document-result').scrollIntoViewIfNeeded();
+    if (!response.ok() || result.status !== 'ok' || !result.translation ||
+        result.review?.translationStage?.state !== 'completed' ||
+        result.review?.critiqueStage?.state !== 'completed' ||
+        result.review?.rulesStage?.state !== 'completed' ||
+        !result.review?.translationStage?.model?.includes('Nemotron') ||
+        !result.review?.critiqueStage?.model?.includes('Nemotron'))
+      throw new Error('Genuine two-stage review did not complete; no staged replacement is allowed.');
+    evidence.liveResult = { status: result.status, runId: result.review.runId,
+      translationStage: result.review.translationStage, critiqueStage: result.review.critiqueStage,
+      rulesStage: result.review.rulesStage, ruleCoverage: result.review.coverage,
+      modelSuggestionCount: result.review.modelFindings?.length ?? 0 };
     await page.locator('#document-progress-track[aria-valuenow="100"]').waitFor();
+    const firstReviewAt = Math.max(36, elapsed() + 2);
+    await until(firstReviewAt);
+    await page.locator('#document-result-grid').scrollIntoViewIfNeeded();
+    await until(firstReviewAt + 7);
+    await page.locator('#document-review-stages').scrollIntoViewIfNeeded();
+    await until(firstReviewAt + 14);
+    await page.locator('#document-human-acknowledge').check();
+    await until(firstReviewAt + 21);
+    await page.locator('#document-coverage').scrollIntoViewIfNeeded();
+    await until(firstReviewAt + 28);
+    await page.locator('#document-result-grid').scrollIntoViewIfNeeded();
   });
-  await scene(3, page => page.setContent(card('<main><div class="kicker">QUALITY / TRACEABILITY / HUMAN REVIEW</div><h1>Evidence behind<br><em>every workflow.</em></h1><div class="row"><div class="box"><span class="num">46</span><span class="label">Server regression checks</span></div><div class="box"><span class="num">6</span><span class="label">Reading-order checks</span></div><div class="box"><span class="num">22</span><span class="label">Browser workflow checks</span></div></div><p>Browser extraction → reviewed excerpt → server → NVIDIA Nemotron on Nebius</p><p style="font-size:23px">Recorded specimens + one genuine live call · Clinical validation pending<br>Live scope: reviewed excerpts; full translated PDF/DOCX reconstruction remains in development.</p></main><div class="footer">github.com/HyunStudio/MTQC-Medical-Translation-QC · Anatomy specimen: Servier Medical Art, CC BY 4.0</div>')), async () => {});
+  await scene(3, page => page.setContent(card('<main><div class="kicker">QUALITY / TRACEABILITY / HUMAN REVIEW</div><h1>Evidence behind<br><em>every workflow.</em></h1><div class="row"><div class="box"><span class="num">66</span><span class="label">Server regression checks</span></div><div class="box"><span class="num">33</span><span class="label">Browser workflow checks</span></div><div class="box"><span class="num">2</span><span class="label">Real sequential model stages</span></div></div><p>Local extraction → approved excerpt → NVIDIA Nemotron draft → separate critique → scoped rules</p><p style="font-size:23px">Controlled pilot: no added detection from critique; model suggestions stay unverified.<br>Clinical validation pending · Live scope: reviewed excerpts, not full-book reconstruction.</p></main><div class="footer">github.com/HyunStudio/MTQC-Medical-Translation-QC · Anatomy specimen: Servier Medical Art, CC BY 4.0</div>')), async () => {});
   writeFileSync(path.join(output, 'recording-evidence.json'), JSON.stringify(evidence, null, 2));
 } finally {
   await browser?.close();

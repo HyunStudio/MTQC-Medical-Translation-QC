@@ -271,6 +271,14 @@ async Task CritiqueReturnsTypedEvidence()
     Assert(handler.Calls == 1, "critique did not use exactly one provider call");
     Assert((string?)result["Model"] == "nvidia/Nemotron-3_5-Lightning" && (int?)result["PromptTokens"] == 42, "critique provenance or usage lost");
     Assert((string?)result["Findings"]![0]!["Category"] == "number" && (string?)result["Findings"]![0]!["Severity"] == "critical", "typed finding was not retained");
+
+    const string finding = "{\"category\":\"unit\",\"severity\":\"review\",\"sourceSpan\":\"mm\",\"draftSpan\":\"مم\",\"rationale\":\"The unit changed.\"}";
+    var duplicateHandler = new FakeProviderHandler(_ => ProviderSuccess("{\"findings\":[" + finding + "," + finding + "]}"));
+    var duplicateClient = new NebiusClient(new HttpClient(duplicateHandler), "test-key", "nvidia/Nemotron-3_5-Lightning",
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var deduplicated = await InvokeCritique(duplicateClient, "2.5 mm", "ar", "2.5 مم");
+    Assert(deduplicated["Findings"]!.AsArray().Count == 1, "identical model suggestions were displayed twice");
+    Assert(duplicateHandler.Calls == 1, "deduplication must not trigger another model call");
 }
 
 async Task CritiqueRejectsInvalidOutput()

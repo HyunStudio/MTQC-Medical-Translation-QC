@@ -7,7 +7,7 @@ import wave
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'output/video/professional-v3'
+OUT = ROOT / 'output/video/professional-v4'
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 def run(*args):
@@ -55,8 +55,11 @@ def encode():
         output = OUT / f"{scene['id']}.mp4"
         # Work in OUT so subtitles paths have no Windows drive-colon escaping.
         subtitle = f"subtitles={scene['id']}.srt:force_style='FontName=Arial,FontSize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H0021160B,BorderStyle=3,Outline=2,Shadow=0,MarginV=18'"
-        run('-sseof', -scene['duration'], '-i', OUT / f"{scene['id']}.webm", '-i', OUT / f"{scene['id']}.wav",
-            '-map', '0:v', '-map', '1:a', '-vf', subtitle + ',fps=30,format=yuv420p', '-c:v', 'libx264', '-preset', 'fast',
+        speed = scene.get('videoSpeed', 1)
+        if speed <= 0:
+            raise ValueError('Video speed must be positive')
+        run('-i', OUT / f"{scene['id']}.webm", '-i', OUT / f"{scene['id']}.wav",
+            '-map', '0:v', '-map', '1:a', '-vf', f'setpts=(PTS-STARTPTS)/{speed},' + subtitle + ',fps=30,format=yuv420p', '-c:v', 'libx264', '-preset', 'fast',
             '-crf', 19, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '160k', '-t', scene['duration'], '-movflags', '+faststart', output)
         parts.append(f"file '{output.name}'")
         for block in (OUT / f"{scene['id']}.srt").read_text().strip().split('\n\n'):

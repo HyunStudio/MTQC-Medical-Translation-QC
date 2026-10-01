@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
-$outputRoot = Join-Path $projectRoot 'output/video/professional-v3'
+$outputRoot = Join-Path $projectRoot 'output/video/professional-v4'
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 $story = Get-Content (Join-Path $projectRoot 'docs/web-demo/video-storyboard.json') -Raw | ConvertFrom-Json
 $voice = New-Object -ComObject SAPI.SpVoice

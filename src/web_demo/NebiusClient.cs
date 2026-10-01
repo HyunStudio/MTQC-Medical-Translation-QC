@@ -167,6 +167,7 @@ public sealed class NebiusClient
             if (findingArray.ValueKind != JsonValueKind.Array || findingArray.GetArrayLength() > 8)
                 throw new InvalidDataException("Provider critique schema invalid");
             var findings = new List<CritiqueFinding>();
+            var uniqueFindings = new HashSet<CritiqueFinding>();
             foreach (var item in findingArray.EnumerateArray())
             {
                 RequireFindingKeys(item);
@@ -176,7 +177,8 @@ public sealed class NebiusClient
                     throw new InvalidDataException("Provider critique schema invalid");
                 var sourceSpan = OptionalSpan(item, "sourceSpan", source);
                 var draftSpan = OptionalSpan(item, "draftSpan", draft);
-                findings.Add(new(category, severity, sourceSpan, draftSpan, RequiredString(item, "rationale", 600)));
+                var finding = new CritiqueFinding(category, severity, sourceSpan, draftSpan, RequiredString(item, "rationale", 600));
+                if (uniqueFindings.Add(finding)) findings.Add(finding);
             }
             var actualModel = root.GetProperty("model").GetString();
             if (string.IsNullOrWhiteSpace(actualModel) || actualModel.Length > 200)

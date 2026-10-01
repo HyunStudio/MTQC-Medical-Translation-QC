@@ -429,6 +429,7 @@ try {
     await page.locator('#document-result-translation').getByText(draft).waitFor();
     assert((await page.locator('#document-review-stages').textContent()).includes('critique-model'), 'second model stage or token usage is hidden');
     assert((await page.locator('#document-model-findings').textContent()).includes('Value differs.'), 'model finding is hidden');
+    assert((await page.locator('#document-model-findings').textContent()).includes('2.5 mm → 3.5 mm'), 'exact source and draft evidence spans are hidden');
     assert((await page.locator('#document-model-findings').textContent()).includes('UNVERIFIED MODEL SUGGESTION'), 'model allegation was presented as validated QC');
     assert(!(await page.locator('#document-model-findings').textContent()).includes('critical:'), 'provider severity was presented as a confirmed critical error');
     assert((await page.locator('#document-rule-findings').textContent()).includes('Direction differs.'), 'rule finding is hidden');

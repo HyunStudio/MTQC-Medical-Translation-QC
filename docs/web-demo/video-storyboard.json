@@ -1,23 +1,26 @@
 [
   {"id":"01-intro","title":"MTQC / Medical document intelligence","minimumSeconds":12,"sentences":[
     "Medical documents combine language, anatomy, numbers, and visual structure.",
-    "M T Q C brings source comparison, local document extraction, and multilingual A I drafts into one review workspace."
+    "M T Q C combines source comparison, local document extraction, a live draft, and a separate A I review in one workbench."
   ]},
   {"id":"02-comparison","title":"01 / Compare the evidence","minimumSeconds":23,"sentences":[
     "Start with a licensed anatomy specimen and inspect the original beside its translated layout.",
-    "These saved examples cover eighteen target languages, including Korean, Spanish, and right to left Arabic.",
+    "Saved anatomy examples demonstrate visual comparison in Korean, Spanish, and right to left Arabic.",
     "Each specimen links to its editable artifact and documented source. These are recorded outputs, not new model calls."
   ]},
-  {"id":"03-document","title":"02 / Inspect structure, then translate","minimumSeconds":48,"sentences":[
+  {"id":"03-document","title":"02 / Inspect structure, then translate","minimumSeconds":70,"videoSpeed":1,"sentences":[
     "Now we open an original two column demonstration document. The file stays in the browser.",
     "Numbered regions expose the proposed reading order. A reviewer can switch to row order for tables, inspect the source, and correct the extracted text.",
     "We select a short passage, choose Arabic, and approve the source before sending it.",
-    "This is a genuine request to an N V I D I A Nemotron model through Nebius Token Factory. The key stays on the server.",
-    "The progress indicator is an estimate. The returned draft shows its model, token usage, and quality review notes."
+    "This is a genuine two stage request to an N V I D I A Nemotron model through Nebius Token Factory. The key stays on the server.",
+    "First, Nemotron creates a draft. Then a separate Nemotron call critiques it, while local rules inspect narrow numeric and terminology signals.",
+    "The progress indicator is an estimate. Model suggestions are unverified, and the reviewer must inspect the source and draft.",
+    "A failed second call leaves an incomplete draft; a clean model response is never medical clearance.",
+    "The reviewer can inspect which rule categories were checked, warned, or not assessed, then record an inspection acknowledgment."
   ]},
   {"id":"04-evidence","title":"03 / Quality is evidence","minimumSeconds":20,"sentences":[
-    "Regression checks cover numeric changes, missing values, lost minus signs, mixed scanned pages, and reading order.",
-    "The current release passes forty six server checks, six layout checks, and twenty two browser checks.",
-    "M T Q C supports expert review. It is not clinically validated, and live translation currently covers reviewed excerpts, not complete textbook reconstruction."
+    "Regression checks cover numbers, negation markers, two column reading order, and partial provider failure.",
+    "Our small paired pilot did not show extra error detection from the second model call. We keep that negative result visible.",
+    "M T Q C supports expert review. It is not clinically validated, and live translation covers reviewed excerpts, not complete textbook reconstruction."
   ]}
 ]

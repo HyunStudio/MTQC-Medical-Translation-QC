@@ -212,7 +212,7 @@ function renderReview(review) {
     }
   };
   appendFindings(modelFindings, review.modelFindings, item =>
-    `UNVERIFIED MODEL SUGGESTION · ${item.category} · ${item.sourceSpan && item.draftSpan ? 'quoted spans, interpretation unverified' : 'evidence span incomplete'}: ${item.rationale}`);
+    `UNVERIFIED MODEL SUGGESTION · ${item.category} · ${item.sourceSpan && item.draftSpan ? `${item.sourceSpan} → ${item.draftSpan}` : 'evidence span incomplete'} · interpretation unverified: ${item.rationale}`);
   appendFindings(ruleFindings, review.ruleFindings, item => `RULE · ${item.category} · ${item.severity}: ${item.message}`);
   for (const item of review.coverage || []) {
     const badge = document.createElement('span');
