@@ -1,6 +1,8 @@
-"""Export the existing verified SMART visual-system batch as a public web fixture.
+"""Export the rights-cleared, refitted SMART visual-system batch as a public fixture.
 
-This is an offline, mechanical export. It never calls an AI provider.
+This is an offline, mechanical export. It never calls an AI provider. The raw
+Servier decks must not be copied into a public release: their master contains
+brand logos and their narrow original labels can clip translated words.
 """
 
 from __future__ import annotations
@@ -19,6 +21,13 @@ LANGUAGES = ("ko", "es", "ar", "zh-CN", "zh-TW", "ja", "fr", "de", "it", "pt",
              "ru", "hi", "id", "nl", "pl", "th", "tr", "vi")
 
 
+def polished_asset_path(project: Path, name: str) -> Path:
+    path = project / "output" / "servier-rights-fit-20261002-v3" / "final" / name
+    if not path.is_file():
+        raise FileNotFoundError(f"Rights-cleared, layout-checked asset missing: {path}")
+    return path
+
+
 def section_data(values: dict[str, str]) -> list[dict[str, str]]:
     return [
         {"id": "title", "label": "Diagram title", "text": values["pkg_00000003"]},
@@ -32,8 +41,8 @@ def findings(language: str) -> list[dict[str, str]]:
         {"id": "coverage", "title": "All 14 visible strings accounted for", "status": "passed",
          "basis": f"The {language} package audit records 14 visible slide strings for this diagram; all have output IDs.",
          "sourceSection": "labels", "targetSection": "labels"},
-        {"id": "geometry", "title": "Diagram geometry preserved", "status": "passed",
-         "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+        {"id": "geometry", "title": "Anatomy art retained; labels refitted", "status": "passed",
+         "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
          "sourceSection": "caption", "targetSection": "caption"},
         {"id": "medical-review", "title": "Independent terminology review pending", "status": "needs-review",
          "basis": "Automated structure checks and rendered-slide review do not establish medical or native-speaker correctness.",
@@ -46,7 +55,7 @@ def main() -> None:
     source_map = {unit["Id"]: unit["Text"] for unit in source_units["units"]}
     report = json.loads((INPUT / "qa" / "structure_report.json").read_text(encoding="utf-8"))
     ASSETS.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(INPUT / "qa" / "renders" / f"en_{DECK}.png", ASSETS / "servier-visual-en.png")
+    shutil.copy2(polished_asset_path(PROJECT, "servier-visual-en.png"), ASSETS / "servier-visual-en.png")
     translations = []
     for language in LANGUAGES:
         checkpoint = json.loads((INPUT / "languages" / language / f"{DECK}.checkpoint.json").read_text(encoding="utf-8"))
@@ -56,8 +65,8 @@ def main() -> None:
         assert audit["geometry_identical"] and audit["non_slide_parts_identical"]
         preview_name = f"servier-visual-{language}.png"
         deck_name = f"servier-visual-{language}.pptx"
-        shutil.copy2(INPUT / "qa" / "renders" / f"{language}_{DECK}.png", ASSETS / preview_name)
-        shutil.copy2(INPUT / "languages" / language / f"{DECK}.translated.pptx", ASSETS / deck_name)
+        shutil.copy2(polished_asset_path(PROJECT, preview_name), ASSETS / preview_name)
+        shutil.copy2(polished_asset_path(PROJECT, deck_name), ASSETS / deck_name)
         translations.append({
             "language": language,
             "status": "AI_DRAFT_UNREVIEWED",
@@ -78,7 +87,7 @@ def main() -> None:
             "citation": "Servier Medical Art (SMART), Educational Tools: Visual System. © Les Laboratoires Servier.",
             "url": "https://smart.servier.com/educational-tools/",
             "license": "CC BY 4.0",
-            "modifications": "Diagram text translated into 18 languages; shape positions and dimensions retained; long labels fitted by text-size changes only. Original attribution remains in each PowerPoint.",
+            "modifications": "Diagram text translated into 18 languages. The anatomy art and connectors remain; titles and label clouds were refitted, master logos removed, and plain-text attribution retained in each PowerPoint.",
             "preview": "/assets/servier-visual-en.png",
             "sections": section_data(source_map),
         },

@@ -1,9 +1,9 @@
-﻿# MTQC — Medical Textbook Translation & Quality Control (judge demo)
+# MTQC — Medical Translation Quality Control (judge demo)
 
-An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft followed by a separate AI critique** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The review UI keeps model suggestions, narrow deterministic rules, and unassessed categories distinct. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
+An English-first medical-document **excerpt-review** demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft followed by a separate AI critique** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. It does not output a fully translated or structure-preserved textbook/PDF. The review UI keeps model suggestions, narrow deterministic rules, and unassessed categories distinct. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
 - [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
-- [Current professional 1080p demo](https://youtu.be/DiLCKVe3QiU) (2:19; one genuine, bounded two-stage Arabic request, synthetic two-column PDF, captions, and explicit limitations)
+- [Current professional 1080p demo](https://youtu.be/FE4t_vn89X8) (2:19; one genuine, bounded two-stage Arabic request, synthetic two-column PDF, captions, explicit limitations, and obscured third-party logos)
 - [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
 - [Submitted Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control) (Nebius × NVIDIA Global AI Hackathon)
 
@@ -24,6 +24,8 @@ Without the client build, recorded cases still open, but PDF/OCR worker URLs ret
 Open the local address printed by ASP.NET Core. The recorded cases require no account, model key, or provider charge. The Servier Medical Art visual-system specimen has an English source and 18 saved, editable draft slides (19 displayed languages). The Müller et al. comparison covers only the Figure 1 title, caption, and four labels in Korean, Spanish, and Arabic; it is **not** a complete translation of the two-column article.
 
 The Document workbench can accept a user-selected PDF (up to two pages) or image (up to 10 MiB), extract selectable text or perform English OCR in the **browser**, and show an editable excerpt beside the draft. The file is not uploaded. Only the excerpt that the user submits for live translation is sent to the server and onward to Nebius. Do not enter patient-identifiable or other restricted data without appropriate authorization and privacy review. The local PDF.js/Tesseract assets are built from pinned npm packages; there is no runtime CDN dependency.
+
+The public Servier slide specimens were visually refitted in native PowerPoint after a cross-language audit. The eye illustration and connector endpoints remain editable, while label clouds and title clearance changed to stop clipping and arbitrary word breaks. The published decks and previews remove original master logos and retain text attribution and the CC BY link. This visual repair does not constitute a terminology review.
 
 ## Reading-order review
 

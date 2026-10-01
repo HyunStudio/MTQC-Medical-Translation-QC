@@ -9,7 +9,7 @@
     "citation": "Servier Medical Art (SMART), Educational Tools: Visual System. © Les Laboratoires Servier.",
     "url": "https://smart.servier.com/educational-tools/",
     "license": "CC BY 4.0",
-    "modifications": "Diagram text translated into 18 languages; shape positions and dimensions retained; long labels fitted by text-size changes only. Original attribution remains in each PowerPoint.",
+    "modifications": "Diagram text translated into 18 languages. The anatomy art and connectors remain; titles and label clouds were refitted, master logos removed, and plain-text attribution retained in each PowerPoint.",
     "preview": "/assets/servier-visual-en.png",
     "sections": [
       {
@@ -63,9 +63,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -112,9 +112,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -161,9 +161,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -210,9 +210,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -259,9 +259,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -308,9 +308,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -357,9 +357,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -406,9 +406,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -455,9 +455,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -504,9 +504,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -553,9 +553,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -602,9 +602,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -651,9 +651,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -700,9 +700,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -749,9 +749,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -798,9 +798,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -847,9 +847,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },
@@ -896,9 +896,9 @@
         },
         {
           "id": "geometry",
-          "title": "Diagram geometry preserved",
+          "title": "Anatomy art retained; labels refitted",
           "status": "passed",
-          "basis": "The recorded package comparison found identical shape positions/dimensions and unchanged non-slide parts.",
+          "basis": "The anatomical art and connector endpoints remain in the editable deck. Label clouds were widened, title clearance increased, and master logos removed; exact slide geometry is not identical to the original.",
           "sourceSection": "caption",
           "targetSection": "caption"
         },

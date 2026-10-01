@@ -4,11 +4,11 @@ Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Submitted 202
 
 ## Project name
 
-MTQC — Medical Textbook Translation & Quality Control
+MTQC — Medical Translation Quality Control
 
 ## Elevator pitch
 
-A medical-document review workbench that puts original visuals, editable translated specimens, provenance, and scoped quality-control evidence side by side—with an optional, bounded live NVIDIA Nemotron excerpt through Nebius Token Factory.
+A medical-document excerpt-review workbench with side-by-side source visuals, editable saved drafts, scoped QC evidence, and bounded live NVIDIA Nemotron translation through Nebius Token Factory.
 
 ## Problem and audience
 
@@ -19,6 +19,8 @@ Medical diagrams and complex documents carry meaning in labels, figure relations
 The English-first browser workbench lets a reviewer select a rights-cleared specimen and target language, compare source and target images at full size, inspect aligned strings and evidence-linked QC findings, open an editable PowerPoint where available, and switch between light and dark themes. The Document workbench accepts a small English PDF (up to two pages) or image (up to 10 MiB), extracts text or runs English OCR locally in the browser, and asks the user to correct and approve the excerpt before sending it. The selected file is not uploaded. The reviewer can request a live draft in any of 18 target languages. One NVIDIA Nemotron call drafts the translation; a separate call critiques that exact draft. The interface keeps both stages' model/token provenance, exact quoted evidence, deterministic rule findings, categories not assessed, and human inspection acknowledgment separate. The progress bar is explicitly a time-derived estimate, not model telemetry or an ETA; only a successful two-stage response and rule pass reaches 100%.
 
 The saved Servier Medical Art visual-system specimen has an English source and 18 draft target slides (19 displayed languages total). A separate Müller et al. Figure 1 specimen demonstrates a three-language comparison for its title, caption, and four labels. The two-column article itself is **not** translated.
+
+This browser workbench does not reconstruct a fully translated textbook or PDF. A 2026-10-02 native PowerPoint visual audit corrected clipped titles and mid-word label breaks across the recorded Servier slides. The public decks and previews remove the original master logos while retaining plain-text Servier/CC BY attribution. The anatomical illustration and connector endpoints remain; some title and label geometry changed.
 
 The recorded specimens load without credentials or model charges. They are labeled AI drafts, and layout/coverage checks are separated from still-pending clinician and native-speaker review. This is an educational demonstration, not clinical advice or certified translation.
 
