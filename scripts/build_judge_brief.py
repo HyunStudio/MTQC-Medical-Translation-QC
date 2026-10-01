@@ -23,8 +23,8 @@ from reportlab.platypus import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "output/pdf/medical-qc-nebius-judge-brief-refresh-20260930.pdf"
-SCREENSHOT = ROOT / "output/video/professional-v3/03-document-frame.png"
+OUT = ROOT / "output/pdf/medical-qc-nebius-judge-brief-evidence-first-20261002.pdf"
+SCREENSHOT = ROOT / "output/video/professional-v4/03-document-frame.png"
 if not SCREENSHOT.exists():
     raise SystemExit(f"Record the authentic browser demo first: {SCREENSHOT}")
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -75,8 +75,8 @@ story += [
     para("<b>Problem.</b> A smooth translation can still reverse an anatomical direction, alter a measurement, or detach a label from its figure. Reviewers need to see source, draft, provenance, and the limits of automated checking together."),
 ]
 metrics = Table([
-    [para("18", metric_num), para("2", metric_num), para("1", metric_num)],
-    [para("live target languages", metric_label), para("local intake types: PDF + image", metric_label), para("server-side NVIDIA model", metric_label)],
+    [para("18", metric_num), para("2", metric_num), para("2", metric_num)],
+    [para("live target languages", metric_label), para("local intake types: PDF + image", metric_label), para("separate model stages", metric_label)],
 ], colWidths=[176, 176, 176], rowHeights=[25, 21])
 metrics.setStyle(TableStyle([
     ("BACKGROUND", (0, 0), (-1, -1), PALE),
@@ -89,20 +89,21 @@ metrics.setStyle(TableStyle([
 story += [metrics, Spacer(1, 9), para("What a judge can do", section)]
 story += [
     para("1. Select a small rights-cleared English PDF (up to two pages) or image. PDF text extraction or English OCR runs locally in the browser; the file is not uploaded."),
-    para("2. Correct and approve a bounded source excerpt, choose one of 18 targets, then request a real <b>nvidia/Nemotron-3_5-Lightning</b> draft through the server-side Nebius Token Factory adapter."),
-    para("3. Compare source and output, view actual model/token metadata and limited numeric/directional QC flags, or inspect saved editable Servier anatomy slides beside their licensed source."),
+    para("2. Correct and approve a bounded source excerpt, choose one of 18 targets, then request a real <b>nvidia/Nemotron-3_5-Lightning</b> draft and a separate critique through the server-side Nebius Token Factory adapter."),
+    para("3. Compare source and output, inspect quoted source-to-draft evidence, model/token metadata, deterministic checks and clearly unverified model suggestions; or inspect saved Servier anatomy drafts beside their licensed source."),
     para("Authentic local browser run", section),
 ]
 image = Image(str(SCREENSHOT))
 image.drawWidth = 528
 image.drawHeight = 528 * ImageReader(str(SCREENSHOT)).getSize()[1] / ImageReader(str(SCREENSHOT)).getSize()[0]
-story += [image, Spacer(1, 5), para("Reviewer-approved English source and a genuine Arabic Nemotron response. Progress is estimated, not provider telemetry.", small)]
+story += [image, Spacer(1, 5), para("Reviewer-approved English source, genuine Arabic draft and separate model critique. Progress is estimated, not provider telemetry.", small)]
 
 story += [PageBreak(), para("Evidence and limits", title), para("Runtime proof, not clinical validation", subtitle)]
 evidence = [
-    ("Real model path", "The browser sends only reviewed text. ASP.NET Core calls Nebius with a server-held key and returns the model ID, token usage, and draft. No key is shipped to the browser."),
+    ("Real model path", "The browser sends only reviewer-approved text. ASP.NET Core makes sequential draft and critique calls to Nebius with a server-held key; a critique failure remains an incomplete draft, never a passed review."),
     ("18-language smoke", "One short real request per supported target returned successfully on 2026-09-29: 2,307 input and 501 output tokens total. At listed Lightning rates, this run estimates USD 0.00025866; this is not the provider billing ledger."),
-    ("Regression + corpus", "46 server, 9 layout, 5 corpus-policy and 31 browser checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors are 52/54; order edges 25/26. Mixed-PDF anchors improved 5/9 to 8/9. Known table/OCR failures remain. No extra model calls; these are engineering checks, not clinical accuracy."),
+    ("Regression + corpus", "66 server, 33 browser, and 18 evaluation/release/video contract checks pass. A 22-input intake pilot covers twelve medical-paper pages and three anatomy charts. Selected PDF anchors are 52/54; order edges 25/26. Mixed-PDF anchors improved 5/9 to 8/9. Known table/OCR failures remain."),
+    ("Paired critique pilot", "On three frozen Korean, Spanish and Arabic drafts, rules alone and rules plus a second model call each localized all three controlled numeric/direction seeds. The second call added zero localized detections; warning count rose 7 to 22, including three adjudicated false positives. A two-seed negation retest localized zero in both arms. This is a negative small-sample result, not a quality benchmark."),
     ("Recorded specimens", "The Servier Medical Art slide has English source plus 18 saved AI-draft targets. The Mueller et al. comparison is limited to Figure 1 title, caption, and four labels - not a complete article translation."),
 ]
 rows = [[para(label, cell), para(detail, cell)] for label, detail in evidence]
@@ -119,13 +120,13 @@ table.setStyle(TableStyle([
 ]))
 story += [table, para("Technical design", section)]
 story += [
-    para("Browser-local extraction -> editable excerpt -> bounded server API -> Nebius / NVIDIA Nemotron -> draft plus scoped QC. OCR replacement resets approval; duplicate submits are locked. Cancel, source edits and approval withdrawal invalidate drafts; usage may already have occurred. Requests are serial, bounded and never automatically retried."),
+    para("Browser-local extraction -> editable excerpt -> bounded server API -> Nemotron draft -> separate Nemotron critique -> deterministic checks and unverified suggestions. The server atomically reserves two provider attempts. OCR replacement resets approval; duplicate submits are locked. Cancel, source edits and approval withdrawal invalidate drafts; usage may already have occurred. Calls are serial and never automatically retried."),
     para("Responsible use", section),
-    para("Educational prototype only. No patient data or private manuscript. Complex table cells and OCR still require correction; raster labels in searchable PDFs are not extracted automatically. Document/diagram OCR profiles are reviewer choices. Every draft requires expert linguistic and medical review. Hosting needs spend monitoring."),
+    para("Educational prototype only. No patient data or private manuscript. Complex table cells and OCR still require correction; raster labels in searchable PDFs are not extracted automatically. Document/diagram OCR profiles are reviewer choices. Model suggestions are not verified findings. Every draft requires expert linguistic and medical review. Hosting needs spend monitoring."),
     para("Rights and reproducibility", section),
     para("Saved Servier and Mueller material is credited under CC BY 4.0. The intake pilot uses Liu et al. (10.3389/fmed.2024.1403423), Xue et al. (10.3389/fbioe.2024.1439499), Jansen et al. (10.1371/journal.pone.0242596) and Servier charts. Source includes licenses, hashes, test code and <link href=\"https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/CORPUS_EVALUATION_20260930.md\" color=\"#0a7890\">full corpus results and limitations</link>. The older Windows engine is separate."),
     Spacer(1, 10),
-    para('<b>Video boundary:</b> The 118.5-second narrated video shows one authentic live call: <link href="https://youtu.be/WpYR5XfvPic" color="#0a7890">youtu.be/WpYR5XfvPic</link>. Later cancellation/approval, OCR-resolution and stricter retention-gate repairs are documented in the current report, not shown as footage. Configured live mode does not prove current provider credit or entitlement.', small),
+    para('<b>Current demo:</b> The 2:19 narrated video shows the genuine two-stage Arabic run, test evidence and limits: <link href="https://youtu.be/DiLCKVe3QiU" color="#0a7890">youtu.be/DiLCKVe3QiU</link>. <link href="https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/" color="#0a7890">Live workbench</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC" color="#0a7890">Apache-2.0 code</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/REVIEW_EVALUATION_20261001.md" color="#0a7890">Paired pilot</link>. Configured live mode does not prove current provider credit or entitlement.', small),
 ]
 
 doc.build(story)
