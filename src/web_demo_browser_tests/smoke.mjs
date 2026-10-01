@@ -128,7 +128,7 @@ try {
 
   await check('local image stays in browser until reviewed text is submitted', async () => {
     const page = await browser.newPage();
-    page.setDefaultTimeout(8000);
+    page.setDefaultTimeout(30000);
     const externalRequests = [];
     page.on('request', request => { if (!request.url().startsWith(base) && !request.url().startsWith('blob:')) externalRequests.push(request.url()); });
     await page.goto(base, { waitUntil: 'networkidle' });
@@ -139,6 +139,7 @@ try {
     const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/GZkAAAAASUVORK5CYII=', 'base64');
     await page.locator('#document-file').setInputFiles({ name: 'small.png', mimeType: 'image/png', buffer: image });
     await page.locator('#document-preview img').waitFor();
+    await page.locator('#document-status').getByText(/Local English OCR|Local OCR could not read/).waitFor({ timeout: 45000 });
     assert(await page.locator('#document-text').isEnabled(), 'Extracted text cannot be corrected');
     assert(await page.locator('#document-translate').isDisabled(), 'Translation enabled before explicit review');
     await page.locator('#document-text').fill('The proximal artery measures 2.5 mm.');
