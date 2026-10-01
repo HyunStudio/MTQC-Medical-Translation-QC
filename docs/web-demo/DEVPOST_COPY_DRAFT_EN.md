@@ -4,11 +4,11 @@ Target: Nebius x NVIDIA Global AI Hackathon, Best Apps and Agents. Submitted 202
 
 ## Project name
 
-MTQC — Medical Translation Quality Control
+MTQC — Medical Document Translation & QC
 
 ## Elevator pitch
 
-A medical-document excerpt-review workbench with side-by-side source visuals, editable saved drafts, scoped QC evidence, and bounded live NVIDIA Nemotron translation through Nebius Token Factory.
+Review-first medical document translation: 18-language live excerpts, visual comparison, and evidence-linked QC via Nemotron.
 
 ## Problem and audience
 

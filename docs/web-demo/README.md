@@ -1,4 +1,4 @@
-# MTQC — Medical Translation Quality Control (judge demo)
+# MTQC — Medical Document Translation & QC (judge demo)
 
 An English-first medical-document **excerpt-review** demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft followed by a separate AI critique** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. It does not output a fully translated or structure-preserved textbook/PDF. The review UI keeps model suggestions, narrow deterministic rules, and unassessed categories distinct. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
