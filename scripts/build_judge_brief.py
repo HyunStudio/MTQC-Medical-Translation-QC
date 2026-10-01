@@ -23,7 +23,7 @@ from reportlab.platypus import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "output/pdf/medical-qc-nebius-judge-brief-evidence-first-20261002.pdf"
+OUT = ROOT / "output/pdf/medical-qc-nebius-judge-brief-final-20261002.pdf"
 SCREENSHOT = ROOT / "output/video/professional-v4/03-document-frame.png"
 if not SCREENSHOT.exists():
     raise SystemExit(f"Record the authentic browser demo first: {SCREENSHOT}")
@@ -126,7 +126,7 @@ story += [
     para("Rights and reproducibility", section),
     para("Saved Servier and Mueller material is credited under CC BY 4.0. The intake pilot uses Liu et al. (10.3389/fmed.2024.1403423), Xue et al. (10.3389/fbioe.2024.1439499), Jansen et al. (10.1371/journal.pone.0242596) and Servier charts. Source includes licenses, hashes, test code and <link href=\"https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/CORPUS_EVALUATION_20260930.md\" color=\"#0a7890\">full corpus results and limitations</link>. The older Windows engine is separate."),
     Spacer(1, 10),
-    para('<b>Current demo:</b> The 2:19 narrated video shows the genuine two-stage Arabic run, test evidence and limits: <link href="https://youtu.be/DiLCKVe3QiU" color="#0a7890">youtu.be/DiLCKVe3QiU</link>. <link href="https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/" color="#0a7890">Live workbench</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC" color="#0a7890">Apache-2.0 code</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/REVIEW_EVALUATION_20261001.md" color="#0a7890">Paired pilot</link>. Configured live mode does not prove current provider credit or entitlement.', small),
+    para('<b>Current demo:</b> The 2:19 narrated video shows the genuine two-stage Arabic run, test evidence and limits: <link href="https://youtu.be/FE4t_vn89X8" color="#0a7890">youtu.be/FE4t_vn89X8</link>. Third-party logos in the licensed anatomy comparison are obscured; Servier attribution is retained. <link href="https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/" color="#0a7890">Live workbench</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC" color="#0a7890">Apache-2.0 code</link> | <link href="https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/REVIEW_EVALUATION_20261001.md" color="#0a7890">Paired pilot</link>. Configured live mode does not prove current provider credit or entitlement.', small),
 ]
 
 doc.build(story)
