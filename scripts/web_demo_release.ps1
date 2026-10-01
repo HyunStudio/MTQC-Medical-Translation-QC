@@ -15,6 +15,9 @@ $required = @(
     'docs/web-demo/public-source.gitattributes',
     'docs/web-demo/THIRD_PARTY_NOTICES.md',
     'docs/web-demo/RIGHTS.md',
+    'docs/web-demo/public-source-workflows/mtqc.yml',
+    'docs/web-demo/evaluation/cases-v1.json',
+    'src/web_demo_evaluation/evaluator.mjs',
     'src/web_demo/fixtures/assets.sha256'
 )
 $missing = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $projectRoot $_) -PathType Leaf) })
@@ -46,11 +49,12 @@ $source = Join-Path $releaseRoot 'public-source'
 New-Item -ItemType Directory -Path $publish,$source -Force | Out-Null
 
 $clientRoot = Join-Path $projectRoot 'src/web_demo_client'
+$npmCommand = if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) { 'npm.cmd' } else { 'npm' }
 Push-Location $clientRoot
 try {
-    & npm.cmd ci
+    & $npmCommand ci
     if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
-    & npm.cmd run build
+    & $npmCommand run build
     if ($LASTEXITCODE -ne 0) { throw 'Local PDF/OCR worker build failed.' }
 }
 finally { Pop-Location }
@@ -75,7 +79,9 @@ $priorLive = $env:DEMO_LIVE_ENABLED
 $env:DEMO_LIVE_ENABLED = 'false'
 $serverProcess = $null
 try {
-    $serverProcess = Start-Process -FilePath 'dotnet.exe' -ArgumentList @("`"$(Join-Path $publish 'MedicalQcWebDemo.dll')`"", '--urls', $baseUrl) -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $releaseRoot 'server-stdout.log') -RedirectStandardError (Join-Path $releaseRoot 'server-stderr.log')
+    $serverArgs = @{ FilePath = 'dotnet'; ArgumentList = @("`"$(Join-Path $publish 'MedicalQcWebDemo.dll')`"", '--urls', $baseUrl); PassThru = $true; RedirectStandardOutput = (Join-Path $releaseRoot 'server-stdout.log'); RedirectStandardError = (Join-Path $releaseRoot 'server-stderr.log') }
+    if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) { $serverArgs.WindowStyle = 'Hidden' }
+    $serverProcess = Start-Process @serverArgs
     $ready = $false
     for ($attempt = 0; $attempt -lt 120; $attempt++) {
         try {
@@ -95,7 +101,7 @@ finally {
     $env:DEMO_LIVE_ENABLED = $priorLive
 }
 
-$allowedTrees = @('src/web_demo','src/web_demo_client','src/web_demo_tests','src/web_demo_browser_tests','docs/web-demo')
+$allowedTrees = @('src/web_demo','src/web_demo_client','src/web_demo_tests','src/web_demo_browser_tests','src/web_demo_evaluation','docs/web-demo')
 foreach ($tree in $allowedTrees) {
     $folder = Join-Path $projectRoot $tree
     foreach ($file in Get-ChildItem -LiteralPath $folder -File -Recurse) {
@@ -110,7 +116,7 @@ foreach ($tree in $allowedTrees) {
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/README.md') -Destination (Join-Path $source 'README.md')
 $exportReadme = Join-Path $source 'README.md'
 $readmeText = Get-Content -LiteralPath $exportReadme -Raw -Encoding utf8
-foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md','COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md')) {
+foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md','COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md','REVIEW_EVALUATION_20261001.md')) {
     $readmeText = $readmeText.Replace("]($docName)", "](docs/web-demo/$docName)")
     if (-not (Test-Path -LiteralPath (Join-Path $source "docs/web-demo/$docName"))) { throw "Missing linked source document: $docName" }
 }
@@ -121,6 +127,10 @@ if ([System.IO.File]::ReadAllText($exportReadme, [System.Text.Encoding]::UTF8) -
 Copy-Item -LiteralPath (Join-Path $projectRoot 'src/web_demo/LICENSE') -Destination (Join-Path $source 'LICENSE')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitignore') -Destination (Join-Path $source '.gitignore')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitattributes') -Destination (Join-Path $source '.gitattributes')
+$workflowFolder = Join-Path $source '.github/workflows'
+New-Item -ItemType Directory -Path $workflowFolder -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source-workflows/mtqc.yml') -Destination (Join-Path $workflowFolder 'mtqc.yml')
+if (-not (Test-Path -LiteralPath (Join-Path $workflowFolder 'mtqc.yml') -PathType Leaf)) { throw 'Public CI workflow missing from source export.' }
 $sourceScripts = Join-Path $source 'scripts'
 New-Item -ItemType Directory -Path $sourceScripts -Force | Out-Null
 foreach ($name in @('web_demo_release.ps1','smoke_18_languages.ps1','build_judge_brief.py','build_video_narration.ps1','compose_professional_video.py')) {
@@ -129,7 +139,7 @@ foreach ($name in @('web_demo_release.ps1','smoke_18_languages.ps1','build_judge
 
 $secretPattern = '(?i)\bsk-[a-z0-9_-]{20,}\b|Bearer\s+[a-z0-9_-]{20,}|(?:api[_-]?key|secret)\s*[:=]\s*["''][^"'']{20,}["'']'
 foreach ($file in Get-ChildItem -LiteralPath $source -File -Recurse) {
-    if ($file.Extension -notin @('.cs','.js','.mjs','.json','.md','.ps1','.py','.html','.css','.svg','.xml','.txt')) { continue }
+    if ($file.Extension -notin @('.cs','.js','.mjs','.json','.md','.ps1','.py','.html','.css','.svg','.xml','.txt','.yml','.yaml')) { continue }
     $contents = Get-Content -LiteralPath $file.FullName -Raw
     if ($contents -match $secretPattern) { throw "Possible secret in public source: $($file.FullName)" }
     if ($contents -match '(?i)C:\\Users\\hyung|H:\\Dev\\Hyun') { throw "Private machine path in public source: $($file.FullName)" }

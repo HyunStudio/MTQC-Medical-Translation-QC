@@ -378,7 +378,11 @@ try {
       await route.fulfill({ json: {
         status: 'ok', message: 'AI draft excerpt only', translation: 'الشريان القريب 2.5 مم',
         model: 'nvidia/Nemotron-3_5-Lightning', promptTokens: 20, completionTokens: 8,
-        qcSummary: 'Independent medical and linguistic review is still required.'
+        qcSummary: 'Independent medical and linguistic review is still required.',
+        review: { runId: 'mock-review', elapsedMs: 1200,
+          translationStage: { state: 'completed', model: 'nvidia/Nemotron-3_5-Lightning', promptTokens: 20, completionTokens: 8 },
+          critiqueStage: { state: 'completed', model: 'nvidia/Nemotron-3_5-Lightning', promptTokens: 25, completionTokens: 9 },
+          rulesStage: { state: 'completed' }, modelFindings: [], ruleFindings: [], coverage: [] }
       } });
     });
     await page.goto(base, { waitUntil: 'networkidle' });
@@ -396,6 +400,87 @@ try {
     assert((await page.locator('#document-result').textContent()).includes('Independent medical and linguistic review'), 'QC warning is hidden');
     assert((await page.locator('#document-result').textContent()).includes('nvidia/Nemotron-3_5-Lightning'), 'Actual model identifier is hidden');
     assert((await page.locator('#document-result-translation').getAttribute('dir')) === 'rtl', 'Arabic document draft lost RTL direction');
+    await page.close();
+  });
+
+  await check('two-stage review separates model and rules with honest coverage', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+    const source = 'The proximal artery measures 2.5 mm.';
+    const draft = '동맥은 원위부에서 3.5 mm입니다.';
+    await page.route('**/api/live/document-excerpt', route => route.fulfill({ json: {
+      status: 'ok', message: 'Human review required.', translation: draft, model: 'translation-model',
+      promptTokens: 20, completionTokens: 8, qcSummary: 'Numeric mismatch.',
+      review: { runId: 'review-001', elapsedMs: 1300,
+        translationStage: { state: 'completed', model: 'translation-model', promptTokens: 20, completionTokens: 8, elapsedMs: 700 },
+        critiqueStage: { state: 'completed', model: 'critique-model', promptTokens: 31, completionTokens: 11, elapsedMs: 550 },
+        rulesStage: { state: 'completed', elapsedMs: 1 },
+        modelFindings: [{ category: 'number', severity: 'critical', sourceSpan: '2.5 mm', draftSpan: '3.5 mm', rationale: 'Value differs.' }],
+        ruleFindings: [{ category: 'direction', severity: 'review', message: 'Direction differs.' }],
+        coverage: [{ category: 'number', state: 'warning' }, { category: 'negation', state: 'not assessed' }]
+      }
+    } }));
+    await page.goto(base, { waitUntil: 'networkidle' });
+    const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/GZkAAAAASUVORK5CYII=', 'base64');
+    await page.locator('#document-file').setInputFiles({ name: 'private-source.png', mimeType: 'image/png', buffer: image });
+    await page.locator('#document-text').fill(source);
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-translate').click();
+    await page.locator('#document-result-translation').getByText(draft).waitFor();
+    assert((await page.locator('#document-review-stages').textContent()).includes('critique-model'), 'second model stage or token usage is hidden');
+    assert((await page.locator('#document-model-findings').textContent()).includes('Value differs.'), 'model finding is hidden');
+    assert((await page.locator('#document-model-findings').textContent()).includes('UNVERIFIED MODEL SUGGESTION'), 'model allegation was presented as validated QC');
+    assert(!(await page.locator('#document-model-findings').textContent()).includes('critical:'), 'provider severity was presented as a confirmed critical error');
+    assert((await page.locator('#document-rule-findings').textContent()).includes('Direction differs.'), 'rule finding is hidden');
+    assert((await page.locator('#document-coverage').textContent()).includes('not assessed'), 'unsupported category was shown as passed');
+    assert((await page.locator('#document-human-acknowledge').getAttribute('aria-label')).includes('inspected'), 'human acknowledgment is mislabeled');
+    if (process.env.CAPTURE_REVIEW_QA === '1') {
+      const captures = path.resolve(here, '../../output/review-qa');
+      mkdirSync(captures, { recursive: true });
+      await page.locator('#document-result').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: path.join(captures, 'review-light-desktop.png'), fullPage: true });
+      await page.locator('#theme-toggle').click();
+      await page.screenshot({ path: path.join(captures, 'review-dark-desktop.png'), fullPage: true });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.screenshot({ path: path.join(captures, 'review-dark-mobile.png'), fullPage: true });
+    }
+    await page.locator('#document-human-acknowledge').check();
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#document-audit-export').click();
+    const download = await downloadPromise;
+    const audit = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8');
+    assert(audit.includes('review-001') && audit.includes('not assessed'), 'audit metadata missing');
+    assert(!audit.includes(source) && !audit.includes(draft) && !audit.includes('2.5 mm') && !audit.includes('Value differs.'), 'audit leaked source, draft, or evidence');
+    await page.locator('#document-language').selectOption('ar');
+    assert(await page.locator('#document-result').isHidden(), 'language change kept stale review');
+    assert(!(await page.locator('#document-human-acknowledge').isChecked()), 'language change kept acknowledgment');
+    await page.locator('#document-language').selectOption('ko');
+    await page.locator('#document-translate').click();
+    await page.locator('#document-result-translation').getByText(draft).waitFor();
+    await page.locator('#document-human-acknowledge').check();
+    await page.locator('#document-text').fill('The artery now measures 4.5 mm.');
+    assert(await page.locator('#document-result').isHidden() && !(await page.locator('#document-human-acknowledge').isChecked()), 'source edit kept stale acknowledgment');
+    await page.close();
+  });
+
+  await check('critique failure shows incomplete draft without 100 percent completion', async () => {
+    const page = await browser.newPage();
+    await page.route('**/api/live/document-excerpt', route => route.fulfill({ json: {
+      status: 'partial', message: 'AI draft — review incomplete.', translation: '검토 전 초안', model: 'translation-model',
+      review: { runId: 'review-002', elapsedMs: 400,
+        translationStage: { state: 'completed', model: 'translation-model' },
+        critiqueStage: { state: 'failed' }, rulesStage: { state: 'completed' },
+        modelFindings: [], ruleFindings: [], coverage: [{ category: 'negation', state: 'not assessed' }]
+      }
+    } }));
+    await page.goto(base, { waitUntil: 'networkidle' });
+    const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/GZkAAAAASUVORK5CYII=', 'base64');
+    await page.locator('#document-file').setInputFiles({ name: 'private.png', mimeType: 'image/png', buffer: image });
+    await page.locator('#document-text').fill('The artery measures 2.5 mm.');
+    await page.locator('#document-reviewed').check();
+    await page.locator('#document-translate').click();
+    await page.locator('#document-result-translation').getByText('검토 전 초안').waitFor();
+    assert((await page.locator('#document-live-status').textContent()).includes('incomplete'), 'partial state was presented as complete');
+    assert(Number(await page.locator('#document-progress-track').getAttribute('aria-valuenow')) < 100, 'partial state reached 100 percent');
     await page.close();
   });
 

@@ -14,8 +14,12 @@ public sealed class LiveBudget
 
     public LiveBudget(LiveOptions options) => this.options = options;
 
-    public async Task<IDisposable?> TryAcquireAsync(string clientId, CancellationToken cancellationToken)
+    public Task<IDisposable?> TryAcquireAsync(string clientId, CancellationToken cancellationToken) =>
+        TryAcquireAsync(clientId, 1, cancellationToken);
+
+    public async Task<IDisposable?> TryAcquireAsync(string clientId, int attemptCount, CancellationToken cancellationToken)
     {
+        if (attemptCount is < 1 or > 2) return null;
         if (!await upstream.WaitAsync(0, cancellationToken)) return null;
         var allowed = false;
         try
@@ -38,7 +42,7 @@ public sealed class LiveBudget
                 if (!clients.TryGetValue(clientId, out var entry) || now - entry.Started >= TimeSpan.FromHours(1))
                     entry = (now, 0);
                 if (entry.Count >= options.PerClientLimit) return null;
-                if (!ReserveLifetimeAttempt()) return null;
+                if (!ReserveLifetimeAttempts(attemptCount)) return null;
                 clients[clientId] = (entry.Started, entry.Count + 1);
                 globalCount++;
                 allowed = true;
@@ -51,7 +55,7 @@ public sealed class LiveBudget
         }
     }
 
-    private bool ReserveLifetimeAttempt()
+    private bool ReserveLifetimeAttempts(int attemptCount)
     {
         if (options.LifetimeAttemptLimit is null && options.LifetimeLedgerPath is null) return true;
         if (options.LifetimeAttemptLimit is not int limit || limit is < 1 or > 1000 ||
@@ -76,8 +80,8 @@ public sealed class LiveBudget
             var bytes = new byte[(int)file.Length];
             file.ReadExactly(bytes);
             if (!int.TryParse(Encoding.ASCII.GetString(bytes), NumberStyles.None, CultureInfo.InvariantCulture, out var count) ||
-                count < 0 || count >= limit) return false;
-            var next = Encoding.ASCII.GetBytes((count + 1).ToString(CultureInfo.InvariantCulture));
+                count < 0 || count > limit - attemptCount) return false;
+            var next = Encoding.ASCII.GetBytes((count + attemptCount).ToString(CultureInfo.InvariantCulture));
             file.Position = 0;
             file.SetLength(0);
             file.Write(next);

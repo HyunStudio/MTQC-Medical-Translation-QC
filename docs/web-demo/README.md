@@ -1,9 +1,9 @@
 # MTQC — Medical Textbook Translation & Quality Control (judge demo)
 
-An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
+An English-first medical-document review demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft followed by a separate AI critique** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. The review UI keeps model suggestions, narrow deterministic rules, and unassessed categories distinct. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
 
 - [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
-- [Professional narrated 1080p demo](https://youtu.be/WpYR5XfvPic) (118.5 seconds: saved anatomy, PDF reading-order review, and one genuine Arabic model call)
+- [Original narrated 1080p demo](https://youtu.be/WpYR5XfvPic) (118.5 seconds; recorded before the separate critique stage was added)
 - [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
 - [Submitted Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control) (Nebius × NVIDIA Global AI Hackathon)
 
@@ -13,8 +13,8 @@ Requires the .NET 10 SDK and Node.js 24 LTS (with npm). From the exported web-de
 
 ```powershell
 Push-Location "src/web_demo_client"
-npm.cmd ci
-npm.cmd run build
+npm ci
+npm run build
 Pop-Location
 dotnet run --project "src/web_demo/MedicalQcWebDemo.csproj"
 ```
@@ -39,9 +39,9 @@ The [complex medical image pilot](COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md) tests
 
 Live requests are disabled by default. A server operator may set `NEBIUS_API_KEY` and `DEMO_LIVE_ENABLED=true` in the **server process environment**, then restart. Never place the key in a browser bundle, source file, published ZIP, or screenshot. The default model is `nvidia/Nemotron-3_5-Lightning`; `DEMO_NEBIUS_MODEL` can override its ID. An enabled status means only that a key is configured; it does not prove provider credit, entitlement, quality, or uptime.
 
-The Document workbench supports an English source excerpt to each of these 18 targets: Korean, Spanish, Arabic, Simplified Chinese, Traditional Chinese, Japanese, French, German, Italian, Portuguese, Russian, Hindi, Indonesian, Dutch, Polish, Thai, Turkish, and Vietnamese. It sends at most 3,000 Unicode code points, with a 64 KiB request-body cap. A separate recorded-case button translates only the fixed Müller caption to Korean, Spanish, or Arabic. Requests time out after 20 seconds, are not automatically retried, and share a default three-attempt/client/hour and 20-attempt/global/hour in-process budget with single upstream concurrency. `DEMO_LIVE_PER_CLIENT_LIMIT` can be explicitly set from 1 to 20 for a controlled local 18-language smoke run; invalid values fall back to three. For a public host, set both `DEMO_LIVE_TOTAL_ATTEMPTS` (1–1,000) and an absolute `DEMO_LIVE_LEDGER_PATH` on persistent storage; the server reserves an attempt before calling Nebius, survives app restarts, and fails closed if the ledger is unreadable. Missing or invalid paired settings disable live mode. The hourly counters still reset on process restart; neither mechanism is a **monetary hard cap**. Apply a provider-side budget and deployment monitoring before enabling a public instance.
+The Document workbench supports an English source excerpt to each of these 18 targets: Korean, Spanish, Arabic, Simplified Chinese, Traditional Chinese, Japanese, French, German, Italian, Portuguese, Russian, Hindi, Indonesian, Dutch, Polish, Thai, Turkish, and Vietnamese. It sends at most 3,000 Unicode code points, with a 64 KiB request-body cap. A separate recorded-case button translates only the fixed Müller caption to Korean, Spanish, or Arabic. A document request atomically reserves **two provider attempts** before sending: one translation and one separate critique. A failed critique leaves a labeled incomplete draft, never a passed review. Requests time out after 20 seconds per call, are not automatically retried, and share a default three-attempt/client/hour and 20-attempt/global/hour in-process budget with single upstream concurrency. `DEMO_LIVE_PER_CLIENT_LIMIT` can be explicitly set from 1 to 20 for a controlled local 18-language smoke run; invalid values fall back to three. For a public host, set both `DEMO_LIVE_TOTAL_ATTEMPTS` (1–1,000) and an absolute `DEMO_LIVE_LEDGER_PATH` on persistent storage; the server reserves attempts before calling Nebius, survives app restarts, and fails closed if the ledger is unreadable. Missing or invalid paired settings disable live mode. The hourly counters still reset on process restart; neither mechanism is a **monetary hard cap**. Apply a provider-side budget and deployment monitoring before enabling a public instance.
 
-The progress bar is a time-derived **estimate**, not model telemetry or a promised ETA. It remains below 100% while waiting and reaches 100% only on a successful response. Errors/cancellation do not claim completion. Draft outputs display returned model/token metadata and scoped QC flags. The numeric, directional, and narrow Korean `femoral vein` checks catch some discrepancies but cannot establish medical correctness. The last check was added after a real hosted model call substituted `대정맥` for `femoral vein`; it is only a review prompt, not a general terminology validator. Arabic uses right-to-left presentation. No content is silently marked medically approved.
+The progress bar is a time-derived **estimate**, not model telemetry or a promised ETA. It remains below 100% while waiting and reaches 100% only after both provider stages and rules complete. Errors/cancellation do not claim completion. Draft outputs display per-stage model/token metadata, unverified AI review suggestions, and scoped rule coverage including `not assessed`. The numeric, directional, narrow Korean `femoral vein`, and Spanish/Arabic negation-marker checks catch some discrepancies but cannot establish medical correctness or correct semantic scope. The terminology check was added after a real hosted model call substituted `대정맥` for `femoral vein`; it is only a review prompt, not a general terminology validator. Arabic uses right-to-left presentation. No content is silently marked medically approved.
 
 ## Build, verify, release
 
@@ -57,6 +57,7 @@ npm ci
 npm run build
 cd ../..
 dotnet run --project "src/web_demo_tests/MedicalQcWebDemoTests.csproj"
+node --test src/web_demo_evaluation/*.test.mjs
 cd "src/web_demo_browser_tests"
 npm ci
 npm test
@@ -65,7 +66,9 @@ cd ../..
 & "scripts/web_demo_release.ps1"
 ```
 
-Browser tests require Chrome; set `CHROME_PATH` if it is not installed at a usual Windows location. They test actual local PDF extraction/OCR and intercepted model responses; they make **no billable provider call**. The release script validates the specimen hash manifest, publishes a fresh app, checks local workers over HTTP, scans a source-only export for obvious secrets and private-machine paths, then creates separate judge-build and source archives with SHA-256 hashes. Run it after any source or dependency change.
+Browser tests require Chrome; set `CHROME_PATH` if it is not installed at a usual path. They test actual local PDF extraction/OCR and intercepted model responses; they make **no billable provider call**. The release script validates the specimen hash manifest, publishes a fresh app, checks local workers over HTTP, scans a source-only export for obvious secrets and private-machine paths, then creates separate judge-build and source archives with SHA-256 hashes. The scoped public export contains `.github/workflows/mtqc.yml` for Windows/Linux clean-clone verification. Run the release script after any source or dependency change.
+
+The [bounded paired review evaluation](REVIEW_EVALUATION_20261001.md) reports the actual negative pilot: the second model call added no localized detection on three controlled numeric/direction seeds, and a two-seed negation development retest also found no additional localized detection. It increased review-suggestion volume. These results are why model findings are explicitly labeled **unverified suggestions** and human inspection remains mandatory. They are not an 18-language benchmark or a medical-quality claim.
 
 The optional `scripts/smoke_18_languages.ps1` launches only a loopback server, makes one short real request per target with no automatic retry, and records per-call token usage and an estimated cost under a configurable script limit. This spends provider credit and requires a User-scope key. The estimate uses public model rates, not an account billing ledger. A successful API response is only runtime evidence; it is **not** a multilingual medical-quality benchmark.
 

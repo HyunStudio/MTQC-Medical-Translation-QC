@@ -147,6 +147,7 @@ async function readPdf(file, preview, status, text, reviewed, token, isCurrent, 
 let liveController;
 let liveRequestId = 0;
 let liveTimer;
+let currentReview;
 
 function refreshRequestControls() {
   refreshButton(document.querySelector('#document-text'), document.querySelector('#document-reviewed'), document.querySelector('#document-translate'));
@@ -166,11 +167,59 @@ function clearLiveDocument() {
   liveRequestId++;
   liveController?.abort();
   liveController = null;
+  currentReview = null;
   clearInterval(liveTimer);
   document.querySelector('#document-progress').hidden = true;
   document.querySelector('#document-result').hidden = true;
+  document.querySelector('#document-human-acknowledge').checked = false;
+  document.querySelector('#document-audit-export').disabled = true;
   document.querySelector('#document-live-status').textContent = 'No document excerpt sent.';
   refreshRequestControls();
+}
+
+function renderReview(review) {
+  const stages = document.querySelector('#document-review-stages');
+  const modelFindings = document.querySelector('#document-model-findings');
+  const ruleFindings = document.querySelector('#document-rule-findings');
+  const coverage = document.querySelector('#document-coverage');
+  stages.replaceChildren();
+  modelFindings.replaceChildren();
+  ruleFindings.replaceChildren();
+  coverage.replaceChildren();
+  if (!review) {
+    stages.textContent = 'Stage provenance unavailable; treat this draft as incomplete.';
+    coverage.textContent = 'No rule categories assessed.';
+    return;
+  }
+  for (const [label, stage] of [['Translation', review.translationStage], ['AI critique', review.critiqueStage], ['Rules', review.rulesStage]]) {
+    const row = document.createElement('p');
+    const usage = Number.isFinite(stage?.promptTokens) && Number.isFinite(stage?.completionTokens)
+      ? ` · ${stage.promptTokens} input / ${stage.completionTokens} output tokens` : '';
+    const elapsed = Number.isFinite(stage?.elapsedMs) ? ` · ${(stage.elapsedMs / 1000).toFixed(1)}s` : '';
+    row.textContent = `${label}: ${stage?.state || 'not reported'}${stage?.model ? ` · ${stage.model}` : ''}${usage}${elapsed}`;
+    stages.append(row);
+  }
+  const appendFindings = (container, items, formatter) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      container.textContent = 'No findings returned. This is not medical clearance.';
+      return;
+    }
+    for (const item of items) {
+      const row = document.createElement('p');
+      row.className = 'document-finding';
+      row.textContent = formatter(item);
+      container.append(row);
+    }
+  };
+  appendFindings(modelFindings, review.modelFindings, item =>
+    `UNVERIFIED MODEL SUGGESTION · ${item.category} · ${item.sourceSpan && item.draftSpan ? 'quoted spans, interpretation unverified' : 'evidence span incomplete'}: ${item.rationale}`);
+  appendFindings(ruleFindings, review.ruleFindings, item => `RULE · ${item.category} · ${item.severity}: ${item.message}`);
+  for (const item of review.coverage || []) {
+    const badge = document.createElement('span');
+    badge.className = `document-coverage-badge ${item.state === 'warning' ? 'warning' : item.state === 'checked' ? 'checked' : 'unassessed'}`;
+    badge.textContent = `${item.category}: ${item.state}`;
+    coverage.append(badge);
+  }
 }
 
 function showDocumentResult(sourceText, targetLanguage, data, successful) {
@@ -185,8 +234,10 @@ function showDocumentResult(sourceText, targetLanguage, data, successful) {
     document.querySelector('#document-result-model').textContent = '';
     document.querySelector('#document-result-usage').textContent = '';
     document.querySelector('#document-result-qc').textContent = 'No translation was completed. The source remains available for review.';
+    document.querySelector('.document-review-evidence').hidden = true;
     return;
   }
+  document.querySelector('.document-review-evidence').hidden = false;
   document.querySelector('#document-result-source').textContent = sourceText;
   const translated = document.querySelector('#document-result-translation');
   translated.textContent = data.translation;
@@ -196,6 +247,10 @@ function showDocumentResult(sourceText, targetLanguage, data, successful) {
     ? `Usage: ${data.promptTokens} input · ${data.completionTokens} output tokens`
     : 'Token usage not reported';
   document.querySelector('#document-result-qc').textContent = data.qcSummary || 'Automated checks unavailable; independent medical and linguistic review required.';
+  currentReview = data.review || null;
+  document.querySelector('#document-human-acknowledge').checked = false;
+  document.querySelector('#document-audit-export').disabled = !currentReview;
+  renderReview(currentReview);
 }
 
 async function runLiveDocument({ sourceText, targetLanguage }) {
@@ -224,10 +279,18 @@ async function runLiveDocument({ sourceText, targetLanguage }) {
     const data = await response.json();
     if (requestId !== liveRequestId) return;
     clearInterval(liveTimer);
-    if (response.ok && data.status === 'ok' && data.translation) {
-      updateDocumentProgress(100, Math.floor((performance.now() - started) / 1000));
-      document.querySelector('#document-progress-title').textContent = 'Request completed · draft ready';
-      document.querySelector('#document-live-status').textContent = 'AI draft returned. Automated warnings are not medical approval.';
+    if (response.ok && data.translation && (data.status === 'ok' || data.status === 'partial')) {
+      const complete = data.status === 'ok' && data.review?.translationStage?.state === 'completed' &&
+        data.review?.critiqueStage?.state === 'completed' && data.review?.rulesStage?.state === 'completed';
+      if (complete) updateDocumentProgress(100, Math.floor((performance.now() - started) / 1000));
+      else {
+        updateDocumentProgress(Math.min(95, Number(document.querySelector('#document-progress-track').getAttribute('aria-valuenow')) || 1), Math.floor((performance.now() - started) / 1000));
+        document.querySelector('#document-progress-track').setAttribute('aria-valuetext', 'Review incomplete; the workflow did not reach 100 percent');
+      }
+      document.querySelector('#document-progress-title').textContent = complete ? 'Translation and review stages completed' : 'Review incomplete · draft only';
+      document.querySelector('#document-live-status').textContent = complete
+        ? 'AI draft and automated checks returned. Human medical and linguistic review remains essential.'
+        : 'AI draft returned, but automated review is incomplete. Do not treat this as an approved translation.';
       showDocumentResult(sourceText, targetLanguage, data, true);
     } else {
       progress.hidden = true;
@@ -378,6 +441,27 @@ export function mountDocumentWorkbench({ onTranslate }) {
   document.querySelector('#document-cancel').addEventListener('click', () => {
     clearLiveDocument();
     document.querySelector('#document-live-status').textContent = 'Request cancelled; no draft accepted. The provider may already have incurred usage.';
+  });
+  document.querySelector('#document-audit-export').addEventListener('click', () => {
+    if (!currentReview) return;
+    const stage = value => ({ state: value?.state || 'not reported', model: value?.model || null,
+      promptTokens: value?.promptTokens ?? null, completionTokens: value?.completionTokens ?? null,
+      elapsedMs: value?.elapsedMs ?? null });
+    const audit = {
+      runId: currentReview.runId,
+      translationStage: stage(currentReview.translationStage), critiqueStage: stage(currentReview.critiqueStage),
+      rulesStage: stage(currentReview.rulesStage), elapsedMs: currentReview.elapsedMs,
+      modelFindings: (currentReview.modelFindings || []).map(item => ({ category: item.category, severity: item.severity })),
+      ruleFindings: (currentReview.ruleFindings || []).map(item => ({ category: item.category, severity: item.severity })),
+      coverage: (currentReview.coverage || []).map(item => ({ category: item.category, state: item.state })),
+      note: 'Metadata-only audit. Human inspection is not medical certification.'
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(audit, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mtqc-review-${String(currentReview.runId || 'run').replace(/[^a-zA-Z0-9-]/g, '')}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 
   translate.addEventListener('click', () => {

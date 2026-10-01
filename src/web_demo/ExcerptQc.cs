@@ -22,6 +22,71 @@ public static class ExcerptQc
         .Select(match => NormalizeNumber(match.Value)).GroupBy(value => value)
         .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
 
+    public static RuleEvaluation Evaluate(string source, string translated, string language)
+    {
+        var findings = new List<RuleFinding>();
+        var coverage = new List<RuleCoverage>();
+        void Add(string category, bool assessed, string? warning, string? sourceSpan = null, string? draftSpan = null)
+        {
+            var state = !assessed ? "not assessed" : warning is null ? "checked" : "warning";
+            coverage.Add(new(category, state));
+            if (warning is not null) findings.Add(new(category, "review", warning, sourceSpan, draftSpan));
+        }
+
+        var sourceNumbers = Numbers(source);
+        var draftNumbers = Numbers(translated);
+        var numericMismatch = sourceNumbers.Keys.Union(draftNumbers.Keys)
+            .Any(value => sourceNumbers.GetValueOrDefault(value) != draftNumbers.GetValueOrDefault(value));
+        var changedDraftNumber = NumberPattern.Matches(translated).Select(match => match.Value)
+            .FirstOrDefault(value => draftNumbers.GetValueOrDefault(NormalizeNumber(value)) >
+                sourceNumbers.GetValueOrDefault(NormalizeNumber(value)));
+        Add("number", sourceNumbers.Count > 0 || draftNumbers.Count > 0,
+            numericMismatch ? "Numeric value or count differs from the source; review each value and sign." : null,
+            draftSpan: numericMismatch ? changedDraftNumber : null);
+
+        var sourceUnits = Regex.Matches(source, @"(?<!\p{L})(?:mg|mm|cm|mL|%)(?!\p{L})", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+            .Select(match => match.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var unitSupported = language is "ko" or "es" && sourceUnits.Length > 0;
+        Add("unit", unitSupported,
+            unitSupported && sourceUnits.Any(unit => !Regex.IsMatch(translated, $@"(?<!\p{{L}}){Regex.Escape(unit)}(?!\p{{L}})", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                ? "A source unit symbol is not identifiable in the draft; review units manually." : null);
+
+        var proximal = Regex.IsMatch(source, @"\bproximal\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var distal = Regex.IsMatch(source, @"\bdistal\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var directionSupported = (language is "ko" or "ar") && (proximal || distal);
+        var directionMismatch = directionSupported && (language == "ko"
+            ? proximal && !translated.Contains("근위", StringComparison.Ordinal) || distal && !translated.Contains("원위", StringComparison.Ordinal)
+            : proximal && !translated.Contains("قريب", StringComparison.Ordinal) || distal && !translated.Contains("بعيد", StringComparison.Ordinal));
+        Add("direction", directionSupported,
+            directionMismatch ? "Source anatomical direction is not identifiable in the draft; review proximal/distal fidelity." : null,
+            draftSpan: directionMismatch && language == "ko" && proximal && translated.Contains("원위", StringComparison.Ordinal)
+                ? "원위" : directionMismatch && language == "ko" && distal && translated.Contains("근위", StringComparison.Ordinal)
+                    ? "근위" : null);
+
+        var sourceNegated = Regex.IsMatch(source, @"\b(?:not|no)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var negationSupported = language is "ko" or "es" or "ar" && sourceNegated;
+        var arabicWithoutMarks = Regex.Replace(translated, @"[\u064B-\u065F]", "");
+        var negationVisible = language switch
+        {
+            "ko" => Regex.IsMatch(translated, "않|없|아니", RegexOptions.CultureInvariant),
+            "es" => Regex.IsMatch(translated, @"\b(?:no|nunca|sin)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+            "ar" => Regex.IsMatch(arabicWithoutMarks, @"(?<!\p{L})(?:لا|ليس|لم|لن)(?!\p{L})", RegexOptions.CultureInvariant),
+            _ => false
+        };
+        Add("negation", negationSupported,
+            negationSupported && !negationVisible
+                ? "Source negation marker is not identifiable in this draft; review meaning and scope manually." : null);
+
+        var femoralVein = language == "ko" &&
+            Regex.IsMatch(source, @"\bfemoral\s+vein\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        Add("terminology", femoralVein,
+            femoralVein && !Regex.IsMatch(translated, @"(?:대퇴|넙다리)\s*정맥", RegexOptions.CultureInvariant)
+                ? "Femoral vein is not identifiable in the Korean draft; review terminology." : null);
+        Add("omission", false, null);
+        Add("other", false, null);
+        return new(findings, coverage);
+    }
+
     public static string Summarize(string source, string translated, string language)
     {
         var targetTokens = NumberPattern.Matches(translated).Select(match => match.Value).ToHashSet(StringComparer.Ordinal);

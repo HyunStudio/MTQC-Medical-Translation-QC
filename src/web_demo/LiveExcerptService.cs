@@ -4,7 +4,7 @@ public sealed record LiveExcerptRequest(string CaseId, string TargetLanguage);
 public sealed record LiveAvailability(bool Available, string Reason);
 public sealed record LiveExcerptResult(string Status, string Message, string? Translation = null,
     string? Model = null, int? PromptTokens = null, int? CompletionTokens = null,
-    string? QcSummary = null);
+    string? QcSummary = null, ReviewRun? Review = null);
 public sealed record LiveOptions(bool Enabled, string? ApiKey, int PerClientLimit = 3,
     int GlobalHourlyLimit = 20, int MaxTrackedClients = 4096,
     int? LifetimeAttemptLimit = null, string? LifetimeLedgerPath = null)

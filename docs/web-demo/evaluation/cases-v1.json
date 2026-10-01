@@ -1,0 +1,31 @@
+{
+  "version": "mtqc-controlled-excerpts-v1",
+  "createdUtc": "2026-10-01",
+  "scope": "Original synthetic educational excerpts. No patient data or clinical reference claims.",
+  "cases": [
+    {
+      "id": "synthetic-ko-01",
+      "author": "HyunStudio / MTQC",
+      "license": "Original synthetic text released with the Apache-2.0 web-demo source",
+      "targetLanguage": "ko",
+      "source": "The proximal femoral artery measures 2.5 mm. The vein is not occluded.",
+      "sourceSha256": "8bf3035ded8690e1679c2d4eb6b626daaf91f24486805e918c0f82db1e5898ca"
+    },
+    {
+      "id": "synthetic-es-01",
+      "author": "HyunStudio / MTQC",
+      "license": "Original synthetic text released with the Apache-2.0 web-demo source",
+      "targetLanguage": "es",
+      "source": "A 2 mg dose was recorded. A 20 mg dose was not recorded.",
+      "sourceSha256": "0ddef2b579994cb59638f58d0ddd057fa540e48d29e7ea1627055692c5384317"
+    },
+    {
+      "id": "synthetic-ar-01",
+      "author": "HyunStudio / MTQC",
+      "license": "Original synthetic text released with the Apache-2.0 web-demo source",
+      "targetLanguage": "ar",
+      "source": "The distal vein measures 1.8 mm. No proximal clot is visible.",
+      "sourceSha256": "ea13e0b29baff812c851ef00661a7faf469217f5511cd21fec78834f030b35e7"
+    }
+  ]
+}
