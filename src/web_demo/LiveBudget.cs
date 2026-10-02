@@ -14,6 +14,30 @@ public sealed class LiveBudget
 
     public LiveBudget(LiveOptions options) => this.options = options;
 
+    public bool HasLifetimeCapacity(int attemptCount)
+    {
+        if (attemptCount is < 1 or > 2) return false;
+        if (options.LifetimeAttemptLimit is null && options.LifetimeLedgerPath is null) return true;
+        if (options.LifetimeAttemptLimit is not int limit || limit is < 1 or > 1000 ||
+            string.IsNullOrWhiteSpace(options.LifetimeLedgerPath) ||
+            !Path.IsPathFullyQualified(options.LifetimeLedgerPath)) return false;
+        try
+        {
+            if (Directory.Exists(options.LifetimeLedgerPath)) return false;
+            if (!File.Exists(options.LifetimeLedgerPath)) return true;
+            using var file = new FileStream(options.LifetimeLedgerPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (file.Length is < 1 or > 20) return false;
+            var bytes = new byte[(int)file.Length];
+            file.ReadExactly(bytes);
+            return int.TryParse(Encoding.ASCII.GetString(bytes), NumberStyles.None,
+                CultureInfo.InvariantCulture, out var count) && count >= 0 && count <= limit - attemptCount;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     public Task<IDisposable?> TryAcquireAsync(string clientId, CancellationToken cancellationToken) =>
         TryAcquireAsync(clientId, 1, cancellationToken);
 

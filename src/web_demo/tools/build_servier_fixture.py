@@ -1,15 +1,19 @@
-"""Export the rights-cleared, refitted SMART visual-system batch as a public fixture.
+"""Verify the bundled SMART visual-system fixture, or rebuild from private inputs.
 
-This is an offline, mechanical export. It never calls an AI provider. The raw
-Servier decks must not be copied into a public release: their master contains
-brand logos and their narrow original labels can clip translated words.
+Both modes are offline and never call an AI provider. The raw Servier decks
+must not be copied into a public release: their master contains brand logos
+and their narrow original labels can clip translated words.
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import shutil
+import zipfile
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 
 PROJECT = Path(__file__).resolve().parents[3]
@@ -26,6 +30,43 @@ def polished_asset_path(project: Path, name: str) -> Path:
     if not path.is_file():
         raise FileNotFoundError(f"Rights-cleared, layout-checked asset missing: {path}")
     return path
+
+
+def verify_published_fixture() -> int:
+    """Check the bundled public release without requiring private source checkpoints."""
+    case = json.loads((OUTPUT / "servier-visual.json").read_text(encoding="utf-8"))
+    translations = case["translations"]
+    if len(translations) != len(LANGUAGES) or {item["language"] for item in translations} != set(LANGUAGES):
+        raise ValueError("Published language set is incomplete or duplicated")
+    manifest = {}
+    for line in (OUTPUT / "assets.sha256").read_text(encoding="utf-8").splitlines():
+        digest, name = line.split("  ", 1)
+        if name in manifest or len(digest) != 64:
+            raise ValueError(f"Malformed or duplicate manifest entry: {name}")
+        manifest[name] = digest
+    names = {path.name for path in ASSETS.iterdir() if path.is_file()}
+    if names != set(manifest):
+        raise ValueError("Published asset list differs from the hash manifest")
+    for name, digest in manifest.items():
+        if hashlib.sha256((ASSETS / name).read_bytes()).hexdigest() != digest:
+            raise ValueError(f"Published asset hash mismatch: {name}")
+    if case["source"]["preview"] != "/assets/servier-visual-en.png":
+        raise ValueError("English source preview is missing")
+    for item in translations:
+        language = item["language"]
+        if (item["preview"], item["download"]) != (
+            f"/assets/servier-visual-{language}.png", f"/assets/servier-visual-{language}.pptx"
+        ) or item["status"] != "AI_DRAFT_UNREVIEWED":
+            raise ValueError(f"Published metadata is inconsistent: {language}")
+        with zipfile.ZipFile(ASSETS / f"servier-visual-{language}.pptx") as archive:
+            master = ET.fromstring(archive.read("ppt/slideMasters/slideMaster1.xml"))
+        ns = {"p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+              "a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
+        footer = " ".join(node.text or "" for node in master.findall(".//a:t", ns))
+        if master.findall(".//p:pic", ns) or "Servier Medical Art" not in footer or \
+                "creativecommons.org/licenses/by/4.0" not in footer:
+            raise ValueError(f"Published deck has a logo or lacks attribution: {language}")
+    return len(translations)
 
 
 def section_data(values: dict[str, str]) -> list[dict[str, str]]:
@@ -50,7 +91,7 @@ def findings(language: str) -> list[dict[str, str]]:
     ]
 
 
-def main() -> None:
+def rebuild_private_fixture() -> None:
     source_units = json.loads((INPUT / "work" / f"{DECK}.units.json").read_text(encoding="utf-8"))
     source_map = {unit["Id"]: unit["Text"] for unit in source_units["units"]}
     report = json.loads((INPUT / "qa" / "structure_report.json").read_text(encoding="utf-8"))
@@ -98,4 +139,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rebuild-from-private-source", action="store_true",
+                        help="Requires the private original source and translation checkpoints")
+    args = parser.parse_args()
+    if args.rebuild_from_private_source:
+        rebuild_private_fixture()
+    else:
+        print(f"Verified {verify_published_fixture()} target languages from bundled public assets")

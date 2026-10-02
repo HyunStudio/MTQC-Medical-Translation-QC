@@ -79,6 +79,8 @@ var tests = new (string Name, Func<Task> Run)[]
     ("both live endpoints share the same client credit limit", LiveEndpointsShareBudget),
     ("live budget permits one upstream call at a time", LiveBudgetSerializesUpstream),
     ("durable live attempt cap survives a budget restart", DurableLiveCapSurvivesRestart),
+    ("live status reflects two-stage durable capacity without spending", LiveStatusReflectsDurableCapacity),
+    ("fixed one-call excerpt can use the last durable attempt", FixedExcerptCanUseLastDurableAttempt),
     ("two-pass budget reservation is atomic and durable", TwoPassBudgetReservationIsAtomic),
     ("two-pass budget fails closed for invalid ledger and request", TwoPassBudgetFailsClosed),
     ("concurrent two-pass reservations cannot exceed durable cap", ConcurrentTwoPassReservationsStayBounded),
@@ -875,6 +877,57 @@ async Task DurableLiveCapSurvivesRestart()
     {
         if (File.Exists(ledger)) File.Delete(ledger);
     }
+}
+
+Task LiveStatusReflectsDurableCapacity()
+{
+    var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-status-{Guid.NewGuid():N}.txt");
+    try
+    {
+        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 100, LifetimeLedgerPath: ledger);
+        var budget = new LiveBudget(options);
+        var provider = new NebiusClient(new HttpClient(new FakeProviderHandler(_ =>
+            throw new Exception("status must not call the provider"))), "test-key", "test-model",
+            new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
+        var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), provider, options, budget);
+        Assert(service.DocumentAvailability.Available, "missing ledger must leave initial capacity available");
+        File.WriteAllText(ledger, "98");
+        Assert(service.DocumentAvailability.Available, "two remaining provider attempts should permit one review");
+        File.WriteAllText(ledger, "99");
+        Assert(!service.DocumentAvailability.Available, "one remaining attempt cannot complete two-stage review");
+        File.WriteAllText(ledger, "corrupt");
+        Assert(!service.DocumentAvailability.Available, "corrupt ledger must not advertise availability");
+        File.Delete(ledger);
+        Directory.CreateDirectory(ledger);
+        Assert(!service.DocumentAvailability.Available, "ledger path occupied by a directory must not advertise availability");
+        return Task.CompletedTask;
+    }
+    finally
+    {
+        if (File.Exists(ledger)) File.Delete(ledger);
+        if (Directory.Exists(ledger)) Directory.Delete(ledger);
+    }
+}
+
+async Task FixedExcerptCanUseLastDurableAttempt()
+{
+    var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-last-attempt-{Guid.NewGuid():N}.txt");
+    try
+    {
+        File.WriteAllText(ledger, "1");
+        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
+        var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"message\":{\"content\":\"관상동맥과 정맥\"}}],\"usage\":{\"prompt_tokens\":88,\"completion_tokens\":15}}")
+        });
+        var provider = new NebiusClient(new HttpClient(handler), "test-key", "test-model",
+            new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
+        var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!),
+            provider, options, new LiveBudget(options));
+        var result = await service.ExecuteAsync(new LiveExcerptRequest("mueller-figure1", "ko"), "judge-a", CancellationToken.None);
+        Assert(result.Status == "ok" && handler.Calls == 1, "one-pass route unnecessarily lost the last provider attempt");
+    }
+    finally { if (File.Exists(ledger)) File.Delete(ledger); }
 }
 
 async Task<IDisposable?> ReserveAttempts(LiveBudget budget, string clientId, int count)

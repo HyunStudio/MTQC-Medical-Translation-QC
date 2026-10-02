@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -26,6 +29,23 @@ def read_part(deck: Path, name: str) -> ET.Element:
 
 
 class ServierFixtureTests(unittest.TestCase):
+    def test_public_fixture_verifies_in_clean_clone_without_private_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            tools = project / "src" / "web_demo" / "tools"
+            fixtures = project / "src" / "web_demo" / "fixtures"
+            tools.mkdir(parents=True)
+            (fixtures / "assets").mkdir(parents=True)
+            shutil.copy2(Path(__file__).with_name("build_servier_fixture.py"), tools)
+            shutil.copy2(ROOT / "fixtures" / "servier-visual.json", fixtures)
+            shutil.copy2(ROOT / "fixtures" / "assets.sha256", fixtures)
+            for asset in ASSETS.iterdir():
+                shutil.copy2(asset, fixtures / "assets" / asset.name)
+            result = subprocess.run([sys.executable, str(tools / "build_servier_fixture.py")],
+                                    capture_output=True, text=True, check=False)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("Verified 18 target languages", result.stdout)
+
     def test_generator_refuses_raw_branding_assets(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

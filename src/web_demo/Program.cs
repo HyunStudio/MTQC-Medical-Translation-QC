@@ -56,7 +56,7 @@ app.MapGet("/api/cases", () => Results.Ok(catalog.All.Select(item => new
 app.MapGet("/api/cases/{id}", (string id) => catalog.Get(id) is { } item
     ? Results.Ok(item)
     : Results.NotFound());
-app.MapGet("/api/live/status", () => Results.Ok(live.Availability));
+app.MapGet("/api/live/status", () => Results.Ok(live.DocumentAvailability));
 app.MapPost("/api/live/excerpt", async (LiveExcerptRequest request, HttpContext context) =>
 {
     var result = await live.ExecuteAsync(request, context.Connection.RemoteIpAddress?.ToString() ?? "unknown", context.RequestAborted);

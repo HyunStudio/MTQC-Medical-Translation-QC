@@ -36,6 +36,12 @@ public sealed class LiveExcerptService
             ? new(false, "Live excerpt is unavailable on this server.")
             : new(true, "Configured; provider credit and model entitlement are not verified by this status check.");
 
+    public LiveAvailability DocumentAvailability => !Availability.Available
+        ? Availability
+        : !budget.HasLifetimeCapacity(2)
+            ? new(false, "The two-stage live review attempt limit is reached or its ledger is unavailable. Recorded cases remain available.")
+            : Availability;
+
     public async Task<LiveExcerptResult> ExecuteAsync(LiveExcerptRequest request, string clientId, CancellationToken cancellationToken)
     {
         if (!Availability.Available) return new("unavailable", Availability.Reason);
