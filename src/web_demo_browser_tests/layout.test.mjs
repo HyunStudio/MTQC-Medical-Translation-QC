@@ -106,3 +106,21 @@ test('numeric full-width table keeps each row together before two-column prose',
   assert(result.text.indexOf('Left prose 7') < result.text.indexOf('Right prose 0'), result.text);
   assert.equal(result.fragmentCount, fragments.length);
 });
+
+test('raster table caption does not turn later two-column numeric prose into a table', () => {
+  const fragments = [word('TABLE 1', 50, 50, 45), word('Raster-only table caption', 50, 68, 180)];
+  for (let row = 0; row < 2; row++) {
+    const y = 130 + row * 20;
+    fragments.push(word(`Left ${row}`, 50, y, 100), word(`0.${row + 1}`, 180, y, 20));
+    fragments.push(word(`Right ${row}`, 400, y, 100), word(`0.${row + 2}`, 530, y, 20));
+  }
+  for (let row = 0; row < 8; row++) {
+    fragments.push(word(`Left prose ${row}`, 50, 190 + row * 15, 280));
+    fragments.push(word(`Right prose ${row}`, 400, 190 + row * 15, 280));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 2);
+  assert.equal(result.tableRegions, 0);
+  assert(result.text.indexOf('Left prose 7') < result.text.indexOf('Right 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});

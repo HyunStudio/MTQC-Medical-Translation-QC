@@ -40,6 +40,13 @@ function numericTableBands(items, width) {
       group.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 2 &&
       Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
     if (numericRows.length < 2 || numericRows[0].y - marker.y > 100) continue;
+    // A TABLE caption alone may precede two-column equations. Require a
+    // separate, wide, multi-cell header before treating later numbers as rows.
+    const header = groups.some(group => group.y > marker.y && group.y < numericRows[0].y &&
+      group.items.length >= 3 &&
+      group.items.filter(item => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 3 &&
+      Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
+    if (!header) continue;
     let last = numericRows[0];
     let count = 1;
     for (const group of numericRows.slice(1)) {
