@@ -334,8 +334,10 @@ export function mountDocumentWorkbench({ onTranslate }) {
     const texts = [];
     const summaries = [];
     const frames = [];
+    let tableRegions = 0;
     pdfPages.forEach((record, pageIndex) => {
       const recovered = recoverReadingOrder(record.fragments, record.width, orderMode.value);
+      tableRegions += recovered.tableRegions;
       texts.push(record.fragments.length ? recovered.text : record.ocrText);
       summaries.push(`Page ${pageIndex + 1}: ${record.fragments.length ? `${recovered.columns} column(s), ${recovered.lines.length} lines` : 'OCR · review order manually'}`);
       const frame = document.createElement('div');
@@ -357,7 +359,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     });
     preview.replaceChildren(...frames);
     preview.classList.toggle('show-reading-order', overlayToggle.checked);
-    layoutSummary.textContent = `${summaries.join(' · ')}. Numbers propose reading sequence; check tables and figure labels against the original.`;
+    layoutSummary.textContent = `${summaries.join(' · ')}. ${tableRegions ? 'Numeric table region detected; row alignment is an approximation, not verified column semantics. Check every value against the original. ' : ''}Numbers propose reading sequence; check tables and figure labels against the original.`;
     if (applyText) {
       text.value = texts.join('\n\n');
       reviewed.checked = false;

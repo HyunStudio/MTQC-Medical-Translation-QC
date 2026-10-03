@@ -26,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install and build browser-local PDF/OCR workers
         working-directory: src/web_demo_client
         run: npm ci && npm run build
@@ -45,6 +48,8 @@ jobs:
           "CHROME_PATH=$chrome" >> $env:GITHUB_ENV
       - name: .NET server and QC regression suite
         run: dotnet run --project src/web_demo_tests/MedicalQcWebDemoTests.csproj
+      - name: Validate editable anatomy specimens and logo-free masters
+        run: python src/web_demo/tools/test_servier_fixture.py
       - name: Paired evaluation and release-contract tests
         run: node --test src/web_demo_evaluation/*.test.mjs
       - name: Browser layout, extraction, and two-stage review regression suite

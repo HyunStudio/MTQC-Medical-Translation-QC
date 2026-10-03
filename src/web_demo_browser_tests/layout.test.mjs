@@ -78,3 +78,31 @@ test('adjacent abstract fragments stay on one line when a fragment crosses a two
   assert(!result.lines.some(line => line.text.includes('Metadata') && line.text.includes('work')), result.text);
   assert.equal(result.fragmentCount, fragments.length);
 });
+
+test('numeric full-width table keeps each row together before two-column prose', () => {
+  const fragments = [
+    word('TABLE 1', 62, 50, 45),
+    word('Methods', 62, 80, 80), word('DSC', 190, 80, 30),
+    word('IoU', 270, 80, 30), word('Precision', 330, 80, 65),
+    word('Recall', 410, 80, 55), word('Time', 610, 80, 40),
+    word('Case Alpha', 62, 110, 80), word('0.8423', 190, 110, 35),
+    word('0.7632', 270, 110, 35), word('0.8666', 330, 110, 35),
+    word('0.8394', 410, 110, 35), word('0.65', 610, 110, 30),
+    word('Case Beta', 62, 130, 80), word('0.8534', 190, 130, 35),
+    word('0.7760', 270, 130, 35), word('0.8683', 330, 130, 35),
+    word('0.8538', 410, 130, 35), word('0.27', 610, 130, 30),
+    word('3.2 Evaluation metrics', 62, 180, 170)
+  ];
+  for (let row = 0; row < 8; row++) {
+    fragments.push(word(`Left prose ${row}`, 62, 220 + row * 16, 300));
+    fragments.push(word(`Right prose ${row}`, 398, 220 + row * 16, 280));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 2);
+  assert(result.lines.some(line => line.text === 'Case Alpha 0.8423 0.7632 0.8666 0.8394 0.65'), result.text);
+  assert(result.lines.some(line => line.text === 'Case Beta 0.8534 0.7760 0.8683 0.8538 0.27'), result.text);
+  assert.equal(result.tableRegions, 1);
+  assert(result.text.indexOf('Case Beta') < result.text.indexOf('Left prose 0'), result.text);
+  assert(result.text.indexOf('Left prose 7') < result.text.indexOf('Right prose 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});

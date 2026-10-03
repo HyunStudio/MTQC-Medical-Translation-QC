@@ -116,7 +116,7 @@ foreach ($tree in $allowedTrees) {
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/README.md') -Destination (Join-Path $source 'README.md')
 $exportReadme = Join-Path $source 'README.md'
 $readmeText = Get-Content -LiteralPath $exportReadme -Raw -Encoding utf8
-foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md','COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md','REVIEW_EVALUATION_20261001.md')) {
+foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md','COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md','KNEE_MRI_LAYOUT_AUDIT_20261003.md','REVIEW_EVALUATION_20261001.md')) {
     $readmeText = $readmeText.Replace("]($docName)", "](docs/web-demo/$docName)")
     if (-not (Test-Path -LiteralPath (Join-Path $source "docs/web-demo/$docName"))) { throw "Missing linked source document: $docName" }
 }

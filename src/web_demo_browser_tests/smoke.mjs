@@ -300,6 +300,21 @@ try {
     await page.close();
   });
 
+  await check('numeric table preview warns that row alignment is not verified', async () => {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(12000);
+    await page.setContent('<style>body{font:15px Arial;margin:35px}table{width:100%;border-collapse:collapse}td,th{padding:5px;text-align:left}main{display:grid;grid-template-columns:1fr 1fr;gap:30px}</style><h2>TABLE 1</h2><table><tr><th>Methods</th><th>DSC</th><th>IoU</th><th>Recall</th><th>Time</th></tr><tr><td>Alpha</td><td>0.84</td><td>0.76</td><td>0.83</td><td>0.65</td></tr><tr><td>Beta</td><td>0.85</td><td>0.77</td><td>0.84</td><td>0.27</td></tr></table><h2>2 Evaluation</h2><main><section><p>Left first prose.</p><p>Left second prose.</p></section><section><p>Right first prose.</p><p>Right second prose.</p></section></main>');
+    const pdf = await page.pdf({ format: 'A4' });
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#document-file').setInputFiles({ name: 'table.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await page.waitForFunction(() => document.querySelector('#document-text')?.value.includes('Right second prose'));
+    const extracted = await page.locator('#document-text').inputValue();
+    assert(extracted.split('\n').some(line => /Alpha\s+0\.84\s+0\.76\s+0\.83\s+0\.65/.test(line)), `Table row association was lost: ${extracted}`);
+    assert((await page.locator('#document-layout-summary').textContent()).includes('Numeric table region detected'), 'Table preview did not warn about unverified column semantics');
+    assert(await page.locator('#document-translate').isDisabled(), 'Table extraction skipped source review');
+    await page.close();
+  });
+
   await check('OCR layout choice is explicit and does not discard reviewer text', async () => {
     const page = await browser.newPage();
     await page.goto(base, { waitUntil: 'networkidle' });
