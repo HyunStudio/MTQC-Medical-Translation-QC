@@ -1,0 +1,465 @@
+{
+  "captureKind": "genuine Nemotron critique on frozen direct drafts and controlled variants",
+  "startedUtc": "2026-10-01T14:50:46.4167176+00:00",
+  "runSet": "mtqc-controlled-direct-drafts-2026-10-01-v1",
+  "promptVersion": "mtqc-critique-prompt-2026-10-01",
+  "comparison": "same draft and same deterministic gate in both arms; enhanced adds separate critique",
+  "runs": [
+    {
+      "runId": "synthetic-ko-01-control",
+      "caseId": "synthetic-ko-01",
+      "targetLanguage": "ko",
+      "draft": "\uB300\uD1F4\uB3D9\uB9E5\uC758 \uADFC\uC704\uBD80\uB294 2.5 mm\uC785\uB2C8\uB2E4. \uC815\uB9E5\uC740 \uD3D0\uC1C4\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
+      "draftSha256": "84330298ea068cce46ef82060319f01a43c14debf75cc9624c89d5d04166610e",
+      "baseline": {
+        "draftSha256": "84330298ea068cce46ef82060319f01a43c14debf75cc9624c89d5d04166610e",
+        "findings": [
+          {
+            "category": "unit",
+            "draftSpan": null,
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "84330298ea068cce46ef82060319f01a43c14debf75cc9624c89d5d04166610e",
+        "findings": [
+          {
+            "category": "unit",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "number",
+            "draftSpan": "2.5 mm",
+            "provenance": "model"
+          },
+          {
+            "category": "terminology",
+            "draftSpan": "\uB300\uD1F4\uB3D9\uB9E5\uC758 \uADFC\uC704\uBD80\uB294",
+            "provenance": "model"
+          },
+          {
+            "category": "omission",
+            "draftSpan": null,
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 2400,
+      "promptTokens": 297,
+      "completionTokens": 312,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "warning"
+        },
+        {
+          "category": "direction",
+          "state": "checked"
+        },
+        {
+          "category": "negation",
+          "state": "checked"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-ko-01-seeded",
+      "caseId": "synthetic-ko-01",
+      "targetLanguage": "ko",
+      "draft": "\uB300\uD1F4\uB3D9\uB9E5\uC758 \uC6D0\uC704\uBD80\uB294 2.5 mm\uC785\uB2C8\uB2E4. \uC815\uB9E5\uC740 \uD3D0\uC1C4\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
+      "draftSha256": "9425d7ffd9779b5a6e052f74d700a583f8e0502ab81af881aaedc1f9268d99fe",
+      "baseline": {
+        "draftSha256": "9425d7ffd9779b5a6e052f74d700a583f8e0502ab81af881aaedc1f9268d99fe",
+        "findings": [
+          {
+            "category": "unit",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "direction",
+            "draftSpan": "\uC6D0\uC704",
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "9425d7ffd9779b5a6e052f74d700a583f8e0502ab81af881aaedc1f9268d99fe",
+        "findings": [
+          {
+            "category": "unit",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "direction",
+            "draftSpan": "\uC6D0\uC704",
+            "provenance": "rule"
+          },
+          {
+            "category": "number",
+            "draftSpan": "2.5 mm",
+            "provenance": "model"
+          },
+          {
+            "category": "terminology",
+            "draftSpan": "\uB300\uD1F4\uB3D9\uB9E5\uC758 \uC6D0\uC704\uBD80\uB294 2.5 mm\uC785\uB2C8\uB2E4",
+            "provenance": "model"
+          },
+          {
+            "category": "omission",
+            "draftSpan": "\uC815\uB9E5\uC740 \uD3D0\uC1C4\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1996,
+      "promptTokens": 299,
+      "completionTokens": 427,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "warning"
+        },
+        {
+          "category": "direction",
+          "state": "warning"
+        },
+        {
+          "category": "negation",
+          "state": "checked"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-control",
+      "caseId": "synthetic-es-01",
+      "targetLanguage": "es",
+      "draft": "\u0022Se registr\u00F3 una dosis de 2 mg. No se registr\u00F3 una dosis de 20 mg.\u0022",
+      "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+      "baseline": {
+        "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+        "findings": []
+      },
+      "enhanced": {
+        "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+        "findings": [
+          {
+            "category": "number",
+            "draftSpan": "2 mg",
+            "provenance": "model"
+          },
+          {
+            "category": "negation",
+            "draftSpan": "No se registr\u00F3 una dosis de 20 mg",
+            "provenance": "model"
+          },
+          {
+            "category": "omission",
+            "draftSpan": "Se registr\u00F3 una dosis de 2 mg. No se registr\u00F3 una dosis de 20 mg.",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1609,
+      "promptTokens": 211,
+      "completionTokens": 339,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "checked"
+        },
+        {
+          "category": "direction",
+          "state": "not assessed"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-seeded",
+      "caseId": "synthetic-es-01",
+      "targetLanguage": "es",
+      "draft": "\u0022Se registr\u00F3 una dosis de 3 mg. No se registr\u00F3 una dosis de 20 mg.\u0022",
+      "draftSha256": "a5fdbf562207360f0b3ed59ea292cac41b61ab712308c8e7cd9ce46b3674751b",
+      "baseline": {
+        "draftSha256": "a5fdbf562207360f0b3ed59ea292cac41b61ab712308c8e7cd9ce46b3674751b",
+        "findings": [
+          {
+            "category": "number",
+            "draftSpan": "3",
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "a5fdbf562207360f0b3ed59ea292cac41b61ab712308c8e7cd9ce46b3674751b",
+        "findings": [
+          {
+            "category": "number",
+            "draftSpan": "3",
+            "provenance": "rule"
+          },
+          {
+            "category": "number",
+            "draftSpan": "Se registr\u00F3 una dosis de 3 mg",
+            "provenance": "model"
+          },
+          {
+            "category": "negation",
+            "draftSpan": "No se registr\u00F3 una dosis de 20 mg",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1178,
+      "promptTokens": 211,
+      "completionTokens": 214,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "warning"
+        },
+        {
+          "category": "unit",
+          "state": "checked"
+        },
+        {
+          "category": "direction",
+          "state": "not assessed"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-control",
+      "caseId": "synthetic-ar-01",
+      "targetLanguage": "ar",
+      "draft": "\u0627\u0644\u0639\u064E\u0631\u0652\u0642\u064E\u0629\u064F \u0627\u0644\u0628\u064E\u0639\u0650\u064A\u062F\u064E\u0629\u064F \u062A\u064E\u0633\u0652\u062A\u064E\u0648\u0650\u064A 1.8 \u0645\u0650\u0645\u0652. \u0644\u064E\u0627 \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C.",
+      "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+      "baseline": {
+        "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "unit",
+            "draftSpan": null,
+            "provenance": "model"
+          },
+          {
+            "category": "terminology",
+            "draftSpan": "\u0644\u064E\u0627 \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 2457,
+      "promptTokens": 475,
+      "completionTokens": 355,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "not assessed"
+        },
+        {
+          "category": "direction",
+          "state": "warning"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-seeded",
+      "caseId": "synthetic-ar-01",
+      "targetLanguage": "ar",
+      "draft": "\u0627\u0644\u0639\u064E\u0631\u0652\u0642\u064E\u0629\u064F \u0627\u0644\u0628\u064E\u0639\u0650\u064A\u062F\u064E\u0629\u064F \u062A\u064E\u0633\u0652\u062A\u064E\u0648\u0650\u064A 8.1 \u0645\u0650\u0645\u0652. \u0644\u064E\u0627 \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C.",
+      "draftSha256": "0045474c5079a83f970cef7aa18e8a92928a4d1d1cb7d24be2fe532b0d4e8e11",
+      "baseline": {
+        "draftSha256": "0045474c5079a83f970cef7aa18e8a92928a4d1d1cb7d24be2fe532b0d4e8e11",
+        "findings": [
+          {
+            "category": "number",
+            "draftSpan": "8.1",
+            "provenance": "rule"
+          },
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "0045474c5079a83f970cef7aa18e8a92928a4d1d1cb7d24be2fe532b0d4e8e11",
+        "findings": [
+          {
+            "category": "number",
+            "draftSpan": "8.1",
+            "provenance": "rule"
+          },
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "number",
+            "draftSpan": "8.1 \u0645\u0650\u0645\u0652",
+            "provenance": "model"
+          },
+          {
+            "category": "terminology",
+            "draftSpan": "\u0644\u064E\u0627 \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1430,
+      "promptTokens": 475,
+      "completionTokens": 323,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "warning"
+        },
+        {
+          "category": "unit",
+          "state": "not assessed"
+        },
+        {
+          "category": "direction",
+          "state": "warning"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    }
+  ]
+}

@@ -108,6 +108,7 @@ try {
     await page.locator('#document-text').fill('The proximal artery measures 2.5 mm. The distal vein measures 1.8 mm.');
     await page.locator('#document-language').selectOption('ar');
     await page.locator('#document-reviewed').check();
+    await page.locator('#document-experimental-critique').check();
     await until(config.sentenceStarts[3]);
     const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/live/document-excerpt') && response.request().method() === 'POST', { timeout: 90000 });
     await page.locator('#document-translate').click();
@@ -139,7 +140,7 @@ try {
     await until(firstReviewAt + 28);
     await page.locator('#document-result-grid').scrollIntoViewIfNeeded();
   });
-  await scene(3, page => page.setContent(card('<main><div class="kicker">QUALITY / TRACEABILITY / HUMAN REVIEW</div><h1>Evidence behind<br><em>every workflow.</em></h1><div class="row"><div class="box"><span class="num">66</span><span class="label">Server regression checks</span></div><div class="box"><span class="num">33</span><span class="label">Browser workflow checks</span></div><div class="box"><span class="num">2</span><span class="label">Real sequential model stages</span></div></div><p>Local extraction → approved excerpt → NVIDIA Nemotron draft → separate critique → scoped rules</p><p style="font-size:23px">Controlled pilot: no added detection from critique; model suggestions stay unverified.<br>Clinical validation pending · Live scope: reviewed excerpts, not full-book reconstruction.</p></main><div class="footer">github.com/HyunStudio/MTQC-Medical-Translation-QC · Anatomy specimen: Servier Medical Art, CC BY 4.0</div>')), async () => {});
+  await scene(3, page => page.setContent(card('<main><div class="kicker">QUALITY / TRACEABILITY / HUMAN REVIEW</div><h1>Evidence behind<br><em>every workflow.</em></h1><div class="row"><div class="box"><span class="num">69</span><span class="label">Server regression checks</span></div><div class="box"><span class="num">34</span><span class="label">Browser workflow checks</span></div><div class="box"><span class="num">2</span><span class="label">Model stages in this experimental filmed run</span></div></div><p>Default: Nemotron draft → scoped rules. Optional research lane: separate AI critique.</p><p style="font-size:23px">Paired pilot: 3/3 seeded detections in both arms, with no added detection from critique.<br>Warnings 7 → 22; limited clean-category false positives 0 → 3. Negation retest 0/2 in both arms.<br>Clinical validation pending · Reviewed excerpts, not full-book reconstruction.</p></main><div class="footer">github.com/HyunStudio/MTQC-Medical-Translation-QC · Anatomy specimen: Servier Medical Art, CC BY 4.0</div>')), async () => {});
   writeFileSync(path.join(output, 'recording-evidence.json'), JSON.stringify(evidence, null, 2));
 } finally {
   await browser?.close();

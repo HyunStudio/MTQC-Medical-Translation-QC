@@ -1,0 +1,46 @@
+{
+  "runSet": "mtqc-negation-development-retest-2026-10-01-v2",
+  "labelPolicy": "Two controlled negation mutations on reused direct drafts; development retest, not independent holdout",
+  "gold": [
+    {
+      "runId": "synthetic-es-01-control-negation-v2",
+      "caseId": "synthetic-es-01",
+      "seed": null,
+      "adjudicatedCleanCategories": [
+        "number",
+        "negation"
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-seeded-negation-v2",
+      "caseId": "synthetic-es-01",
+      "seed": {
+        "category": "negation",
+        "draftSpan": "Se registró una dosis de 20 mg."
+      },
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-control-negation-v2",
+      "caseId": "synthetic-ar-01",
+      "seed": null,
+      "adjudicatedCleanCategories": [
+        "number",
+        "negation"
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-seeded-negation-v2",
+      "caseId": "synthetic-ar-01",
+      "seed": {
+        "category": "negation",
+        "draftSpan": "يَرَى خَثْرَةٌ قَرِيبَةٌ."
+      },
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    }
+  ]
+}

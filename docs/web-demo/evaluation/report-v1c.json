@@ -1,0 +1,50 @@
+{
+  "generatedUtc": "2026-10-01T15:05:13.657Z",
+  "corpusVersion": "mtqc-controlled-excerpts-v1",
+  "runSet": "mtqc-controlled-direct-drafts-2026-10-01-v1",
+  "sampleCount": 6,
+  "seededCount": 3,
+  "controlCount": 3,
+  "targetLanguages": [
+    "ar",
+    "es",
+    "ko"
+  ],
+  "baseline": {
+    "truePositive": 3,
+    "falseNegative": 0,
+    "falsePositive": 0,
+    "warningVolume": 7,
+    "unadjudicatedWarnings": 4,
+    "recall": 1,
+    "precision": null,
+    "precisionStatus": "not measured"
+  },
+  "enhanced": {
+    "truePositive": 3,
+    "falseNegative": 0,
+    "falsePositive": 3,
+    "warningVolume": 22,
+    "unadjudicatedWarnings": 14,
+    "recall": 1,
+    "precision": null,
+    "precisionStatus": "not measured"
+  },
+  "perCategory": {
+    "direction": {
+      "seeded": 1,
+      "baselineDetected": 1,
+      "enhancedDetected": 1
+    },
+    "number": {
+      "seeded": 2,
+      "baselineDetected": 2,
+      "enhancedDetected": 2
+    }
+  },
+  "totalLatencyMs": 11070,
+  "totalPromptTokens": 1968,
+  "totalCompletionTokens": 1970,
+  "estimatedCostUsd": "not measured: no verified current price table or account bill",
+  "interpretation": "Controlled review-error detection only; not clinical or full-document translation accuracy."
+}

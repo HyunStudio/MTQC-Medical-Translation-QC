@@ -60,6 +60,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("live malformed provider response is sanitized", LiveMalformedResponseIsSanitized),
     ("live timeout is sanitized", LiveTimeoutIsSanitized),
     ("user excerpt accepts all 18 target languages", UserExcerptAcceptsAllTargets),
+    ("default document review uses one model call and keeps critique experimental", UserExcerptDefaultsToRulesWithoutCritique),
     ("user excerpt runs translation then critique then rules", UserExcerptRunsTwoStages),
     ("critique failure leaves an incomplete draft", UserExcerptCritiqueFailureIsPartial),
     ("translation failure never exposes a draft or starts critique", UserExcerptTranslationFailureHasNoDraft),
@@ -594,10 +595,23 @@ async Task UserExcerptAcceptsAllTargets()
     var languages = new[] { "ko", "es", "ar", "zh-CN", "zh-TW", "ja", "fr", "de", "it", "pt", "ru", "hi", "id", "nl", "pl", "th", "tr", "vi" };
     foreach (var language in languages)
     {
-        var result = await service.ExecuteAsync(new UserExcerptRequest("The proximal artery measures 2.5 mm.", language), "judge-a", CancellationToken.None);
+        var result = await service.ExecuteAsync(new UserExcerptRequest("The proximal artery measures 2.5 mm.", language, true), "judge-a", CancellationToken.None);
         Assert(result.Status == "ok" && result.Model == "nvidia/Nemotron-3_5-Lightning", $"{language} did not reach live model");
     }
     Assert(handler.Calls == 36, "not all 18 targets completed both provider stages");
+}
+
+async Task UserExcerptDefaultsToRulesWithoutCritique()
+{
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("동맥은 2.5 mm입니다."));
+    var result = await NewUserService(handler).ExecuteAsync(
+        new UserExcerptRequest("The artery measures 2.5 mm.", "ko"), "judge-a", CancellationToken.None);
+    var review = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!["Review"]!;
+    Assert(result.Status == "ok" && handler.Calls == 1,
+        "default document request must complete translation and rules without buying a second model call");
+    Assert((string?)review["CritiqueStage"]!["State"] == "skipped" &&
+           (string?)review["RulesStage"]!["State"] == "completed",
+        "default review must disclose that experimental AI critique was not run");
 }
 
 FakeProviderHandler SuccessfulTwoPassHandler(string translation)
@@ -623,7 +637,7 @@ async Task UserExcerptRunsTwoStages()
     handler = new FakeProviderHandler(_ => ProviderSuccess(handler.Calls == 1
         ? "동맥은 3.5 mm입니다."
         : "{\"findings\":[{\"category\":\"number\",\"severity\":\"critical\",\"sourceSpan\":\"2.5 mm\",\"draftSpan\":\"3.5 mm\",\"rationale\":\"Numeric mismatch.\"}]}"));
-    var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko"), "judge-a", CancellationToken.None);
+    var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko", true), "judge-a", CancellationToken.None);
     var json = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!;
     Assert(handler.Calls == 2 && result.Status == "ok", "document workflow did not complete two provider calls");
     Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "completed", "critique stage not complete");
@@ -638,7 +652,7 @@ async Task UserExcerptCritiqueFailureIsPartial()
     handler = new FakeProviderHandler(_ => handler.Calls == 1
         ? ProviderSuccess("동맥은 3.5 mm입니다.")
         : new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("private provider body") });
-    var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko"), "judge-a", CancellationToken.None);
+    var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko", true), "judge-a", CancellationToken.None);
     var json = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!;
     Assert(handler.Calls == 2 && result.Status == "partial" && result.Translation is not null, "critique failure hid the draft or claimed completion");
     Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "failed", "critique failure stage missing");
@@ -656,7 +670,7 @@ async Task UserExcerptTranslationFailureHasNoDraft()
     var json = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!;
     Assert(handler.Calls == 1 && result.Status == "provider-error" && result.Translation is null, "failed translation exposed a draft or called critique");
     Assert((string?)json["Review"]!["TranslationStage"]!["State"] == "failed" &&
-           (string?)json["Review"]!["CritiqueStage"]!["State"] == "pending", "failed workflow stages were misreported");
+           (string?)json["Review"]!["CritiqueStage"]!["State"] == "skipped", "failed workflow stages were misreported");
     Assert(!result.Message.Contains("private clinical", StringComparison.Ordinal), "provider response leaked");
 }
 
@@ -670,7 +684,7 @@ async Task UserExcerptReservesTwoAttempts()
         var provider = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
             new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
         var result = await new UserExcerptService(provider, options, new LiveBudget(options))
-            .ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko"), "judge-a", CancellationToken.None);
+            .ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko", true), "judge-a", CancellationToken.None);
         Assert(result.Status == "rate-limited" && handler.Calls == 0 && File.ReadAllText(ledger) == "0", "one free ledger unit allowed half of a two-pass run");
     }
     finally { if (File.Exists(ledger)) File.Delete(ledger); }
@@ -749,9 +763,9 @@ async Task ChineseVariantsAreExplicit()
 {
     var handler = SuccessfulTwoPassHandler("译文");
     var service = NewUserService(handler, perClientLimit: 2);
-    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-CN"), "judge-a", CancellationToken.None);
+    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-CN", true), "judge-a", CancellationToken.None);
     Assert(handler.Bodies[0].Contains("Simplified Chinese", StringComparison.Ordinal), "zh-CN was not disambiguated");
-    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-TW"), "judge-a", CancellationToken.None);
+    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-TW", true), "judge-a", CancellationToken.None);
     Assert(handler.Bodies[2].Contains("Traditional Chinese", StringComparison.Ordinal), "zh-TW was not disambiguated");
 }
 
@@ -782,7 +796,7 @@ async Task AllTargetsHaveExplicitNames()
     };
     foreach (var (code, name) in expected)
     {
-        await service.ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", code), "judge-a", CancellationToken.None);
+        await service.ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", code, true), "judge-a", CancellationToken.None);
         Assert(handler.Bodies[^2].Contains($"Target language: {name}", StringComparison.Ordinal), $"{code} prompt did not name {name}");
     }
 }
@@ -892,9 +906,11 @@ Task LiveStatusReflectsDurableCapacity()
         var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), provider, options, budget);
         Assert(service.DocumentAvailability.Available, "missing ledger must leave initial capacity available");
         File.WriteAllText(ledger, "98");
-        Assert(service.DocumentAvailability.Available, "two remaining provider attempts should permit one review");
+        Assert(service.DocumentAvailability.Available, "two remaining provider attempts should permit a default review");
         File.WriteAllText(ledger, "99");
-        Assert(!service.DocumentAvailability.Available, "one remaining attempt cannot complete two-stage review");
+        Assert(service.DocumentAvailability.Available, "one remaining attempt must permit the default one-call review");
+        File.WriteAllText(ledger, "100");
+        Assert(!service.DocumentAvailability.Available, "exhausted ledger must disable live review");
         File.WriteAllText(ledger, "corrupt");
         Assert(!service.DocumentAvailability.Available, "corrupt ledger must not advertise availability");
         File.Delete(ledger);

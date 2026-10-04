@@ -16,16 +16,16 @@ After observing v1, we tightened the critique prompt and created a **non-indepen
 
 ## Cost, limits, and interpretation
 
-The local durable ledger records **18 provider attempts** in total: three direct translations, eleven successful critique responses (ten retained unique run records plus one early success lost before per-run checkpoints were added), and four failed diagnostic critique attempts. No raw account bill was captured, so actual USD spend is **not measured**; tokens/latencies in local run records are not invoices. A hard local ceiling of 20 attempts was used for this evaluation. No patient data, proprietary textbook pages, or third-party PDF figures were sent in these calls. The raw synthetic drafts, gold labels, and model response records remain in ignored `output/evaluation/` rather than the public export.
+The local durable ledger records **18 provider attempts** in total: three direct translations, eleven successful critique responses (ten retained unique run records plus one early success lost before per-run checkpoints were added), and four failed diagnostic critique attempts. No raw account bill was captured, so actual USD spend is **not measured**; tokens/latencies in local run records are not invoices. A hard local ceiling of 20 attempts was used for this evaluation. No patient data, proprietary textbook pages, or third-party PDF figures were sent in these calls. The six published JSON files in [`evaluation/`](evaluation/) contain the synthetic paired run records, separate gold, and computed reports; they exclude the local attempt ledger and failed diagnostic responses. The public files were schema/privacy-screened before export and independently recomputed with the published evaluator.
 
-The supported product claim is a bounded, review-first workflow: visual source/draft comparison, explicit pre-send source approval, sequential translation and critique with model/usage provenance, narrow deterministic checks, `not assessed` labels, and human inspection. It is **not** a medically validated translator, a proven error-reduction system, or a verified 18-language quality benchmark. Expert bilingual/clinical review and larger independent datasets remain required.
+The supported product claim is a bounded, review-first workflow: visual source/draft comparison, explicit pre-send source approval, a default translation call with model/usage provenance and narrow deterministic checks, an optional experimental second-call critique, `not assessed` labels, and human inspection. It is **not** a medically validated translator, a proven error-reduction system, or a verified 18-language quality benchmark. Expert bilingual/clinical review and larger independent datasets remain required.
 
-Recompute local pilot summaries (where local ignored capture files exist):
+Recompute the published pilot summaries without a model call:
 
 ```sh
-node src/web_demo_evaluation/run.mjs docs/web-demo/evaluation/cases-v1.json output/evaluation/review-runs.json output/evaluation/gold-v1.json output/evaluation/report-v1-new.json
-node src/web_demo_evaluation/run.mjs docs/web-demo/evaluation/cases-v1.json output/evaluation/review-runs-v2.json output/evaluation/gold-v2.json output/evaluation/report-v2-new.json
+node src/web_demo_evaluation/run.mjs docs/web-demo/evaluation/cases-v1.json docs/web-demo/evaluation/review-runs.json docs/web-demo/evaluation/gold-v1.json output/evaluation/report-v1-new.json
+node src/web_demo_evaluation/run.mjs docs/web-demo/evaluation/cases-v1.json docs/web-demo/evaluation/review-runs-v2.json docs/web-demo/evaluation/gold-v2.json output/evaluation/report-v2-new.json
 node --test src/web_demo_evaluation/*.test.mjs
 ```
 
-The report files use create-new semantics to prevent overwriting prior evidence. Source code and the rights-cleared manifest are public; the aggregate counts above are reported with their denominators, while private local run artifacts are not represented as a public benchmark.
+The report files use create-new semantics to prevent overwriting prior evidence. Compare their content to [`report-v1c.json`](evaluation/report-v1c.json) and [`report-v2b.json`](evaluation/report-v2b.json), ignoring only generation time. These published records are a small development pilot, not an independent benchmark; neither precision nor actual account spend was measured.

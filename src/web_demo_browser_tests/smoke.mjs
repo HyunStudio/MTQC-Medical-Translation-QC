@@ -145,9 +145,10 @@ try {
     await page.locator('#document-text').fill('The proximal artery measures 2.5 mm.');
     await page.locator('#document-reviewed').check();
     await page.locator('#document-language').selectOption('ar');
+    assert(!(await page.locator('#document-experimental-critique').isChecked()), 'experimental critique was enabled by default');
     await page.locator('#document-translate').click();
     const payload = await page.evaluate(() => window.selectedExcerpt);
-    assert(JSON.stringify(payload) === JSON.stringify({ sourceText: 'The proximal artery measures 2.5 mm.', targetLanguage: 'ar' }), 'Outbound selection includes more than reviewed text and language');
+    assert(JSON.stringify(payload) === JSON.stringify({ sourceText: 'The proximal artery measures 2.5 mm.', targetLanguage: 'ar', includeExperimentalCritique: false }), 'Outbound selection includes file content or enables extra inference unexpectedly');
     assert(externalRequests.length === 0, `Browser requested an external asset: ${externalRequests[0]}`);
     await page.close();
   });
@@ -397,7 +398,7 @@ try {
         qcSummary: 'Independent medical and linguistic review is still required.',
         review: { runId: 'mock-review', elapsedMs: 1200,
           translationStage: { state: 'completed', model: 'nvidia/Nemotron-3_5-Lightning', promptTokens: 20, completionTokens: 8 },
-          critiqueStage: { state: 'completed', model: 'nvidia/Nemotron-3_5-Lightning', promptTokens: 25, completionTokens: 9 },
+          critiqueStage: { state: 'skipped' },
           rulesStage: { state: 'completed' }, modelFindings: [], ruleFindings: [], coverage: [] }
       } });
     });
@@ -412,10 +413,11 @@ try {
     assert(Number(await page.locator('#document-progress-track').getAttribute('aria-valuenow')) < 100, 'Pending call reached 100 percent');
     await page.locator('#document-progress-track[aria-valuenow="100"]').waitFor();
     await page.locator('#document-result').getByText('الشريان القريب 2.5 مم').waitFor();
-    assert(JSON.stringify(requestBody) === JSON.stringify({ sourceText: 'The proximal artery measures 2.5 mm.', targetLanguage: 'ar' }), 'Request posted file data or an altered excerpt');
+    assert(JSON.stringify(requestBody) === JSON.stringify({ sourceText: 'The proximal artery measures 2.5 mm.', targetLanguage: 'ar', includeExperimentalCritique: false }), 'Request posted file data, an altered excerpt, or a paid critique by default');
     assert((await page.locator('#document-result').textContent()).includes('Independent medical and linguistic review'), 'QC warning is hidden');
     assert((await page.locator('#document-result').textContent()).includes('nvidia/Nemotron-3_5-Lightning'), 'Actual model identifier is hidden');
     assert((await page.locator('#document-result-translation').getAttribute('dir')) === 'rtl', 'Arabic document draft lost RTL direction');
+    assert((await page.locator('#document-model-findings').textContent()).includes('not requested'), 'default result obscures skipped experimental critique');
     await page.close();
   });
 
@@ -423,7 +425,10 @@ try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
     const source = 'The proximal artery measures 2.5 mm.';
     const draft = '동맥은 원위부에서 3.5 mm입니다.';
-    await page.route('**/api/live/document-excerpt', route => route.fulfill({ json: {
+    let critiqueRequested = false;
+    await page.route('**/api/live/document-excerpt', route => {
+      critiqueRequested = route.request().postDataJSON().includeExperimentalCritique;
+      return route.fulfill({ json: {
       status: 'ok', message: 'Human review required.', translation: draft, model: 'translation-model',
       promptTokens: 20, completionTokens: 8, qcSummary: 'Numeric mismatch.',
       review: { runId: 'review-001', elapsedMs: 1300,
@@ -434,14 +439,17 @@ try {
         ruleFindings: [{ category: 'direction', severity: 'review', message: 'Direction differs.' }],
         coverage: [{ category: 'number', state: 'warning' }, { category: 'negation', state: 'not assessed' }]
       }
-    } }));
+    } });
+    });
     await page.goto(base, { waitUntil: 'networkidle' });
     const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/GZkAAAAASUVORK5CYII=', 'base64');
     await page.locator('#document-file').setInputFiles({ name: 'private-source.png', mimeType: 'image/png', buffer: image });
     await page.locator('#document-text').fill(source);
     await page.locator('#document-reviewed').check();
+    await page.locator('#document-experimental-critique').check();
     await page.locator('#document-translate').click();
     await page.locator('#document-result-translation').getByText(draft).waitFor();
+    assert(critiqueRequested === true, 'optional research critique was not explicitly requested');
     assert((await page.locator('#document-review-stages').textContent()).includes('critique-model'), 'second model stage or token usage is hidden');
     assert((await page.locator('#document-model-findings').textContent()).includes('Value differs.'), 'model finding is hidden');
     assert((await page.locator('#document-model-findings').textContent()).includes('2.5 mm → 3.5 mm'), 'exact source and draft evidence spans are hidden');
@@ -494,6 +502,7 @@ try {
     await page.locator('#document-file').setInputFiles({ name: 'private.png', mimeType: 'image/png', buffer: image });
     await page.locator('#document-text').fill('The artery measures 2.5 mm.');
     await page.locator('#document-reviewed').check();
+    await page.locator('#document-experimental-critique').check();
     await page.locator('#document-translate').click();
     await page.locator('#document-result-translation').getByText('검토 전 초안').waitFor();
     assert((await page.locator('#document-live-status').textContent()).includes('incomplete'), 'partial state was presented as complete');

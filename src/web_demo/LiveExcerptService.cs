@@ -38,8 +38,8 @@ public sealed class LiveExcerptService
 
     public LiveAvailability DocumentAvailability => !Availability.Available
         ? Availability
-        : !budget.HasLifetimeCapacity(2)
-            ? new(false, "The two-stage live review attempt limit is reached or its ledger is unavailable. Recorded cases remain available.")
+        : !budget.HasLifetimeCapacity(1)
+            ? new(false, "The live translation attempt limit is reached or its ledger is unavailable. Recorded cases remain available.")
             : Availability;
 
     public async Task<LiveExcerptResult> ExecuteAsync(LiveExcerptRequest request, string clientId, CancellationToken cancellationToken)

@@ -1,0 +1,59 @@
+{
+  "runSet": "mtqc-controlled-direct-drafts-2026-10-01-v1",
+  "labelPolicy": "Controlled single-span changes; gold is never sent to the model",
+  "gold": [
+    {
+      "runId": "synthetic-ko-01-control",
+      "caseId": "synthetic-ko-01",
+      "seed": null,
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    },
+    {
+      "runId": "synthetic-ko-01-seeded",
+      "caseId": "synthetic-ko-01",
+      "seed": {
+        "category": "direction",
+        "draftSpan": "원위부"
+      },
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-control",
+      "caseId": "synthetic-es-01",
+      "seed": null,
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-seeded",
+      "caseId": "synthetic-es-01",
+      "seed": {
+        "category": "number",
+        "draftSpan": "3 mg"
+      },
+      "adjudicatedCleanCategories": []
+    },
+    {
+      "runId": "synthetic-ar-01-control",
+      "caseId": "synthetic-ar-01",
+      "seed": null,
+      "adjudicatedCleanCategories": [
+        "number"
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-seeded",
+      "caseId": "synthetic-ar-01",
+      "seed": {
+        "category": "number",
+        "draftSpan": "8.1"
+      },
+      "adjudicatedCleanCategories": []
+    }
+  ]
+}

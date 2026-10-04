@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace MedicalQcWebDemo;
 
-public sealed record UserExcerptRequest(string SourceText, string TargetLanguage);
+public sealed record UserExcerptRequest(string SourceText, string TargetLanguage, bool IncludeExperimentalCritique = false);
 
 public sealed class UserExcerptService
 {
@@ -28,12 +28,12 @@ public sealed class UserExcerptService
             request.SourceText.EnumerateRunes().Count() > 3000 ||
             !TargetLanguages.Contains(request.TargetLanguage, StringComparer.Ordinal))
             return new("invalid", "Provide a reviewed English excerpt of 1–3,000 characters and a supported target language.");
-        using var lease = await budget.TryAcquireAsync(clientId, 2, cancellationToken);
+        using var lease = await budget.TryAcquireAsync(clientId, request.IncludeExperimentalCritique ? 2 : 1, cancellationToken);
         if (lease is null) return new("rate-limited", "Live demo request limit reached. Try a recorded case or return later.");
         var timer = Stopwatch.StartNew();
         var runId = Guid.NewGuid().ToString("N");
         var translationStage = new ReviewStage("pending");
-        var critiqueStage = new ReviewStage("pending");
+        var critiqueStage = new ReviewStage(request.IncludeExperimentalCritique ? "pending" : "skipped");
         var rulesStage = new ReviewStage("pending");
         var modelFindings = (IReadOnlyList<CritiqueFinding>)Array.Empty<CritiqueFinding>();
         var ruleFindings = (IReadOnlyList<RuleFinding>)Array.Empty<RuleFinding>();
@@ -54,7 +54,7 @@ public sealed class UserExcerptService
             translationStage = new("failed", ElapsedMs: timer.ElapsedMilliseconds);
             return new("provider-error", "Translation did not complete. Check model access or credit; no draft was accepted.", Review: Review());
         }
-        try
+        if (request.IncludeExperimentalCritique) try
         {
             var started = timer.ElapsedMilliseconds;
             var critique = await provider.CritiqueAsync(source, request.TargetLanguage, output.Text, cancellationToken);
@@ -78,9 +78,10 @@ public sealed class UserExcerptService
         {
             rulesStage = new("failed");
         }
-        var complete = critiqueStage.State == "completed" && rulesStage.State == "completed";
+        var complete = rulesStage.State == "completed" &&
+            (!request.IncludeExperimentalCritique || critiqueStage.State == "completed");
         return new(complete ? "ok" : "partial",
-            complete ? "AI draft and automated review completed; human medical and linguistic review is still required."
+            complete ? "AI draft and scoped rule checks completed; experimental AI critique may be skipped. Human medical and linguistic review is still required."
                 : "AI draft — review incomplete. Human review is required; do not treat this as an approved translation.",
             output.Text, output.Model, output.PromptTokens, output.CompletionTokens,
             ExcerptQc.Summarize(source, output.Text, request.TargetLanguage), Review());

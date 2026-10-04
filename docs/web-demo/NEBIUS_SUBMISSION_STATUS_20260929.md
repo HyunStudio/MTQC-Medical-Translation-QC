@@ -32,14 +32,14 @@ The initial 18-call QC report flagged decimal separator changes in nine targets.
 
 ## Submission verification and ongoing operations
 
-Final media refresh (2026-09-29): https://youtu.be/WpYR5XfvPic is the new public 118.5-second 1080p narrated demo. Its single genuine Arabic call used 157 input and 25 output tokens. The complete video decoded without errors; contact-sheet frames and the two-page updated judge PDF were visually inspected. YouTube reported no copyright issue. Devpost's video, story, and attached PDF were updated, and the form again displayed "Project submitted!". The PDF-whitespace fix was deployed and verified in the hosted JavaScript. Earlier video/test entries above describe historical snapshots.
+Historical media refresh (2026-09-29): the then-current narrated demo showed one genuine Arabic call using 157 input and 25 output tokens. It was subsequently superseded by the [current approximately 138.8-second video](https://youtu.be/FE4t_vn89X8). The historical recording decoded without errors; contact-sheet frames and the two-page judge PDF were visually inspected. YouTube reported no copyright issue. Devpost's video, story, and attached PDF were updated at that milestone, and the form then displayed "Project submitted!". The PDF-whitespace fix was deployed and verified in the hosted JavaScript. Earlier video/test entries above describe historical snapshots, not the current submission.
 
 1. The logged-in Devpost page displayed “Project submitted!” and “SUBMITTED TO Nebius x NVIDIA Global AI Hackathon.” Its embedded YouTube video, English story, screenshot gallery, demo link, and public code link appeared in the page. An unauthenticated GET to the project URL returned HTTP 200 with title, video ID, and repository link.
 2. The Azure root and GET `/api/cases`, public GitHub repository, and YouTube video returned HTTP 200 on 2026-09-29. Keep monitoring Azure uptime and Nebius spending/credit through judging within the user's $1 development-call cap and the public app's bounded attempt guard. A fresh live provider call was not made solely for post-submission verification.
 
 The older Windows Word/PDF core predates this event. The hackathon contribution is the browser workbench, licensed specimen comparison, local document intake, 18-target Nebius/NVIDIA runtime path, scoped QC, responsive design, and release evidence. Recorded 18-language slides and live 18-language smoke calls are separate artifacts and must not be conflated.
 
-## 2026-10-02 evidence-first submission refresh (current)
+## 2026-10-02 evidence-first submission refresh (historical snapshot)
 
 This dated update supersedes the historical video, PDF, test-count, and deployed-code snapshots above; it does not erase them.
 
@@ -52,3 +52,9 @@ This dated update supersedes the historical video, PDF, test-count, and deployed
 - **Evaluation boundary:** On the frozen three-draft Korean/Spanish/Arabic pilot, the additional model critique added zero localized detections over deterministic rules and increased warning volume from 7 to 22, including three adjudicated false positives. The two-seed negation development retest found zero localized detections in either arm. Model outputs remain unverified suggestions; independent medical and native-speaker validation is absent. See [the paired report](REVIEW_EVALUATION_20261001.md).
 
 The public app's persistent 100-provider-attempt ceiling, hourly counters, and server-held key limit exposure but are **not a provider-side monetary cap**. The user's development-call budget remains separate from the $25 Builder credit, and actual account billing was not independently verified. Continue read-only uptime/link monitoring during judging; do not spend credit merely to check availability.
+
+## 2026-10-04 default-path correction (local release candidate)
+
+The paired pilot did not establish a benefit from the second Nemotron critique call: 0 extra localized detections on the three numeric/direction seeds, warnings 7→22, three false positives in limited adjudicated clean categories, and 0/2 negation detections in either arm. The document workbench therefore defaults to one translation call plus scoped deterministic checks. A second critique is an explicitly selected, unverified experimental option. The UI discloses that selecting it sends the approved text and draft to Nebius again. The default path now needs only one available durable attempt; the opt-in path reserves two.
+
+The source includes public synthetic run records, separate gold and recomputable reports, not private provider credentials or patient data. A fresh independent source export passed 69/69 .NET server checks, 34/34 browser workflow checks, and 18/18 evaluation tests after `npm ci` and local worker build. The 42 fixture hashes and published worker endpoints were checked. A refreshed 2:18.78 local narrated video replaces only the evidence card while retaining genuine earlier Arabic inference footage; it is **not yet the public YouTube/Devpost video**. The existing public video still shows 66/33 as a recording-time test snapshot. The local two-page judge PDF was rendered and visually inspected; its Devpost attachment has not yet been replaced. No paid provider call was made for this correction.

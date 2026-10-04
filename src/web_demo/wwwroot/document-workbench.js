@@ -211,8 +211,12 @@ function renderReview(review) {
       container.append(row);
     }
   };
-  appendFindings(modelFindings, review.modelFindings, item =>
-    `UNVERIFIED MODEL SUGGESTION · ${item.category} · ${item.sourceSpan && item.draftSpan ? `${item.sourceSpan} → ${item.draftSpan}` : 'evidence span incomplete'} · interpretation unverified: ${item.rationale}`);
+  if (review.critiqueStage?.state === 'skipped') {
+    modelFindings.textContent = 'Experimental AI critique was not requested. No additional model review was performed.';
+  } else {
+    appendFindings(modelFindings, review.modelFindings, item =>
+      `UNVERIFIED MODEL SUGGESTION · ${item.category} · ${item.sourceSpan && item.draftSpan ? `${item.sourceSpan} → ${item.draftSpan}` : 'evidence span incomplete'} · interpretation unverified: ${item.rationale}`);
+  }
   appendFindings(ruleFindings, review.ruleFindings, item => `RULE · ${item.category} · ${item.severity}: ${item.message}`);
   for (const item of review.coverage || []) {
     const badge = document.createElement('span');
@@ -253,7 +257,7 @@ function showDocumentResult(sourceText, targetLanguage, data, successful) {
   renderReview(currentReview);
 }
 
-async function runLiveDocument({ sourceText, targetLanguage }) {
+async function runLiveDocument({ sourceText, targetLanguage, includeExperimentalCritique }) {
   if (liveController) return;
   clearLiveDocument();
   const requestId = liveRequestId;
@@ -273,7 +277,7 @@ async function runLiveDocument({ sourceText, targetLanguage }) {
     const response = await fetch('/api/live/document-excerpt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourceText, targetLanguage }),
+      body: JSON.stringify({ sourceText, targetLanguage, includeExperimentalCritique }),
       signal: liveController.signal
     });
     const data = await response.json();
@@ -281,13 +285,14 @@ async function runLiveDocument({ sourceText, targetLanguage }) {
     clearInterval(liveTimer);
     if (response.ok && data.translation && (data.status === 'ok' || data.status === 'partial')) {
       const complete = data.status === 'ok' && data.review?.translationStage?.state === 'completed' &&
-        data.review?.critiqueStage?.state === 'completed' && data.review?.rulesStage?.state === 'completed';
+        (data.review?.critiqueStage?.state === 'completed' || data.review?.critiqueStage?.state === 'skipped') &&
+        data.review?.rulesStage?.state === 'completed';
       if (complete) updateDocumentProgress(100, Math.floor((performance.now() - started) / 1000));
       else {
         updateDocumentProgress(Math.min(95, Number(document.querySelector('#document-progress-track').getAttribute('aria-valuenow')) || 1), Math.floor((performance.now() - started) / 1000));
         document.querySelector('#document-progress-track').setAttribute('aria-valuetext', 'Review incomplete; the workflow did not reach 100 percent');
       }
-      document.querySelector('#document-progress-title').textContent = complete ? 'Translation and review stages completed' : 'Review incomplete · draft only';
+      document.querySelector('#document-progress-title').textContent = complete ? 'Draft and scoped checks completed' : 'Review incomplete · draft only';
       document.querySelector('#document-live-status').textContent = complete
         ? 'AI draft and automated checks returned. Human medical and linguistic review remains essential.'
         : 'AI draft returned, but automated review is incomplete. Do not treat this as an approved translation.';
@@ -320,6 +325,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
   const reviewed = document.querySelector('#document-reviewed');
   const translate = document.querySelector('#document-translate');
   const language = document.querySelector('#document-language');
+  const experimentalCritique = document.querySelector('#document-experimental-critique');
   const preview = document.querySelector('#document-preview');
   if (!input || !fileTrigger || !fileSelected || !status || !text || !reviewed || !translate || !language || !preview) return;
   let generation = 0;
@@ -440,6 +446,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     refreshButton(text, reviewed, translate);
   });
   language.addEventListener('change', clearLiveDocument);
+  experimentalCritique.addEventListener('change', clearLiveDocument);
   document.querySelector('#document-cancel').addEventListener('click', () => {
     clearLiveDocument();
     document.querySelector('#document-live-status').textContent = 'Request cancelled; no draft accepted. The provider may already have incurred usage.';
@@ -468,7 +475,8 @@ export function mountDocumentWorkbench({ onTranslate }) {
 
   translate.addEventListener('click', () => {
     if (translate.disabled || !reviewed.checked) return;
-    onTranslate({ sourceText: text.value.trim(), targetLanguage: language.value });
+    onTranslate({ sourceText: text.value.trim(), targetLanguage: language.value,
+      includeExperimentalCritique: experimentalCritique.checked });
   });
 }
 

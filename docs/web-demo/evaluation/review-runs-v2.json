@@ -1,0 +1,260 @@
+{
+  "captureKind": "genuine Nemotron critique on frozen direct drafts and controlled variants",
+  "startedUtc": "2026-10-01T14:59:10.496756+00:00",
+  "runSet": "mtqc-negation-development-retest-2026-10-01-v2",
+  "promptVersion": "mtqc-critique-prompt-2026-10-01-v2",
+  "comparison": "same draft and same deterministic gate in both arms; enhanced adds separate critique",
+  "runs": [
+    {
+      "runId": "synthetic-es-01-control-negation-v2",
+      "caseId": "synthetic-es-01",
+      "targetLanguage": "es",
+      "draft": "\u0022Se registr\u00F3 una dosis de 2 mg. No se registr\u00F3 una dosis de 20 mg.\u0022",
+      "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+      "baseline": {
+        "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+        "findings": []
+      },
+      "enhanced": {
+        "draftSha256": "7f18b9a51bb9fe226ba9357748f9a510ad7efd44afbc8b4bd09828eb1da3771e",
+        "findings": [
+          {
+            "category": "other",
+            "draftSpan": "Se registr\u00F3 una dosis de 2 mg",
+            "provenance": "model"
+          },
+          {
+            "category": "other",
+            "draftSpan": "No se registr\u00F3 una dosis de 20 mg",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 2481,
+      "promptTokens": 284,
+      "completionTokens": 219,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "checked"
+        },
+        {
+          "category": "direction",
+          "state": "not assessed"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-es-01-seeded-negation-v2",
+      "caseId": "synthetic-es-01",
+      "targetLanguage": "es",
+      "draft": "\u0022Se registr\u00F3 una dosis de 2 mg. Se registr\u00F3 una dosis de 20 mg.\u0022",
+      "draftSha256": "8e53f5ce36afd2bc9efb26ff2554f19ad3de55ee5586d596b0dcd795cff1dc2d",
+      "baseline": {
+        "draftSha256": "8e53f5ce36afd2bc9efb26ff2554f19ad3de55ee5586d596b0dcd795cff1dc2d",
+        "findings": []
+      },
+      "enhanced": {
+        "draftSha256": "8e53f5ce36afd2bc9efb26ff2554f19ad3de55ee5586d596b0dcd795cff1dc2d",
+        "findings": [
+          {
+            "category": "other",
+            "draftSpan": "Se registr\u00F3 una dosis de 20 mg",
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 905,
+      "promptTokens": 283,
+      "completionTokens": 95,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "checked"
+        },
+        {
+          "category": "direction",
+          "state": "not assessed"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-control-negation-v2",
+      "caseId": "synthetic-ar-01",
+      "targetLanguage": "ar",
+      "draft": "\u0627\u0644\u0639\u064E\u0631\u0652\u0642\u064E\u0629\u064F \u0627\u0644\u0628\u064E\u0639\u0650\u064A\u062F\u064E\u0629\u064F \u062A\u064E\u0633\u0652\u062A\u064E\u0648\u0650\u064A 1.8 \u0645\u0650\u0645\u0652. \u0644\u064E\u0627 \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C.",
+      "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+      "baseline": {
+        "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "1e28ed2f1081c3b8349a6d0dabdbaffa0ed0affd487aea5fbb9c050c8e7efc2a",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "other",
+            "draftSpan": null,
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1772,
+      "promptTokens": 548,
+      "completionTokens": 270,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "not assessed"
+        },
+        {
+          "category": "direction",
+          "state": "warning"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    },
+    {
+      "runId": "synthetic-ar-01-seeded-negation-v2",
+      "caseId": "synthetic-ar-01",
+      "targetLanguage": "ar",
+      "draft": "\u0627\u0644\u0639\u064E\u0631\u0652\u0642\u064E\u0629\u064F \u0627\u0644\u0628\u064E\u0639\u0650\u064A\u062F\u064E\u0629\u064F \u062A\u064E\u0633\u0652\u062A\u064E\u0648\u0650\u064A 1.8 \u0645\u0650\u0645\u0652. \u064A\u064E\u0631\u064E\u0649 \u062E\u064E\u062B\u0652\u0631\u064E\u0629\u064C \u0642\u064E\u0631\u0650\u064A\u0628\u064E\u0629\u064C.",
+      "draftSha256": "13dbfd298a4ef77dba3844fd64e0fbe449c558770cb5701358e44db3df3b3152",
+      "baseline": {
+        "draftSha256": "13dbfd298a4ef77dba3844fd64e0fbe449c558770cb5701358e44db3df3b3152",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          }
+        ]
+      },
+      "enhanced": {
+        "draftSha256": "13dbfd298a4ef77dba3844fd64e0fbe449c558770cb5701358e44db3df3b3152",
+        "findings": [
+          {
+            "category": "direction",
+            "draftSpan": null,
+            "provenance": "rule"
+          },
+          {
+            "category": "other",
+            "draftSpan": null,
+            "provenance": "model"
+          }
+        ]
+      },
+      "latencyMs": 1351,
+      "promptTokens": 532,
+      "completionTokens": 169,
+      "estimatedCostUsd": null,
+      "critiqueModel": "nvidia/Nemotron-3_5-Lightning",
+      "ruleCoverage": [
+        {
+          "category": "number",
+          "state": "checked"
+        },
+        {
+          "category": "unit",
+          "state": "not assessed"
+        },
+        {
+          "category": "direction",
+          "state": "warning"
+        },
+        {
+          "category": "negation",
+          "state": "not assessed"
+        },
+        {
+          "category": "terminology",
+          "state": "not assessed"
+        },
+        {
+          "category": "omission",
+          "state": "not assessed"
+        },
+        {
+          "category": "other",
+          "state": "not assessed"
+        }
+      ]
+    }
+  ]
+}
