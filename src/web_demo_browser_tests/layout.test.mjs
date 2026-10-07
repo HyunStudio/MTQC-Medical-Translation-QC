@@ -124,3 +124,205 @@ test('raster table caption does not turn later two-column numeric prose into a t
   assert(result.text.indexOf('Left prose 7') < result.text.indexOf('Right 0'), result.text);
   assert.equal(result.fragmentCount, fragments.length);
 });
+
+test('long full-width table retains model count slice and voxel values on late rows', () => {
+  const fragments = [word('TABLE 1', 50, 50, 50),
+    word('Model', 100, 80, 70), word('Count', 400, 80, 60),
+    word('Slices', 500, 80, 60), word('Voxel', 640, 80, 50)];
+  for (let row = 0; row < 28; row++) {
+    const y = 110 + row * 25;
+    fragments.push(word(`Model${row}`, 100, y, 85), word(`${100 + row}`, 400, y, 35),
+      word(`${200 + row}`, 500, y, 35), word('1', 640, y, 15));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert(result.lines.some(line => line.text === 'Model27 127 227 1'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
+test('sparse inherited table cells and comma-separated slices stay with later rows', () => {
+  const fragments = [word('TABLE 1', 50, 50, 50),
+    word('Dataset', 75, 80, 60), word('Model', 356, 80, 70),
+    word('Count', 467, 80, 50), word('Slices', 543, 80, 60), word('Voxel', 634, 80, 60),
+    word('BHC', 75, 110, 40), word('Prisma', 356, 110, 70), word('160', 467, 110, 30),
+    word('208', 543, 110, 30), word('1 x 1 x 1', 634, 110, 60),
+    word('OPDC', 75, 130, 45), word('Trio', 356, 130, 45), word('383', 467, 130, 30),
+    word('174', 543, 130, 30), word('1 x 1 x 1', 634, 130, 60)];
+  for (let row = 0; row < 20; row++) {
+    const y = 150 + row * 25;
+    fragments.push(word(`Scanner${row}`, 356, y, 85), word(`${40 + row}`, 467, y, 30),
+      word(`${160 + row}, ${170 + row}`, 543, y, 76), word('1 x 1 x 1.2', 634, y, 70));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert(result.lines.some(line => line.text === 'Scanner19 59 179, 189 1 x 1 x 1.2'), result.text);
+});
+
+test('a half-column table next to prose never becomes a full-width table band', () => {
+  const fragments = [word('TABLE 1', 50, 50, 55),
+    word('Variable', 50, 80, 80), word('Group A', 150, 80, 70),
+    word('Group B', 240, 80, 70), word('Right prose heading continues', 390, 80, 290)];
+  for (let row = 0; row < 8; row++) {
+    const y = 110 + row * 20;
+    fragments.push(word(`Left${row}`, 50, y, 65), word(`${row + 1}`, 150, y, 20),
+      word(`${row + 2}`, 240, y, 20), word(`Right prose line ${row}`, 390, y, 290));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 0);
+  assert(result.text.indexOf('Left7') < result.text.indexOf('Right prose line 0'), result.text);
+});
+
+test('inline Table 1 reference beside a right-column table is not a full-page marker', () => {
+  const fragments = [word('Left paragraph', 50, 50, 180), word('Table 1', 250, 50, 55),
+    word('Table 2', 390, 50, 55),
+    word('from', 50, 80, 30), word('analysis', 90, 80, 50), word('due', 150, 80, 25),
+    word('ROI', 390, 80, 30), word('Model', 450, 80, 40),
+    word('MSD', 520, 80, 40), word('DSC', 640, 80, 40)];
+  for (let row = 0; row < 6; row++) {
+    const y = 110 + row * 20;
+    fragments.push(word(`Left ${row}`, 50, y, 260), word(`Muscle ${row}`, 390, y, 100),
+      word(`0.${row + 1}`, 530, y, 30), word(`0.${row + 2}`, 640, y, 30));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 0);
+  assert(result.text.indexOf('Left 5') < result.text.indexOf('Muscle 0'), result.text);
+});
+
+test('real Kalluvila page 8 five-column one-row ratings table stays in header and value rows', () => {
+  // Kalluvila et al., Diagnostics 2025, DOI 10.3390/diagnostics15233046,
+  // published PDF physical page 8 (CC BY 4.0). PDF.js fragment coordinates
+  // below are rounded to 0.01 px from the frozen original-page capture.
+  // Visual truth: one five-column table followed by one prose column.
+  const fragments = [
+    ['Table 1.', 207.62, 89.84, 39.23, 11.21],
+    ['Radiologist Evaluation of Algorithms (Likert Scale).', 250.32, 89.84, 256.43, 11.21],
+    ['UNet++', 236.61, 116.19, 40.98, 11.21], ['U-Net', 339.76, 116.19, 31.12, 11.21],
+    ['Nested U-Net', 418.53, 116.19, 70.03, 11.21], ['Attention U-Net', 510.21, 116.19, 83.11, 11.21],
+    ['Trans U-Net', 619.01, 116.19, 61.95, 11.21],
+    ['3.1', 232.81, 136.11, 14.01, 11.21], ['±', 249.76, 135.64, 9.08, 11.68],
+    ['0.32', 261.78, 136.11, 19.61, 11.21], ['3.6', 331.02, 136.11, 14.01, 11.21],
+    ['±', 347.98, 135.64, 9.08, 11.68], ['0.52', 360.00, 136.11, 19.61, 11.21],
+    ['3.7', 429.26, 136.11, 14.01, 11.21], ['±', 446.20, 135.64, 9.08, 11.68],
+    ['0.67', 458.22, 136.11, 19.61, 11.21], ['3.7', 518.90, 136.32, 14.01, 11.21],
+    ['±', 535.85, 135.85, 10.45, 11.68], ['0.82 *', 549.24, 136.32, 27.39, 11.21],
+    [',†', 576.63, 134.75, 7.27, 8.72], ['2.0', 628.49, 136.11, 14.01, 11.21],
+    ['±', 645.44, 135.64, 9.08, 11.68], ['0.0', 657.46, 136.11, 14.01, 11.21],
+    ['* Preferred network by radiologist 1.', 207.21, 154.78, 160.67, 9.96],
+    ['†', 371.06, 153.65, 3.74, 7.47],
+    ['Preferred network by radiologist 2.', 378.01, 154.78, 154.30, 9.96],
+    ['3.3. Qualitative Comparison', 207.99, 183.58, 143.96, 12.45],
+    ['In this portion of the results, we focus on manually assessing the segmentation quality', 234.57, 204.73, 465.02, 12.45]
+  ].map(([text, x, y, width, height]) => ({ text, x, y, width, height }));
+  const result = recoverReadingOrder(fragments, 744.095);
+  assert.equal(result.tableRegions, 1);
+  assert(result.lines.some(line => line.text === 'UNet++ U-Net Nested U-Net Attention U-Net Trans U-Net'), result.text);
+  assert(result.lines.some(line => line.text === '3.1 ± 0.32 3.6 ± 0.52 3.7 ± 0.67 3.7 ± 0.82 *,† 2.0 ± 0.0'), result.text);
+  assert(result.text.indexOf('2.0 ± 0.0') < result.text.indexOf('3.3. Qualitative Comparison'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
+// Reproduced red on a synthetic dose fragment; neither the six held-out
+// pages nor the earlier twelve-page corpus contains this fragment pattern.
+// Keep it visible as a known risk, not as a passing extraction claim.
+test.skip('shifted subscript in a medical dose term stays between adjacent baseline fragments', () => {
+  const result = recoverReadingOrder([
+    { text: 'D', x: 0, y: 90, width: 6, height: 10 },
+    { text: '95%', x: 6, y: 95, width: 12, height: 7 },
+    { text: 'dose', x: 22, y: 90, width: 20, height: 10 }
+  ], 600);
+  assert.equal(result.text, 'D95% dose');
+  assert.deepEqual(result.lines[0].fragmentIds, [0, 1, 2]);
+});
+
+test('two-column prose immediately below a numeric table is not swallowed by its band', () => {
+  const fragments = [
+    word('TABLE 1', 50, 50, 60),
+    word('Method', 50, 80, 60), word('Metric A', 260, 80, 60), word('Metric B', 460, 80, 60),
+    word('Alpha', 50, 110, 60), word('0.8', 260, 110, 60), word('0.9', 460, 110, 60),
+    word('Beta', 50, 130, 60), word('0.7', 260, 130, 60), word('0.8', 460, 130, 60)
+  ];
+  for (let row = 0; row < 6; row++) {
+    fragments.push(word(`Left prose ${row}`, 50, 153 + row * 15, 250));
+    fragments.push(word(`Right prose ${row}`, 390, 153 + row * 15, 250));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert.equal(result.lines.find(line => line.text === 'Left prose 0')?.column, 'left');
+  assert(result.text.indexOf('Left prose 5') < result.text.indexOf('Right prose 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
+test('centered one-row table does not absorb following two-column prose', () => {
+  const fragments = [word('TABLE 1', 207, 50, 44), word('Rating scale', 254, 50, 110)];
+  for (let index = 0; index < 5; index++) {
+    fragments.push(word(`Algorithm ${index}`, 225 + index * 95, 80, 70));
+    fragments.push(word(`${index + 1}.0`, 225 + index * 95, 110, 24));
+  }
+  for (let row = 0; row < 6; row++) {
+    fragments.push(word(`Left body ${row}`, 50, 133 + row * 16, 250));
+    fragments.push(word(`Right body ${row}`, 390, 133 + row * 16, 250));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert.equal(result.lines.find(line => line.text === 'Left body 0')?.column, 'left');
+  assert(result.text.indexOf('Left body 5') < result.text.indexOf('Right body 0'), result.text);
+});
+
+test('centered multirow table retains aligned numeric rows before two-column prose', () => {
+  const fragments = [word('TABLE 1', 207, 50, 44), word('Rating scale', 254, 50, 110)];
+  for (let index = 0; index < 5; index++) {
+    fragments.push(word(`Algorithm ${index}`, 225 + index * 95, 80, 70));
+    fragments.push(word(`${index + 1}.0`, 225 + index * 95, 110, 24));
+    fragments.push(word(`${index + 2}.0`, 225 + index * 95, 128, 24));
+  }
+  for (let row = 0; row < 6; row++) {
+    fragments.push(word(`Left body ${row}`, 50, 150 + row * 16, 250));
+    fragments.push(word(`Right body ${row}`, 390, 150 + row * 16, 250));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert(result.lines.some(line => line.column === 'table' && line.text === '2.0 3.0 4.0 5.0 6.0'), result.text);
+  assert.equal(result.lines.find(line => line.text === 'Left body 0')?.column, 'left');
+  assert(result.text.indexOf('Left body 5') < result.text.indexOf('Right body 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
+test('isolated citation numeral below a table does not merge two-column prose', () => {
+  const fragments = [
+    word('TABLE 1', 50, 50, 60),
+    word('Method', 50, 80, 60), word('Metric A', 260, 80, 60), word('Metric B', 460, 80, 60),
+    word('Alpha', 50, 110, 60), word('0.8', 260, 110, 60), word('0.9', 460, 110, 60),
+    word('Beta', 50, 130, 60), word('0.7', 260, 130, 60), word('0.8', 460, 130, 60),
+    { text: '12', x: 302, y: 151, width: 8, height: 8 }
+  ];
+  for (let row = 0; row < 6; row++) {
+    fragments.push(word(`Left prose ${row}`, 50, 153 + row * 15, 250));
+    fragments.push(word(`Right prose ${row}`, 390, 153 + row * 15, 250));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert.equal(result.lines.find(line => line.text.includes('Left prose 0'))?.column, 'left');
+  assert.equal(result.lines.find(line => line.text === 'Right prose 0')?.column, 'right');
+  assert(result.text.indexOf('Left prose 5') < result.text.indexOf('Right prose 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
+test('aligned citation numerals do not bridge non-table prose into a table band', () => {
+  const fragments = [
+    word('TABLE 1', 50, 50, 60),
+    word('Method', 50, 80, 60), word('Metric A', 260, 80, 60), word('Metric B', 460, 80, 60),
+    word('Alpha', 50, 110, 60), word('0.8', 260, 110, 60), word('0.9', 460, 110, 60),
+    word('Beta', 50, 130, 60), word('0.7', 260, 130, 60), word('0.8', 460, 130, 60),
+    word('as reported by', 50, 153, 150), { text: '12', x: 255, y: 151, width: 8, height: 8 },
+    word('Right prose 0', 390, 153, 250),
+    word('Left prose 1', 50, 168, 250), word('Right prose 1', 390, 168, 250),
+    word('Left prose 2', 50, 183, 250), word('per', 390, 183, 60),
+    { text: '7', x: 455, y: 181, width: 5, height: 8 }
+  ];
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert.equal(result.lines.find(line => line.text.includes('as reported by'))?.column, 'left');
+  assert.equal(result.lines.find(line => line.text === 'Right prose 0')?.column, 'right');
+  assert(result.text.indexOf('Left prose 2') < result.text.indexOf('Right prose 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});

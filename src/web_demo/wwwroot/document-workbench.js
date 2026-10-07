@@ -365,7 +365,7 @@ export function mountDocumentWorkbench({ onTranslate }) {
     });
     preview.replaceChildren(...frames);
     preview.classList.toggle('show-reading-order', overlayToggle.checked);
-    layoutSummary.textContent = `${summaries.join(' · ')}. ${tableRegions ? 'Numeric table region detected; row alignment is an approximation, not verified column semantics. Check every value against the original. ' : ''}Numbers propose reading sequence; check tables and figure labels against the original.`;
+    layoutSummary.textContent = `${summaries.join(' · ')}. ${applyText ? 'Applied to excerpt; review approval reset. ' : 'Preview only; excerpt and review approval are unchanged. Select Replace excerpt with this order to apply. '}${tableRegions ? 'Numeric table region detected; row alignment is an approximation, not verified column semantics. Check every value against the original. ' : ''}Numbers propose reading sequence; check tables and figure labels against the original.`;
     if (applyText) {
       text.value = texts.join('\n\n');
       reviewed.checked = false;

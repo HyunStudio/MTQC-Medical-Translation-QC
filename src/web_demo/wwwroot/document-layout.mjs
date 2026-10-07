@@ -34,28 +34,73 @@ function numericTableBands(items, width) {
   const groups = groupedRows(items);
   const bands = [];
   for (const marker of items.filter(item => /^TABLE\s+\d+\b/i.test(item.text.trim())).sort((a, b) => a.y - b.y)) {
+    const markerRow = groups.find(group => group.items.includes(marker));
+    if (marker.x > Math.min(...markerRow.items.map(item => item.x)) + 2) continue;
     if (bands.some(band => marker.y <= band.end)) continue;
-    const numericRows = groups.filter(group => group.y > marker.y &&
-      group.y - marker.y < width * .55 && group.items.length >= 3 &&
+    // Some journals center a single wide data row on a prose page. It has
+    // too few rows for the ordinary table detector, but five compact header
+    // cells and five horizontally aligned numeric starts are strong evidence
+    // of a row that must not be split by an apparent two-column gutter.
+    // The >20% left edge distinguishes this case from the established
+    // left-aligned long-table path below; the 40% and half-page span guards
+    // exclude a table that belongs only to one prose column.
+    if (marker.x > width * .2) {
+      if (marker.x <= width * .4) {
+        const header = groups.find(group => group.y > marker.y && group.y - marker.y < 45 &&
+          group.items.length >= 5 && group.items.every(item => item.width < width * .2 && /[A-Za-z]/.test(item.text)) &&
+          Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .5);
+        const data = header && groups.find(group => group.y > header.y && group.y - header.y < 35);
+        const numericStarts = data?.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())) ?? [];
+        if (data && numericStarts.length >= header.items.length &&
+          Math.max(...data.items.map(item => item.x + item.width)) - Math.min(...data.items.map(item => item.x)) > width * .5 &&
+          header.items.every(cell => numericStarts.some(value => Math.abs(value.x - cell.x) < width * .03))) {
+          let last = data;
+          for (const group of groups.filter(group => group.y > data.y)) {
+            if (group.y - last.y > 35) break;
+            const values = group.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()));
+            if (values.length < header.items.length ||
+              !header.items.every(cell => values.some(value => Math.abs(value.x - cell.x) < width * .03))) break;
+            last = group;
+          }
+          bands.push({ start: marker.y - 1,
+            end: Math.max(...last.items.map(item => item.y + item.height)) + 2 });
+        }
+      }
+      continue;
+    }
+    const numericRows = groups.filter(group => group.y > marker.y && group.items.length >= 3 &&
       group.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 2 &&
       Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
     if (numericRows.length < 2 || numericRows[0].y - marker.y > 100) continue;
     // A TABLE caption alone may precede two-column equations. Require a
     // separate, wide, multi-cell header before treating later numbers as rows.
-    const header = groups.some(group => group.y > marker.y && group.y < numericRows[0].y &&
+    const header = groups.find(group => group.y > marker.y && group.y < numericRows[0].y &&
       group.items.length >= 3 &&
       group.items.filter(item => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 3 &&
+      group.items.every(item => item.width < width * .25) &&
       Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
     if (!header) continue;
+    // Once a full-width table is established, inherited blank cells and
+    // comma-separated slice lists may leave only one plain numeric cell.
+    // Keep contiguous rows aligned to the table columns without using the
+    // stricter evidence required to establish the table in the first place.
+    const tableColumns = [...header.items, ...numericRows[0].items].map(item => item.x);
     let last = numericRows[0];
     let count = 1;
-    for (const group of numericRows.slice(1)) {
+    for (const group of groups.filter(group => group.y > numericRows[0].y)) {
       if (group.y - last.y > 45) break;
+      const aligned = item => tableColumns.some(x => Math.abs(item.x - x) < width * .03);
+      if (group.items.length < 3 || group.items.filter(item => item.width < width * .25).length < 2 ||
+        !group.items.every(aligned) ||
+        !group.items.some(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()) && aligned(item)) ||
+        Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) <= width * .25) break;
       last = group;
       count++;
     }
     if (count < 2) continue;
-    bands.push({ start: marker.y - 1, end: last.y + Math.max(25, last.height * 2.3) });
+    // End at the last cell's box, not a full blank-row allowance: prose may
+    // resume in two columns only a few pixels below the table rule.
+    bands.push({ start: marker.y - 1, end: last.y + last.height + 2 });
   }
   return bands;
 }

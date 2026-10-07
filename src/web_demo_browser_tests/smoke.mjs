@@ -284,8 +284,11 @@ try {
     await page.locator('#document-reviewed').check();
     await page.locator('#document-order-mode').selectOption('single');
     assert(await page.locator('#document-text').inputValue() === 'Reviewer corrected excerpt.', 'Previewing order overwrote a reviewer edit');
+    assert(await page.locator('#document-reviewed').isChecked(), 'Previewing order revoked source approval');
+    assert((await page.locator('#document-layout-summary').textContent()).includes('Preview only'), 'Unapplied order proposal is not identified');
     await page.locator('#document-apply-order').click();
     assert(!(await page.locator('#document-reviewed').isChecked()), 'Replacing text retained old approval');
+    assert((await page.locator('#document-layout-summary').textContent()).includes('Applied to excerpt'), 'Applied order proposal is not identified');
     const rowwise = await page.locator('#document-text').inputValue();
     assert(rowwise.indexOf('Right first') < rowwise.indexOf('Left second'), 'Explicit row ordering did not apply');
     await page.locator('#document-order-mode').selectOption('auto');
