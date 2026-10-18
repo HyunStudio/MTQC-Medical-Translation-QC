@@ -131,6 +131,9 @@ test('replay source paths are anchored to the locked manifest directory', () => 
   assert.equal(resolveManifestSourcePath(manifest, 'article.pdf'), path.resolve('local', 'article.pdf'));
   assert.throws(() => resolveManifestSourcePath(manifest, '..\\outside.pdf'), /outside manifest/i);
   assert.throws(() => resolveManifestSourcePath(manifest, path.resolve('absolute.pdf')), /outside manifest/i);
+  for (const outside of ['../outside.pdf', '..\\nested/../../outside.pdf', 'C:outside.pdf', 'C:/outside.pdf', 'C:\\outside.pdf', '\\\\server\\share\\outside.pdf'])
+    assert.throws(() => resolveManifestSourcePath(manifest, outside), /outside manifest/i);
+  assert.equal(resolveManifestSourcePath(manifest, 'nested\\article.pdf'), path.resolve('local', 'nested', 'article.pdf'));
 });
 
 test('replay refuses changed visual truth or source-page renders', () => {

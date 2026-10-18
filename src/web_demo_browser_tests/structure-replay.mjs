@@ -51,10 +51,11 @@ function parseArgs(argv) {
 }
 
 export function resolveManifestSourcePath(manifestPath, sourcePath) {
-  if (typeof sourcePath !== 'string' || !sourcePath.trim() || path.isAbsolute(sourcePath))
+  if (typeof sourcePath !== 'string' || !sourcePath.trim() || path.isAbsolute(sourcePath) ||
+      path.win32.isAbsolute(sourcePath) || /^[A-Za-z]:/.test(sourcePath))
     throw new Error('Source path is outside manifest directory');
   const base = path.dirname(manifestPath);
-  const resolved = path.resolve(base, sourcePath);
+  const resolved = path.resolve(base, sourcePath.replaceAll('\\', '/'));
   const relative = path.relative(base, resolved);
   if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
     throw new Error('Source path is outside manifest directory');
