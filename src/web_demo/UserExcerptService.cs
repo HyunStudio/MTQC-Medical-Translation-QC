@@ -26,10 +26,13 @@ public sealed class UserExcerptService
             return new("unavailable", "Live translation is disabled on this server. Recorded cases remain available.");
         if (request is null || string.IsNullOrWhiteSpace(request.SourceText) ||
             request.SourceText.EnumerateRunes().Count() > 3000 ||
+            request.SourceText.Any(ch => char.IsControl(ch) && ch is not ('\t' or '\n' or '\r')) ||
             !TargetLanguages.Contains(request.TargetLanguage, StringComparer.Ordinal))
-            return new("invalid", "Provide a reviewed English excerpt of 1–3,000 characters and a supported target language.");
+            return new("invalid", "Provide a reviewed English excerpt of 1–3,000 readable characters and a supported target language. Correct any unreadable PDF glyphs against the original.");
+        if (provider.RequestedModel != LiveMoneyOptions.Model)
+            return new("rate-limited", "Live model cost is not approved. Recorded examples remain available.");
         using var lease = await budget.TryAcquireAsync(clientId, request.IncludeExperimentalCritique ? 2 : 1, cancellationToken);
-        if (lease is null) return new("rate-limited", "Live demo request limit reached. Try a recorded case or return later.");
+        if (lease is null) return new("rate-limited", "Live budget or request limit reached, or cost accounting is not ready. Recorded examples remain available without a paid call.");
         var timer = Stopwatch.StartNew();
         var runId = Guid.NewGuid().ToString("N");
         var translationStage = new ReviewStage("pending");
@@ -38,14 +41,20 @@ public sealed class UserExcerptService
         var modelFindings = (IReadOnlyList<CritiqueFinding>)Array.Empty<CritiqueFinding>();
         var ruleFindings = (IReadOnlyList<RuleFinding>)Array.Empty<RuleFinding>();
         var coverage = (IReadOnlyList<RuleCoverage>)Array.Empty<RuleCoverage>();
+        ReviewIdentity? identity = null;
         ReviewRun Review() => new(runId, translationStage, critiqueStage, rulesStage,
-            modelFindings, ruleFindings, coverage, timer.ElapsedMilliseconds);
+            modelFindings, ruleFindings, coverage, timer.ElapsedMilliseconds,
+            EstimatedCostUsd: budget.EstimatedCostUsd(lease), Identity: identity);
         var source = request.SourceText.Trim();
         NebiusOutput output;
         try
         {
             var started = timer.ElapsedMilliseconds;
-            output = await provider.TranslateAsync(source, request.TargetLanguage, cancellationToken);
+            using var cost = budget.TryStartCall(lease, 0);
+            if (cost is null) return new("rate-limited", "Cost reservation is unavailable. Recorded examples remain available.");
+            output = await provider.TranslateAsync(source, request.TargetLanguage, cancellationToken, cost);
+            cost.Complete();
+            identity = ReviewIdentity.Create(source, output.Text, request.TargetLanguage);
             translationStage = new("completed", output.Model, output.PromptTokens,
                 output.CompletionTokens, timer.ElapsedMilliseconds - started);
         }
@@ -57,10 +66,17 @@ public sealed class UserExcerptService
         if (request.IncludeExperimentalCritique) try
         {
             var started = timer.ElapsedMilliseconds;
-            var critique = await provider.CritiqueAsync(source, request.TargetLanguage, output.Text, cancellationToken);
-            modelFindings = critique.Findings;
-            critiqueStage = new("completed", critique.Model, critique.PromptTokens,
-                critique.CompletionTokens, timer.ElapsedMilliseconds - started);
+            using var cost = budget.TryStartCall(lease, 1);
+            if (cost is null)
+                critiqueStage = new("held", ElapsedMs: timer.ElapsedMilliseconds - started);
+            else
+            {
+                var critique = await provider.CritiqueAsync(source, request.TargetLanguage, output.Text, cancellationToken, cost);
+                cost.Complete();
+                modelFindings = critique.Findings;
+                critiqueStage = new("completed", critique.Model, critique.PromptTokens,
+                    critique.CompletionTokens, timer.ElapsedMilliseconds - started);
+            }
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or System.Text.Json.JsonException)
         {
@@ -82,7 +98,9 @@ public sealed class UserExcerptService
             (!request.IncludeExperimentalCritique || critiqueStage.State == "completed");
         return new(complete ? "ok" : "partial",
             complete ? "AI draft and scoped rule checks completed; experimental AI critique may be skipped. Human medical and linguistic review is still required."
-                : "AI draft — review incomplete. Human review is required; do not treat this as an approved translation.",
+                : critiqueStage.State == "held"
+                    ? "AI draft — experimental critique is on hold until billing is confirmed. Scoped rule checks are available; human review remains required. Recorded examples remain available."
+                    : "AI draft — review incomplete. Human review is required; do not treat this as an approved translation.",
             output.Text, output.Model, output.PromptTokens, output.CompletionTokens,
             ExcerptQc.Summarize(source, output.Text, request.TargetLanguage), Review());
     }

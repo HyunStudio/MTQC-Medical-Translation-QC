@@ -1,5 +1,27 @@
 using MedicalQcWebDemo;
 
+// Offline receipt import never starts the web server or sends a provider request.
+if (args.Length > 0 && args[0] == "--reconcile-live-cost")
+{
+    try
+    {
+        if (args.Length != 2 || !Path.IsPathFullyQualified(args[1]) || new FileInfo(args[1]).Length > 4096)
+            throw new InvalidDataException();
+        var receipt = System.Text.Json.JsonSerializer.Deserialize<LiveBillingReceipt>(File.ReadAllText(args[1]));
+        var money = LiveMoneyOptions.FromEnvironment(LiveMoneyOptions.Model, requireFresh: false);
+        if (receipt is null || money is null || !new LiveMoneyLedger(money, TimeProvider.System).Reconcile(receipt))
+            throw new InvalidDataException();
+        Console.WriteLine("Billing receipt recorded; future admission still checks all limits.");
+        return 0;
+    }
+    catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or
+        System.Text.Json.JsonException or NotSupportedException)
+    {
+        Console.Error.WriteLine("Billing receipt rejected; existing reservations remain held.");
+        return 1;
+    }
+}
+
 var fixtureRoot = Environment.GetEnvironmentVariable("DEMO_FIXTURE_ROOT")
     ?? Path.Combine(AppContext.BaseDirectory, "fixtures");
 DemoCaseCatalog catalog;
@@ -31,14 +53,15 @@ var rawLifetimeLimit = Environment.GetEnvironmentVariable("DEMO_LIVE_TOTAL_ATTEM
 var ledgerRequested = ledgerPath is not null || rawLifetimeLimit is not null;
 var ledgerValid = int.TryParse(rawLifetimeLimit, out var lifetimeLimit) && lifetimeLimit is >= 1 and <= 1000 &&
     !string.IsNullOrWhiteSpace(ledgerPath) && Path.IsPathFullyQualified(ledgerPath);
+var liveModel = Environment.GetEnvironmentVariable("DEMO_NEBIUS_MODEL") ?? LiveMoneyOptions.Model;
 var liveOptions = new LiveOptions(
     string.Equals(Environment.GetEnvironmentVariable("DEMO_LIVE_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) &&
         (!ledgerRequested || ledgerValid),
     liveKey,
     PerClientLimit: LiveOptions.ParsePerClientLimit(Environment.GetEnvironmentVariable("DEMO_LIVE_PER_CLIENT_LIMIT")),
     LifetimeAttemptLimit: ledgerValid ? lifetimeLimit : null,
-    LifetimeLedgerPath: ledgerValid ? ledgerPath : null);
-var liveModel = Environment.GetEnvironmentVariable("DEMO_NEBIUS_MODEL") ?? "nvidia/Nemotron-3_5-Lightning";
+    LifetimeLedgerPath: ledgerValid ? ledgerPath : null,
+    Money: LiveMoneyOptions.FromEnvironment(liveModel));
 var provider = new NebiusClient(new HttpClient(), liveKey ?? "", liveModel,
     new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(20));
 var budget = new LiveBudget(liveOptions);

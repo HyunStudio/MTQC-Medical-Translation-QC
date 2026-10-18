@@ -19,6 +19,37 @@ using (var build = Process.Start(new ProcessStartInfo("dotnet", $"build \"{webPr
 }
 var tests = new (string Name, Func<Task> Run)[]
 {
+    ("provider envelope requires explicit completion and preserves rejected usage", ProviderEnvelopeRequiresCompletion),
+    ("provider envelope sanitizes out-of-range critique usage", ProviderEnvelopeRejectsCritiqueUsage),
+    ("followup Spanish adversative phrases cannot mask a missing negative marker", FollowupSpanishAdversatives),
+    ("followup Arabic conjunction prefixes preserve bounded negative markers", FollowupArabicPrefixes),
+    ("followup Korean literal daily frequency avoids invented numeric changes", FollowupFrequencyControls),
+    ("followup Korean frequency normalization preserves changes and boundaries", FollowupFrequencyChanges),
+    ("followup Korean frequency aliases cannot erase decimal or signed prefixes", FollowupFrequencyPrefixes),
+    ("paper hyphen unit faithful adjectival quantities retain pair identity", PaperHyphenControls),
+    ("paper hyphen unit changed magnitudes units and signs retain exact evidence", PaperHyphenChanges),
+    ("review improvement summary withholds English allegations for valid German terms", ReviewImprovementDirection),
+    ("review improvement identifier detects substitutions omissions and counts", ReviewImprovementIdentifierChanges),
+    ("review improvement identifier preserves order and literal hyphen aliases", ReviewImprovementIdentifierControls),
+    ("review improvement identifier leaves unsupported shapes unassessed", ReviewImprovementIdentifierScope),
+    ("review improvement result identity binds the accepted source draft and language", ReviewImprovementIdentity),
+    ("money guard offline receipt import permits expired admission proof", MoneyGuardOfflineReceipt),
+    ("money guard validates billing receipts before releasing reservations", MoneyGuardReconciliation),
+    ("money guard holds successful and sibling calls until billing confirmation", MoneyGuardPendingBilling),
+    ("money guard snapshots prices in every reservation", MoneyGuardPriceSnapshot),
+    ("money guard records outcomes after admission evidence expires", MoneyGuardExpiredDuringCall),
+    ("money guard refuses unapproved request or response models", MoneyGuardPinsModel),
+    ("money guard protects cash reserve and rejects stale evidence", MoneyGuardProtectsCash),
+    ("money guard serializes separate budget instances", MoneyGuardConcurrentReservations),
+    ("money guard resets the daily envelope at KST midnight", MoneyGuardKstDay),
+    ("money guard preserves malformed paid response usage", MoneyGuardMalformedUsage),
+    ("money guard keeps cached results after unknown usage", MoneyGuardKeepsCache),
+    ("money guard blocks an unknown billing bucket", MoneyGuardBlocksUnknownBucket),
+    ("money guard reserves against daily and complete run ceilings", MoneyGuardHonorsCeilings),
+    ("money guard persists usage without source or key", MoneyGuardPersistsUsage),
+    ("money guard holds unknown cost across restart", MoneyGuardHoldsUnknownCost),
+    ("money guard fails closed for corrupt durable state", MoneyGuardFailsClosed),
+    ("money guard blocks an unconfigured live call before spending", MoneyGuardBlocksUnconfiguredLiveCall),
     ("recorded case works without an API key", RecordedCaseWorksWithoutKey),
     ("missing license rejects the fixture", () => RejectMutation(root => root["source"]!["license"] = "")),
     ("missing source URL rejects the fixture", () => RejectMutation(root => root["source"]!["url"] = "")),
@@ -61,13 +92,46 @@ var tests = new (string Name, Func<Task> Run)[]
     ("live timeout is sanitized", LiveTimeoutIsSanitized),
     ("user excerpt accepts all 18 target languages", UserExcerptAcceptsAllTargets),
     ("default document review uses one model call and keeps critique experimental", UserExcerptDefaultsToRulesWithoutCritique),
-    ("user excerpt runs translation then critique then rules", UserExcerptRunsTwoStages),
-    ("critique failure leaves an incomplete draft", UserExcerptCritiqueFailureIsPartial),
+    ("user excerpt holds critique until billing and still runs rules", UserExcerptRunsTwoStages),
+    ("held critique leaves an incomplete draft", UserExcerptCritiqueFailureIsPartial),
     ("translation failure never exposes a draft or starts critique", UserExcerptTranslationFailureHasNoDraft),
     ("document request reserves two provider attempts", UserExcerptReservesTwoAttempts),
     ("unsupported deterministic coverage is not passed", QcUnsupportedCoverageIsNotPassed),
     ("structured rules distinguish numeric and direction warnings", QcStructuredWarningsAreScoped),
     ("Spanish and Arabic missing negation is a scoped review warning", QcSpanishArabicNegationIsScoped),
+    ("source negation idioms remain unassessed without a genuine marker", QcSourceNegationIdiomsWithhold),
+    ("source negation idioms do not mask genuine negative clauses", QcSourceNegationIdiomsPreserve),
+    ("negation target scope withholds foreign anchors and compound polarity", QcNegationTargetScopeWithholds),
+    ("negation target scope retains simple and shared predicate coverage", QcNegationTargetScopeControls),
+    ("negation scope QC locates partial omissions by unique anchors", QcNegationScopeOmissions),
+    ("negation scope QC allows reordered merged and short-form negatives", QcNegationScopeControls),
+    ("negation scope QC withholds ambiguous and unsupported alignment", QcNegationScopeWithholds),
+    ("scientific QC detects whole-token value and sign changes", QcScientificChanges),
+    ("scientific QC preserves equivalent exponent forms and identifiers", QcScientificControls),
+    ("scientific QC withholds unsupported exponent comparisons", QcScientificWithholds),
+    ("uncertain negation QC withholds unsupported certainty and quantifiers", QcUncertainNegationHolds),
+    ("uncertain negation QC retains simple and source idiom boundaries", QcUncertainNegationControls),
+    ("quoted negation QC withholds attribution and literal mentions", QcQuotedNegationHolds),
+    ("quoted negation QC retains formatting controls and omission warnings", QcQuotedNegationControls),
+    ("clot entity scope withholds missing competing and repeated terms", QcClotEntityScopeHolds),
+    ("clot entity scope preserves simple controls and outside-vocabulary gaps", QcClotEntityScopeControls),
+    ("predicate coverage withholds mixed statements and missing record terms", QcPredicateCoverageHolds),
+    ("predicate coverage preserves record controls and omission warnings", QcPredicateCoverageControls),
+    ("recorded dose coverage withholds missing repeated and compound nouns", QcRecordedDoseCoverageHolds),
+    ("recorded dose coverage preserves bounded controls and omissions", QcRecordedDoseCoverageControls),
+    ("dose record interval coverage withholds intervening nouns and reverse order", QcDoseRecordIntervalHolds),
+    ("dose record interval coverage preserves shared controls and omissions", QcDoseRecordIntervalControls),
+    ("record tail coverage withholds extra nouns and alternate surfaces", QcRecordTailHolds),
+    ("record tail coverage preserves terminal negatives and omission evidence", QcRecordTailControls),
+    ("source dose surface coverage withholds extra source nouns and alternates", QcSourceDoseSurfaceHolds),
+    ("source dose surface coverage preserves context and omission evidence", QcSourceDoseSurfaceControls),
+    ("unit dose interval coverage withholds intervening nouns and alternates", QcUnitDoseIntervalHolds),
+    ("unit dose interval coverage preserves context omissions and disclosed gaps", QcUnitDoseIntervalControls),
+    ("leading decimal QC preserves magnitude and sign", QcLeadingDecimalChanges),
+    ("leading decimal QC allows explicit leading zero", QcLeadingDecimalControls),
+    ("unit QC flags swapped value-unit pairs with exact evidence", QcUnitPairsArePreserved),
+    ("unit QC flags omitted and added symbol occurrences", QcUnitOccurrencesArePreserved),
+    ("unit QC allows pair reordering and localized decimals", QcUnitPairControls),
     ("user excerpt rejects unsupported languages and overlong Unicode", UserExcerptRejectsBadInput),
     ("user excerpt route is disabled without a server key", UserExcerptRouteIsDisabled),
     ("user excerpt route rejects a body above 64 KiB", UserExcerptRejectsOversizedBody),
@@ -109,6 +173,501 @@ foreach (var (name, run) in selectedTests)
 Console.WriteLine($"{selectedTests.Length - failed}/{selectedTests.Length} passed");
 return failed == 0 ? 0 : 1;
 
+async Task ProviderEnvelopeRequiresCompletion()
+{
+    // This catches accepting a draft without an explicit normal stop, and
+    // verifies the actual service/ledger still holds reported provider usage.
+    foreach (var finish in new string?[] { null, "null", "3", "\"length\"", "\"content_filter\"" })
+    {
+        var choice = new JsonObject { ["message"] = new JsonObject { ["content"] = "private partial draft" } };
+        if (finish is not null) choice["finish_reason"] = JsonNode.Parse(finish);
+        var raw = new JsonObject
+        {
+            ["model"] = "nvidia/Nemotron-3_5-Lightning",
+            ["choices"] = new JsonArray(choice),
+            ["usage"] = new JsonObject { ["prompt_tokens"] = 11, ["completion_tokens"] = 7 }
+        }.ToJsonString();
+        var path = MoneyTestPath();
+        var options = FundedOptions(path);
+        var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(raw) });
+        var result = await FundedRun(options, handler, critique: true);
+        Assert(result.Status == "provider-error" && result.Translation is null,
+            $"unconfirmed completion was accepted: {finish ?? "missing"}");
+        Assert(!result.Message.Contains("private partial draft", StringComparison.Ordinal), "rejection leaked draft content");
+        var calls = JsonNode.Parse(File.ReadAllText(path))!["Calls"]!.AsArray();
+        Assert((string?)calls[0]!["State"] == "failed-cost-held" &&
+            (int?)calls[0]!["PromptTokens"] == 11 && (int?)calls[0]!["CompletionTokens"] == 7 &&
+            (string?)calls[1]!["State"] == "cancelled", "rejection lost usage or did not cancel unstarted critique");
+        Assert((await FundedRun(options, handler)).Status == "rate-limited" && handler.Calls == 1,
+            "unconfirmed completion was retried or released its reservation");
+    }
+}
+
+async Task ProviderEnvelopeRejectsCritiqueUsage()
+{
+    foreach (var field in new[] { "prompt_tokens", "completion_tokens" })
+    foreach (var invalid in new[] { "2147483648", "1.5", "1e100" })
+    {
+        var usage = new JsonObject { ["prompt_tokens"] = 11, ["completion_tokens"] = 7 };
+        usage[field] = JsonNode.Parse(invalid);
+        var raw = new JsonObject
+        {
+            ["model"] = "nvidia/Nemotron-3_5-Lightning",
+            ["choices"] = new JsonArray(new JsonObject
+            {
+                ["finish_reason"] = "stop",
+                ["message"] = new JsonObject { ["content"] = "{\"findings\":[]}" }
+            }),
+            ["usage"] = usage
+        }.ToJsonString();
+        var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(raw) });
+        var client = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
+            new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+        var rejected = false;
+        try { await client.CritiqueAsync("Dose 2 mg.", "ko", "2 mg 용량.", CancellationToken.None); }
+        catch (InvalidDataException) { rejected = true; }
+        Assert(rejected && handler.Calls == 1, $"critique usage escaped the sanitized rejection: {field}={invalid}");
+    }
+}
+
+Task FollowupSpanishAdversatives()
+{
+    const string source = "The marker was not measured.";
+    foreach (var draft in new[] { "Sin embargo, el marcador se midió.", "No obstante, el marcador se midió.", "SIN EMBARGO, el marcador se midió.", "Sin embargo; el marcador se midió." })
+        Assert(ExcerptQc.Evaluate(source, draft, "es").Findings.Any(f => f.Category == "negation"), "adversative phrase masked a missing negative marker: " + draft);
+    foreach (var draft in new[] { "Sin embargo, el marcador no se midió.", "No obstante, el marcador nunca se midió.", "El marcador quedó sin medir.", "Sin embargo, se midió sin demora." })
+        Assert(!ExcerptQc.Evaluate(source, draft, "es").Findings.Any(f => f.Category == "negation"), "genuine negative marker was discarded: " + draft);
+    return Task.CompletedTask;
+}
+
+Task FollowupArabicPrefixes()
+{
+    const string source = "The marker did not rise.";
+    foreach (var draft in new[] { "ولم يرتفع المؤشر.", "ولن يرتفع المؤشر.", "وليس المؤشر مرتفعًا.", "ولا يرتفع المؤشر.", "وَلَمْ يرتفع المؤشر." })
+        Assert(!ExcerptQc.Evaluate(source, draft, "ar").Findings.Any(f => f.Category == "negation"), "waw negative alias was lost: " + draft);
+    foreach (var draft in new[] { "ارتفع المؤشر.", "ولما ارتفع المؤشر، بدأ الفحص.", "والنتيجة هي ارتفاع المؤشر." })
+        Assert(ExcerptQc.Evaluate(source, draft, "ar").Findings.Any(f => f.Category == "negation"), "unrelated prefix established negative presence: " + draft);
+    return Task.CompletedTask;
+}
+
+Task FollowupFrequencyControls()
+{
+    foreach (var pair in new[] {
+        ("Participants took medicine once daily.", "참가자는 약을 1일 1회 복용했다."),
+        ("Participants took medicine once daily for 9 days.", "참가자는 9일 동안 약을 1일 1회 복용했다.")
+    })
+    {
+        var result = ExcerptQc.Evaluate(pair.Item1, pair.Item2, "ko");
+        Assert(result.Coverage.Any(c => c.Category == "number" && c.State == "checked"), "literal daily frequency was marked as a numeric change");
+        Assert(!ExcerptQc.Summarize(pair.Item1, pair.Item2, "ko").Contains("Numeric value/count mismatch", StringComparison.Ordinal), "summary disagreed with normalized inventory");
+    }
+    return Task.CompletedTask;
+}
+
+Task FollowupFrequencyPrefixes()
+{
+    foreach (var draft in new[] { "약을 -1일 1회 복용했다.", "약을 +1일 1회 복용했다.", "약을 −1일 1회 복용했다.", "약을 ±1일 1회 복용했다.", "약을 .1일 1회 복용했다.", "약을 ,1일 1회 복용했다.", "약을 ٫1일 1회 복용했다.", "약을 —1일 1회 복용했다.", "약을 ．1일 1회 복용했다." })
+    {
+        Assert(ExcerptQc.Evaluate("Take medicine once daily.", draft, "ko").Findings.Any(f => f.Category == "number"), "alias erased a numeric prefix: " + draft);
+        Assert(ExcerptQc.Summarize("Take medicine once daily.", draft, "ko").Contains("Numeric value/count mismatch", StringComparison.Ordinal), "summary erased a numeric prefix: " + draft);
+    }
+    Assert(ExcerptQc.Evaluate("At day 0 take medicine once daily.", "약은 0.1일 1회 복용했다.", "ko").Findings.Any(f => f.Category == "number"), "alias truncated a decimal to an existing source integer");
+    return Task.CompletedTask;
+}
+
+Task FollowupFrequencyChanges()
+{
+    foreach (var pair in new[] {
+        ("Participants took medicine once daily for 9 days.", "참가자는 90일 동안 약을 1일 1회 복용했다."),
+        ("Participants took medicine once daily.", "참가자는 약을 1일 2회 복용했다."),
+        ("Participants took medicine twice daily.", "참가자는 약을 1일 1회 복용했다."),
+        ("Participants took 8 mg once daily.", "참가자는 1일 1회 80 mg을 복용했다."),
+        ("Participants took medicine once daily.", "참가자는 약을 1일 1회 복용했고 다른 약도 1일 1회 복용했다."),
+        ("Participants took medicine once daily.", "참가자는 제1일 1회 복용했다.")
+    })
+        Assert(ExcerptQc.Evaluate(pair.Item1, pair.Item2, "ko").Findings.Any(f => f.Category == "number"), "frequency alias hid a numeric change or unsupported boundary");
+    Assert(ExcerptQc.Evaluate("Participants took 8 mg once daily.", "참가자는 1일 1회 80 mg을 복용했다.", "ko").Findings.Any(f => f.Category == "unit"), "normalization altered number-unit pair checks");
+    Assert(ExcerptQc.Evaluate("The marker was 7 mg.", "표지는 .7 mg이었다.", "ko").Findings.Any(f => f.Category == "number"), "unrelated leading-decimal inventory was silently suppressed");
+    return Task.CompletedTask;
+}
+
+Task PaperHyphenControls()
+{
+    foreach (var (source, draft) in new[] { ("2 150-mg tablets", "150 mg 정제 2개"), ("A 0.5-mL sample", "0.5 mL 검체"), ("A 2-μg sample", "2 μg 검체"), ("A -3-mm value", "-3 mm 값"), ("A 1e3-mg sample", "1e3 mg 검체") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(x => x.Category == "unit" && x.State == "checked"), "faithful adjectival hyphen quantity produced a unit warning: " + source);
+        Assert(result.Findings.All(x => x.Category is not ("unit" or "number")), "faithful hyphen spelling changed numeric/pair identity");
+    }
+    return Task.CompletedTask;
+}
+
+Task PaperHyphenChanges()
+{
+    foreach (var (source, draft, expected) in new[] { ("150-mg", "150 μg", "150-mg"), ("150-mg", "15 mg", "150-mg"), ("-3-mm", "3 mm", "-3-mm"), ("1e3-mg", "1e2 mg", "1e3-mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        var finding = result.Findings.Single(x => x.Category == "unit");
+        Assert(finding.SourceSpan == expected && finding.DraftSpan == draft, "hyphen quantity change lost exact pair/sign evidence");
+    }
+    foreach (var source in new[] { "5 -mg", "5- mg", "5–mg", "5-%" })
+    {
+        var result = ExcerptQc.Evaluate(source, "5 mg", "ko");
+        Assert(result.Findings.Any(x => x.Category == "unit"), "unsupported separator spelling was silently normalized: " + source);
+    }
+    return Task.CompletedTask;
+}
+
+Task ReviewImprovementDirection()
+{
+    foreach (var language in new[] { "de", "es", "pt", "fr", "nl" })
+        Assert(!ExcerptQc.Summarize("The vein runs distal.", "Die Vene verläuft distal.", language)
+            .Contains("Untranslated English directional term", StringComparison.Ordinal),
+            $"{language}: an unvalidated language was called untranslated English");
+    Assert(ExcerptQc.Summarize("The proximal artery.", "الشريان proximal", "ar")
+        .Contains("Untranslated English directional term", StringComparison.Ordinal), "scoped Arabic warning lost");
+    return Task.CompletedTask;
+}
+
+Task ReviewImprovementIdentifierChanges()
+{
+    foreach (var (source, draft) in new[] {
+        ("The patient carries HLA-B27.", "환자는 HLA-C27을 가지고 있습니다."),
+        ("BRCA1 and BRCA1 were measured.", "BRCA1을 측정했습니다."),
+        ("IL-6 was measured.", "IL-6 y IL-6 se midieron."),
+        ("BRCA1 was measured.", "측정했습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Findings.Any(x => x.Category == "identifier"), "literal identifier change was not flagged");
+        Assert(result.Coverage.Any(x => x.Category == "identifier" && x.State == "warning"), "changed literal inventory was cleared");
+    }
+    var pair = ExcerptQc.Evaluate("HLA-B27 was recorded.", "HLA-C27을 기록했습니다.", "ko").Findings.Single(x => x.Category == "identifier");
+    Assert(pair.SourceSpan == "HLA-B27" && pair.DraftSpan == "HLA-C27", "exact changed identifier spans missing");
+    return Task.CompletedTask;
+}
+
+Task ReviewImprovementIdentifierControls()
+{
+    foreach (var draft in new[] { "BRCA1 및 HLA-B27을 기록했습니다.", "BRCA1 및 HLA‑B27을 기록했습니다.", "BRCA1 وHLA‐B27", "BRCA1: HLA-B27.", "(BRCA1), HLA-B27;" })
+    {
+        var result = ExcerptQc.Evaluate("HLA-B27 and BRCA1 were recorded.", draft, "ko");
+        Assert(result.Findings.All(x => x.Category != "identifier"), "order or literal hyphen alias caused a warning");
+        Assert(result.Coverage.Any(x => x.Category == "identifier" && x.State == "checked"), "supported literal inventory was not checked");
+    }
+    return Task.CompletedTask;
+}
+
+Task ReviewImprovementIdentifierScope()
+{
+    foreach (var text in new[] { "METHODS AND RESULTS", "tumor protein p53", "Model AB123456789", "Dose 1e3 mg", "NC_000001.11", "AB12.5", "AB12/34", "IL-1α", "IL-1β", "éBRCA1", "èBRCA1", "AB12–CD34", "HLA-B27:05", "BRCA1²", "AB12−CD34", "HLA−AB27", "XYZ−AB27", "HLA-DRB1*15:01" })
+    {
+        var result = ExcerptQc.Evaluate(text, text, "ko");
+        Assert(result.Coverage.Any(x => x.Category == "identifier" && x.State == "not assessed"), $"unsupported identifier shape was certified: {text}");
+        Assert(result.Findings.All(x => x.Category != "identifier"), "unsupported shape produced a literal warning");
+    }
+    return Task.CompletedTask;
+}
+
+async Task ReviewImprovementIdentity()
+{
+    const string source = "HLA-B27 was recorded.";
+    const string draft = "HLA-B27을 기록했습니다.";
+    var handler = new FakeProviderHandler(_ => ProviderSuccess(draft));
+    var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("  " + source + "\n", "ko", true), "identity-a", CancellationToken.None);
+    var review = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!["Review"]!;
+    var identity = review["Identity"];
+    Assert(identity is not null, "accepted translation has no input identity");
+    string Hash(string text) => Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
+    Assert((string?)identity!["SourceSha256"] == Hash(source) && (string?)identity["DraftSha256"] == Hash(draft), "identity does not bind exact provider input and accepted draft");
+    Assert((string?)identity["TargetLanguage"] == "ko" && (string?)identity["TextNormalization"] == "trim-utf8", "language or text normalization missing");
+    Assert(!string.IsNullOrWhiteSpace((string?)identity["RuleVersion"]) && !string.IsNullOrWhiteSpace((string?)identity["AppVersion"]), "version identity missing");
+    Assert(result.Status == "partial" && handler.Calls == 1, "identity bypassed pending-billing critique hold");
+    Assert(!identity.ToJsonString().Contains(source, StringComparison.Ordinal) && !identity.ToJsonString().Contains(draft, StringComparison.Ordinal), "identity included plaintext");
+}
+
+async Task MoneyGuardOfflineReceipt()
+{
+    var options = FundedOptions(MoneyTestPath());
+    await FundedRun(options, new FakeProviderHandler(_ => ProviderSuccess("번역")));
+    var item = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!;
+    var receipt = new LiveBillingReceipt((string)item["CallId"]!, "trial", LiveMoneyOptions.Model,
+        .00000234m, "synthetic-offline-billing-proof", DateTimeOffset.UtcNow);
+    var receiptPath = Path.Combine(Path.GetDirectoryName(options.Money.LedgerPath)!, "receipt.json");
+    File.WriteAllText(receiptPath, System.Text.Json.JsonSerializer.Serialize(receipt));
+    var dll = Path.Combine(Path.GetDirectoryName(webProject)!, "bin", "Debug", "net10.0", "MedicalQcWebDemo.dll");
+    var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true,
+        RedirectStandardOutput = true, RedirectStandardError = true };
+    foreach (var argument in new[] { dll, "--reconcile-live-cost", receiptPath }) start.ArgumentList.Add(argument);
+    start.Environment.Remove("NEBIUS_API_KEY");
+    start.Environment["DEMO_LIVE_COST_LEDGER_PATH"] = options.Money.LedgerPath;
+    start.Environment["DEMO_LIVE_BILLING_BUCKET"] = "trial";
+    start.Environment["DEMO_LIVE_BILLING_EVIDENCE"] = "synthetic-expired-admission-proof";
+    start.Environment["DEMO_LIVE_BILLING_VERIFIED_UTC"] = DateTimeOffset.UtcNow.AddHours(-25).ToString("O");
+    start.Environment["DEMO_LIVE_TRIAL_REMAINING_USD"] = "1";
+    start.Environment["DEMO_LIVE_CASH_REMAINING_USD"] = "25";
+    start.Environment["DEMO_LIVE_TAX_MULTIPLIER"] = "1";
+    using var process = Process.Start(start)!;
+    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+    await process.WaitForExitAsync(timeout.Token);
+    Assert(process.ExitCode == 0 && (string?)JsonNode.Parse(File.ReadAllText(options.Money.LedgerPath))!["Calls"]![0]!["State"] == "reconciled",
+        "offline receipt accounting required fresh paid-admission proof");
+    Assert(!new LiveBudget(options with { Money = options.Money with { VerifiedAtUtc = DateTimeOffset.UtcNow.AddHours(-25) } }).HasLifetimeCapacity(1),
+        "offline receipt import weakened stale-proof paid admission");
+}
+void ConfirmTestBilling(FakeProviderHandler handler) => ConfirmBilling(handler.TestBudgetOptions
+    ?? throw new Exception("test budget options missing"));
+void ConfirmBilling(LiveOptions options, TimeProvider? clock = null)
+{
+    var calls = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]!.AsArray();
+    var item = calls.Last(c => (string?)c!["State"] == "pending-billing")!;
+    var receipt = new LiveBillingReceipt((string)item["CallId"]!, (string)item["Bucket"]!, LiveMoneyOptions.Model,
+        (decimal)item["EstimatedCostUsd"]!, "synthetic-billing-receipt", (clock ?? TimeProvider.System).GetUtcNow());
+    Assert(new LiveBudget(options, clock).ReconcileBilling(receipt), "synthetic verified billing receipt rejected");
+}
+async Task MoneyGuardReconciliation()
+{
+    var options = FundedOptions(MoneyTestPath());
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+    await FundedRun(options, handler);
+    var item = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!;
+    var basis = new LiveBillingReceipt((string)item["CallId"]!, "trial", LiveMoneyOptions.Model,
+        .00000234m, "synthetic-billing-receipt", DateTimeOffset.UtcNow);
+    var budget = new LiveBudget(options);
+    foreach (var invalid in new[] { basis with { Bucket = "cash" }, basis with { BilledCostUsd = .16m },
+        basis with { Evidence = "private source text" }, basis with { ConfirmedAtUtc = basis.ConfirmedAtUtc.AddDays(1) } })
+        Assert(!budget.ReconcileBilling(invalid), "invalid receipt released a reservation");
+    Assert(budget.ReconcileBilling(basis) && budget.ReconcileBilling(basis), "valid or repeated identical receipt rejected");
+    Assert(!budget.ReconcileBilling(basis with { BilledCostUsd = 0m }), "conflicting receipt replaced billing history");
+    Assert((await FundedRun(options, handler)).Status == "ok" && handler.Calls == 2, "confirmed call did not allow a bounded next run");
+    item = JsonNode.Parse(File.ReadAllText(options.Money.LedgerPath))!["Calls"]![0]!;
+    Assert((string?)item["State"] == "reconciled" && (string?)item["Outcome"] == "accepted" &&
+        (decimal?)item["BilledCostUsd"] == basis.BilledCostUsd && item["BillingReceipt"] is not null,
+        "billing confirmation erased the original outcome or charge evidence");
+}
+async Task MoneyGuardPendingBilling()
+{
+    var options = FundedOptions(MoneyTestPath());
+    var handler = SuccessfulTwoPassHandler("번역");
+    var first = await FundedRun(options, handler, critique: true);
+    var next = await FundedRun(options, handler);
+    var calls = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]!.AsArray();
+    Assert(first.Status == "partial" && handler.Calls == 1 && next.Status == "rate-limited",
+        "successful unbilled response dispatched a sibling or later paid call");
+    Assert((string?)calls[0]!["State"] == "pending-billing" && calls[0]!["BilledCostUsd"] is null &&
+        (decimal?)calls[0]!["ReservedUsd"] == options.Money.MaximumCallUsd && (string?)calls[1]!["State"] == "cancelled",
+        "unbilled maximum hold or unstarted sibling history was lost");
+}
+async Task MoneyGuardPriceSnapshot()
+{
+    var options = FundedOptions(MoneyTestPath());
+    await FundedRun(options, new FakeProviderHandler(_ => throw new TaskCanceledException("timeout")));
+    var item = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!;
+    Assert((decimal?)item["InputUsdPerMillion"] == .06m && (decimal?)item["OutputUsdPerMillion"] == .24m &&
+        (string?)item["PriceVersion"] == "nebius-standard-2026-08-01" && item["ReservedAtUtc"] is not null,
+        "unknown call has no immutable price/time snapshot");
+}
+async Task MoneyGuardExpiredDuringCall()
+{
+    var clock = new MoneyClock(DateTimeOffset.UtcNow);
+    var options = FundedOptions(MoneyTestPath());
+    options = options with { Money = options.Money! with { VerifiedAtUtc = clock.Now.AddHours(-24).AddSeconds(1) } };
+    var handler = new FakeProviderHandler(_ => { clock.Now = clock.Now.AddSeconds(2); return ProviderSuccess("번역"); });
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", LiveMoneyOptions.Model,
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var result = await new UserExcerptService(provider, options, new LiveBudget(options, clock)).ExecuteAsync(
+        new("Dose 2 mg.", "ko"), "expires", CancellationToken.None);
+    var item = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!;
+    Assert(result.Status == "ok" && (int?)item["PromptTokens"] == 11 && (string?)item["State"] == "pending-billing",
+        "admitted response lost its usage when configuration evidence expired");
+}
+async Task MoneyGuardPinsModel()
+{
+    foreach (var changeRequest in new[] { true, false })
+    {
+        var options = FundedOptions(MoneyTestPath());
+        var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"model\":\"other-model\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"번역\"}}],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}")
+        });
+        var provider = new NebiusClient(new HttpClient(handler), "test-key", changeRequest ? "other-model" : LiveMoneyOptions.Model,
+            new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+        var result = await new UserExcerptService(provider, options, new LiveBudget(options)).ExecuteAsync(
+            new("Dose 2 mg.", "ko"), "model-check", CancellationToken.None);
+        Assert(result.Translation is null && result.Status != "ok" && handler.Calls == (changeRequest ? 0 : 1),
+            "unapproved requested or returned model was accepted");
+    }
+}
+
+async Task MoneyGuardProtectsCash()
+{
+    var basis = FundedOptions(MoneyTestPath(), "cash");
+    foreach (var money in new[]
+    {
+        basis.Money! with { CashRemainingUsd = 20.07m },
+        basis.Money! with { VerifiedAtUtc = DateTimeOffset.UtcNow.AddHours(-25) },
+        basis.Money! with { TaxMultiplier = 0m },
+        basis.Money! with { DailyLimitUsd = 0.51m },
+        basis.Money! with { PerRunLimitUsd = 0.16m }
+    })
+    {
+        var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+        var result = await FundedRun(basis with { Money = money }, handler);
+        Assert(result.Status == "rate-limited" && handler.Calls == 0,
+            "protected cash, historical hold, stale proof, or approved ceilings were bypassed");
+    }
+}
+
+async Task MoneyGuardConcurrentReservations()
+{
+    var options = FundedOptions(MoneyTestPath(), daily: 0.10m);
+    var budgets = new[] { new LiveBudget(options), new LiveBudget(options) };
+    var leases = await Task.WhenAll(budgets.Select((budget, index) => budget.TryAcquireAsync("client-" + index, CancellationToken.None)));
+    try { Assert(leases.Count(lease => lease is not null) == 1, "separate instances exceeded a shared reservation"); }
+    finally { foreach (var lease in leases) lease?.Dispose(); }
+}
+
+async Task MoneyGuardKstDay()
+{
+    var clock = new MoneyClock(new DateTimeOffset(2026, 10, 10, 14, 59, 59, TimeSpan.Zero));
+    var options = FundedOptions(MoneyTestPath(), daily: 0.063347m);
+    options = options with { Money = options.Money! with { VerifiedAtUtc = clock.GetUtcNow() } };
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", LiveMoneyOptions.Model,
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var service = new UserExcerptService(provider, options, new LiveBudget(options, clock));
+    Assert((await service.ExecuteAsync(new("Dose 2 mg.", "ko"), "a", CancellationToken.None)).Status == "ok", "first day request failed");
+    Assert((await service.ExecuteAsync(new("Dose 2 mg.", "ko"), "b", CancellationToken.None)).Status == "rate-limited", "daily reservation envelope was ignored");
+    ConfirmBilling(options, clock);
+    clock.Now = clock.Now.AddSeconds(2);
+    Assert((await service.ExecuteAsync(new("Dose 2 mg.", "ko"), "c", CancellationToken.None)).Status == "ok", "daily ceiling failed to reset at KST midnight");
+    Assert(handler.Calls == 2, "daily reset spent an extra request");
+}
+
+async Task MoneyGuardMalformedUsage()
+{
+    var path = MoneyTestPath();
+    var options = FundedOptions(path);
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("<think>invalid draft</think>"));
+    var result = await FundedRun(options, handler);
+    var item = JsonNode.Parse(File.ReadAllText(path))!["Calls"]![0]!;
+    Assert(result.Status == "provider-error" && (int?)item["PromptTokens"] == 11 &&
+        (int?)item["CompletionTokens"] == 7 && (string?)item["State"] == "failed-cost-held",
+        "paid schema rejection lost reported tokens or released the reservation");
+    var blocked = await FundedRun(options, new FakeProviderHandler(_ => ProviderSuccess("번역")));
+    Assert(blocked.Status == "rate-limited", "failed response bought another call without reconciliation");
+}
+
+async Task MoneyGuardKeepsCache()
+{
+    var path = MoneyTestPath();
+    var options = FundedOptions(path);
+    var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+    {
+        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"번역\"}}]}")
+    });
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", LiveMoneyOptions.Model,
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), provider, options);
+    var first = await service.ExecuteAsync(new("mueller-figure1", "ko"), "a", CancellationToken.None);
+    var cached = await service.ExecuteAsync(new("mueller-figure1", "ko"), "b", CancellationToken.None);
+    var blocked = await service.ExecuteAsync(new("mueller-figure1", "es"), "c", CancellationToken.None);
+    Assert(first.Status == "ok" && cached.Status == "ok" && blocked.Status == "rate-limited" && handler.Calls == 1,
+        "unknown usage either spent again or hid the cached example");
+}
+LiveOptions TestLiveOptions(bool Enabled, string? ApiKey, int PerClientLimit = 3, int GlobalHourlyLimit = 20,
+    int MaxTrackedClients = 4096, int? LifetimeAttemptLimit = null, string? LifetimeLedgerPath = null) =>
+    new(Enabled, ApiKey, PerClientLimit, GlobalHourlyLimit, MaxTrackedClients, LifetimeAttemptLimit, LifetimeLedgerPath,
+        new LiveMoneyOptions(MoneyTestPath(), "trial", "local-synthetic-proof", DateTimeOffset.UtcNow, 1m, 25m, 1m));
+LiveOptions FundedOptions(string path, string bucket = "trial", decimal daily = 0.50m, decimal perRun = 0.15m) =>
+    new(true, "test-key", PerClientLimit: 20, GlobalHourlyLimit: 20,
+        Money: new LiveMoneyOptions(path, bucket, "local-synthetic-proof", DateTimeOffset.UtcNow,
+            1m, 25m, 1m, daily, perRun));
+
+async Task<LiveExcerptResult> FundedRun(LiveOptions options, FakeProviderHandler handler, bool critique = false)
+{
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    return await new UserExcerptService(provider, options, new LiveBudget(options)).ExecuteAsync(
+        new UserExcerptRequest("Dose 2 mg.", "ko", critique), Guid.NewGuid().ToString("N"), CancellationToken.None);
+}
+
+string MoneyTestPath() => Path.Combine(Path.GetTempPath(), "mtqc-money-tests-" + Guid.NewGuid().ToString("N"), "cost.json");
+
+async Task MoneyGuardBlocksUnknownBucket()
+{
+    var path = MoneyTestPath();
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+    var result = await FundedRun(FundedOptions(path, "unknown"), handler);
+    Assert(result.Status == "rate-limited" && handler.Calls == 0, "unknown billing bucket spent money");
+}
+
+async Task MoneyGuardHonorsCeilings()
+{
+    foreach (var (daily, run, critique) in new[] { (0.01m, 0.15m, false), (0.50m, 0.10m, true) })
+    {
+        var path = MoneyTestPath();
+        var handler = SuccessfulTwoPassHandler("번역");
+        var result = await FundedRun(FundedOptions(path, daily: daily, perRun: run), handler, critique);
+        Assert(result.Status == "rate-limited" && handler.Calls == 0,
+            "daily or entire two-call ceiling was checked after spending");
+    }
+}
+
+async Task MoneyGuardPersistsUsage()
+{
+    var path = MoneyTestPath();
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("개인 번역 문장"));
+    var result = await FundedRun(FundedOptions(path), handler);
+    Assert(result.Status == "ok" && File.Exists(path), "successful call lost its durable cost record");
+    var raw = File.ReadAllText(path);
+    var record = JsonNode.Parse(raw)!;
+    var calls = record["Calls"]!.AsArray();
+    Assert(calls.Count == 1 && (int?)calls[0]!["PromptTokens"] == 11 &&
+        (int?)calls[0]!["CompletionTokens"] == 7 && (decimal?)calls[0]!["EstimatedCostUsd"] == 0.00000234m,
+        "persisted token usage or rate-based estimate is wrong");
+    Assert(calls[0]!["BilledCostUsd"] is null, "a token estimate was mislabeled as billed cost");
+    Assert(!raw.Contains("Dose 2 mg.") && !raw.Contains("개인 번역 문장") && !raw.Contains("test-key"),
+        "cost ledger leaked source, draft, or credentials");
+    Assert(result.Review?.EstimatedCostUsd == 0.00000234m, "UI estimate did not match the call record");
+}
+
+async Task MoneyGuardHoldsUnknownCost()
+{
+    var path = MoneyTestPath();
+    var options = FundedOptions(path);
+    var failed = new FakeProviderHandler(_ => throw new TaskCanceledException("timeout"));
+    var first = await FundedRun(options, failed);
+    var second = await FundedRun(options, new FakeProviderHandler(_ => ProviderSuccess("번역")));
+    Assert(first.Status == "provider-error" && second.Status == "rate-limited",
+        "unknown charged call was forgotten across budget restart");
+    var record = JsonNode.Parse(File.ReadAllText(path))!;
+    Assert((decimal?)record["Calls"]![0]!["ReservedUsd"] == 0.06334656m &&
+        (string?)record["Calls"]![0]!["State"] == "unknown-cost",
+        "timeout released its maximum reservation");
+}
+
+async Task MoneyGuardFailsClosed()
+{
+    var path = MoneyTestPath();
+    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+    File.WriteAllText(path, "corrupt");
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+    var result = await FundedRun(FundedOptions(path), handler);
+    Assert(result.Status == "rate-limited" && handler.Calls == 0 && File.ReadAllText(path) == "corrupt",
+        "corrupt ledger was reset or spent credit");
+}
+async Task MoneyGuardBlocksUnconfiguredLiveCall()
+{
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("번역"));
+    var options = new LiveOptions(true, "test-key");
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var result = await new UserExcerptService(provider, options, new LiveBudget(options)).ExecuteAsync(
+        new UserExcerptRequest("Dose 2 mg.", "ko"), "guard", CancellationToken.None);
+    Assert(result.Status == "rate-limited" && result.Translation is null,
+        "missing monetary configuration allowed a paid draft");
+    Assert(handler.Calls == 0, "missing monetary configuration reached the provider");
+}
 async Task RecordedCaseWorksWithoutKey()
 {
     using var server = await DemoServer.Start(webProject, null);
@@ -215,7 +774,7 @@ async Task LiveRequestIsBoundedAndCached()
 {
     var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
     {
-        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"message\":{\"content\":\"관상동맥과 정맥\"}}],\"usage\":{\"prompt_tokens\":88,\"completion_tokens\":15}}")
+        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"관상동맥과 정맥\"}}],\"usage\":{\"prompt_tokens\":88,\"completion_tokens\":15}}")
     });
     var service = NewLiveService(handler);
     var first = await service.ExecuteAsync(new LiveExcerptRequest("mueller-figure1", "ko"), "client-a", CancellationToken.None);
@@ -453,7 +1012,7 @@ async Task LiveRateLimitBlocksUncachedRequest()
 {
     var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
     {
-        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"message\":{\"content\":\"translated\"}}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":3}}")
+        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"translated\"}}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":3}}")
     });
     var service = NewLiveService(handler, perClientLimit: 1);
     var first = await service.ExecuteAsync(new LiveExcerptRequest("mueller-figure1", "ko"), "client-a", CancellationToken.None);
@@ -463,15 +1022,15 @@ async Task LiveRateLimitBlocksUncachedRequest()
 
 async Task LiveGlobalLimitBlocksNewClients()
 {
-    var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.PaymentRequired));
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("translated"));
     var service = NewLiveService(handler, globalLimit: 2);
-    var request = new LiveExcerptRequest("mueller-figure1", "ko");
-    await service.ExecuteAsync(request, "client-a", CancellationToken.None);
-    await service.ExecuteAsync(request, "client-b", CancellationToken.None);
-    var third = await service.ExecuteAsync(request, "client-c", CancellationToken.None);
+    await service.ExecuteAsync(new("mueller-figure1", "ko"), "client-a", CancellationToken.None);
+    ConfirmTestBilling(handler);
+    await service.ExecuteAsync(new("mueller-figure1", "es"), "client-b", CancellationToken.None);
+    ConfirmTestBilling(handler);
+    var third = await service.ExecuteAsync(new("mueller-figure1", "ar"), "client-c", CancellationToken.None);
     Assert(third.Status == "rate-limited" && handler.Calls == 2, "global request cap was bypassed");
 }
-
 Task LocalSmokeLimitIsExplicitAndCapped()
 {
     Assert(LiveOptions.ParsePerClientLimit(null) == 3, "default live limit changed");
@@ -484,15 +1043,15 @@ Task LocalSmokeLimitIsExplicitAndCapped()
 
 async Task LiveCounterStorageIsBounded()
 {
-    var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.PaymentRequired));
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("translated"));
     var service = NewLiveService(handler, maxTrackedClients: 2);
-    var request = new LiveExcerptRequest("mueller-figure1", "ko");
-    await service.ExecuteAsync(request, "client-a", CancellationToken.None);
-    await service.ExecuteAsync(request, "client-b", CancellationToken.None);
-    var third = await service.ExecuteAsync(request, "client-c", CancellationToken.None);
+    await service.ExecuteAsync(new("mueller-figure1", "ko"), "client-a", CancellationToken.None);
+    ConfirmTestBilling(handler);
+    await service.ExecuteAsync(new("mueller-figure1", "es"), "client-b", CancellationToken.None);
+    ConfirmTestBilling(handler);
+    var third = await service.ExecuteAsync(new("mueller-figure1", "ar"), "client-c", CancellationToken.None);
     Assert(third.Status == "rate-limited" && handler.Calls == 2, "client counter cap was bypassed");
 }
-
 async Task LiveProviderErrorIsSanitized()
 {
     var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.PaymentRequired)
@@ -565,7 +1124,7 @@ async Task LiveOversizedOutputIsRejected()
     var longText = new string('a', 1900);
     var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
     {
-        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"message\":{\"content\":\"" + longText + "\"}}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":3}}")
+        Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"" + longText + "\"}}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":3}}")
     });
     var result = await NewLiveService(handler).ExecuteAsync(new LiveExcerptRequest("mueller-figure1", "ko"), "client-a", CancellationToken.None);
     Assert(result.Status == "provider-error" && result.Translation is null, "oversized output was exposed");
@@ -590,15 +1149,16 @@ async Task LiveTimeoutIsSanitized()
 
 async Task UserExcerptAcceptsAllTargets()
 {
-    var handler = SuccessfulTwoPassHandler("translated");
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("translated"));
     var service = NewUserService(handler, perClientLimit: 18, globalLimit: 18);
     var languages = new[] { "ko", "es", "ar", "zh-CN", "zh-TW", "ja", "fr", "de", "it", "pt", "ru", "hi", "id", "nl", "pl", "th", "tr", "vi" };
     foreach (var language in languages)
     {
-        var result = await service.ExecuteAsync(new UserExcerptRequest("The proximal artery measures 2.5 mm.", language, true), "judge-a", CancellationToken.None);
+        var result = await service.ExecuteAsync(new UserExcerptRequest("The proximal artery measures 2.5 mm.", language), "judge-a", CancellationToken.None);
         Assert(result.Status == "ok" && result.Model == "nvidia/Nemotron-3_5-Lightning", $"{language} did not reach live model");
+        ConfirmTestBilling(handler);
     }
-    Assert(handler.Calls == 36, "not all 18 targets completed both provider stages");
+    Assert(handler.Calls == 18, "not all 18 target requests were tested after explicit synthetic reconciliation");
 }
 
 async Task UserExcerptDefaultsToRulesWithoutCritique()
@@ -612,6 +1172,8 @@ async Task UserExcerptDefaultsToRulesWithoutCritique()
     Assert((string?)review["CritiqueStage"]!["State"] == "skipped" &&
            (string?)review["RulesStage"]!["State"] == "completed",
         "default review must disclose that experimental AI critique was not run");
+    Assert(review["Coverage"]!.AsArray().Any(item => (string?)item!["Category"] == "unit" && (string?)item["State"] == "checked"),
+        "default document review falsely warns on a preserved unit with a Korean suffix");
 }
 
 FakeProviderHandler SuccessfulTwoPassHandler(string translation)
@@ -639,10 +1201,10 @@ async Task UserExcerptRunsTwoStages()
         : "{\"findings\":[{\"category\":\"number\",\"severity\":\"critical\",\"sourceSpan\":\"2.5 mm\",\"draftSpan\":\"3.5 mm\",\"rationale\":\"Numeric mismatch.\"}]}"));
     var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko", true), "judge-a", CancellationToken.None);
     var json = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!;
-    Assert(handler.Calls == 2 && result.Status == "ok", "document workflow did not complete two provider calls");
-    Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "completed", "critique stage not complete");
+    Assert(handler.Calls == 1 && result.Status == "partial", "unconfirmed billing dispatched a paid critique");
+    Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "held", "billing hold was not disclosed");
     Assert((string?)json["Review"]!["RulesStage"]!["State"] == "completed", "rules stage not complete");
-    Assert((string?)json["Review"]!["ModelFindings"]![0]!["Category"] == "number", "model warning provenance lost");
+    Assert(json["Review"]!["ModelFindings"]!.AsArray().Count == 0, "unperformed critique invented model findings");
     Assert((string?)json["Review"]!["Coverage"]![0]!["Category"] == "number", "deterministic coverage absent");
 }
 
@@ -654,8 +1216,8 @@ async Task UserExcerptCritiqueFailureIsPartial()
         : new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("private provider body") });
     var result = await NewUserService(handler).ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", "ko", true), "judge-a", CancellationToken.None);
     var json = JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(result))!;
-    Assert(handler.Calls == 2 && result.Status == "partial" && result.Translation is not null, "critique failure hid the draft or claimed completion");
-    Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "failed", "critique failure stage missing");
+    Assert(handler.Calls == 1 && result.Status == "partial" && result.Translation is not null, "critique failure hid the draft or claimed completion");
+    Assert((string?)json["Review"]!["CritiqueStage"]!["State"] == "held", "critique billing hold stage missing");
     Assert((string?)json["Review"]!["RulesStage"]!["State"] == "completed", "independent rules did not run after critique failure");
     Assert(!result.Message.Contains("private provider body", StringComparison.Ordinal), "provider error leaked");
 }
@@ -680,7 +1242,7 @@ async Task UserExcerptReservesTwoAttempts()
     try
     {
         var handler = new FakeProviderHandler(_ => ProviderSuccess("translation"));
-        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 1, LifetimeLedgerPath: ledger);
+        var options = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 1, LifetimeLedgerPath: ledger);
         var provider = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
             new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
         var result = await new UserExcerptService(provider, options, new LiveBudget(options))
@@ -714,6 +1276,627 @@ Task QcStructuredWarningsAreScoped()
     return Task.CompletedTask;
 }
 
+Task QcSourceNegationIdiomsWithhold()
+{
+    foreach (var source in new[] { "A 20 mg dose was not only recorded but confirmed.", "No more than 20 mg was recorded.", "No less than 20 mg was recorded.", "NO\tMORE\nTHAN 20 mg was recorded." })
+    foreach (var language in new[] { "ko", "es", "ar" })
+    {
+        // A pure idiom has no marker assessed by this presence rule, regardless
+        // of whether its draft happens to contain a negative marker.
+        foreach (var draft in new[] { "20 mg", language == "ko" ? "20 mg은 없습니다." : language == "es" ? "No se registró 20 mg." : "لا 20 mg" })
+        {
+            var result = ExcerptQc.Evaluate(source, draft, language);
+            Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "not assessed"), "source idiom was treated as genuine negation");
+            Assert(!result.Findings.Any(item => item.Category is "negation" or "negation-scope"), "source idiom emitted a negative-meaning allegation");
+        }
+    }
+    return Task.CompletedTask;
+}
+
+Task QcSourceNegationIdiomsPreserve()
+{
+    const string source = "No proximal clot is visible. A 20 mg dose was not only recorded but confirmed.";
+    var ko = ExcerptQc.Evaluate(source, "근위부 혈전은 보입니다. 20 mg 용량은 기록되고 확인되었습니다.", "ko");
+    Assert(ko.Coverage.Any(item => item.Category == "negation" && item.State == "warning"), "excluding idiom masked the remaining genuine marker");
+    Assert(ko.Coverage.Any(item => item.Category == "negation-scope" && item.State == "warning"), "irrelevant idiom sentence blocked supported scoped omission");
+    foreach (var language in new[] { "ko", "es", "ar" })
+    {
+        var result = ExcerptQc.Evaluate("No more than 20 mg was recorded. A 10 mg dose was not recorded.", "20 mg. 10 mg.", language);
+        Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "warning"), "actual not after quantity idiom was discarded");
+    }
+    var control = ExcerptQc.Evaluate(source, "근위부 혈전은 보이지 않습니다. 20 mg 용량은 기록되고 확인되었습니다.", "ko");
+    Assert(control.Coverage.Any(item => item.Category == "negation" && item.State == "checked"), "genuine negative marker control changed");
+    Assert(control.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "simple negative anchor control was blocked by an idiom");
+    return Task.CompletedTask;
+}
+
+Task QcNegationTargetScopeWithholds()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible. The distal vein is normal.", "근위부 혈전은 보이지만 원위부에는 혈전이 없습니다."),
+        ("A 20 mg dose was not recorded. A 10 mg dose was recorded.", "20 mg은 기록되었으나 10 mg은 기록되지 않았습니다."),
+        ("No proximal clot is visible.", "근위부 혈전은 없지 않습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전은 보이며 20 mg 용량은 기록되지 않았습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전은 보이며, 20 mg 용량은 기록되지 않았습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전은 보이며，20 mg 용량은 기록되지 않았습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전은 보이지 않으며 20 mg 용량은 기록되지 않았습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "target predicate ambiguity was presented as checked lexical scope");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "ambiguous target scope produced an allegation");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcNegationTargetScopeControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 없습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량의 기록은 없습니다.") })
+        Assert(ExcerptQc.Evaluate(source, draft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "simple or shared predicate control became unassessed");
+    Assert(ExcerptQc.Evaluate("No proximal clot is visible.", "근위부 혈전은 보입니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "warning"), "simple omission warning was suppressed");
+    return Task.CompletedTask;
+}
+
+Task QcNegationScopeOmissions()
+{
+    const string source = "No proximal clot is visible. The distal vein measures 2.5 mm. A 20 mg dose was not recorded.";
+    foreach (var (draft, sourceSpan, draftSpan) in new[] {
+        ("근위부 혈전은 보입니다. 원위부 정맥은 2.5 mm입니다. 20 mg 용량은 기록되지 않았습니다.", "No proximal clot is visible.", "근위부 혈전은 보입니다."),
+        ("근위부 혈전은 보이지 않습니다. 원위부 정맥은 2.5 mm입니다. 20 mg 용량은 기록되었습니다.", "A 20 mg dose was not recorded.", "20 mg 용량은 기록되었습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "warning"), "partial omission was masked by another negative sentence");
+        var finding = result.Findings.Single(item => item.Category == "negation-scope");
+        Assert(finding.SourceSpan == sourceSpan && finding.DraftSpan == draftSpan, "partial-negation warning must show the exact corresponding sentences");
+        Assert(finding.Severity == "review", "scope heuristic must not certify semantic error");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcNegationScopeControls()
+{
+    const string source = "No proximal clot is visible. A 20 mg dose was not recorded.";
+    foreach (var draft in new[] {
+        "20 mg 용량은 기록되지 않았습니다. 근위부 혈전은 보이지 않습니다.",
+        "근위부 혈전과 20 mg 용량의 기록은 없습니다.",
+        "근위부 혈전은 안 보입니다. 20 mg 용량은 기록되지 않았습니다." })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "valid synthetic scope control was warned or withheld");
+    }
+    var decimalControl = ExcerptQc.Evaluate("A 2.5 mg dose was not recorded. No proximal clot is visible.",
+        "근위부 혈전은 없습니다. 2,5 mg 용량은 기록되지 않았습니다.", "ko");
+    Assert(decimalControl.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "decimal punctuation changed sentence or anchor matching");
+    foreach (var draft in new[] { "근위부 소견은 혈전이 아님.", "근위부 소견은 혈전이 아닌 것으로 보입니다." })
+    {
+        var result = ExcerptQc.Evaluate("The proximal finding is not a clot.", draft, "ko");
+        Assert(!result.Findings.Any(item => item.Category is "negation" or "negation-scope"), "recognized Korean negative inflection caused a warning");
+    }
+    // Sentence evidence cap is inclusive and is independent of source/draft length.
+    var source160 = "No proximal clot " + new string('x', 142) + ".";
+    var draft160 = "근위부 혈전 " + new string('가', 152) + ".";
+    Assert(source160.Length == 160 && draft160.Length == 160, "boundary fixture length changed");
+    Assert(ExcerptQc.Evaluate(source160, draft160, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "warning"), "160-character evidence should be supported");
+    foreach (var (longSource, longDraft) in new[] { (source160 + "x", draft160), (source160, draft160 + "가") })
+        Assert(ExcerptQc.Evaluate(longSource, longDraft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "161-character evidence must be withheld");
+    return Task.CompletedTask;
+}
+
+Task QcNegationScopeWithholds()
+{
+    foreach (var (source, draft, language) in new[] {
+        ("No proximal clot is visible after 20 mg. The proximal wall is normal.", "근위부 혈전은 보이지 않습니다. 근위부 벽은 정상입니다. 20 mg 용량은 기록되었습니다.", "ko"),
+        ("No proximal clot after 20 mg.", "근위부 혈전은 보입니다.", "ko"),
+        ("A 20 mg dose was not recorded, and the proximal vein is patent.", "20 mg 용량은 기록되지 않았습니다. 근위부 정맥은 열려 있습니다.", "ko"),
+        ("A 20 mg dose was not only recorded but confirmed.", "20 mg 용량은 기록되고 확인되었습니다.", "ko"),
+        ("No more than 20 mg was recorded.", "최대 20 mg이 기록되었습니다.", "ko"),
+        ("No proximal clot is visible. The proximal wall is normal.", "근위부 혈전은 보입니다. 근위부 벽은 정상입니다. 혈전은 없습니다.", "ko"),
+        ("A 20 mg dose was not recorded. The 20 mg vial is present.", "20 mg 용량은 기록되었습니다. 20 mg 병은 있습니다. 다른 기록은 없습니다.", "ko"),
+        ("No clot is visible. A dose was not recorded.", "혈전은 보입니다. 용량은 기록되지 않았습니다.", "ko"),
+        ("A 20 mg dose was not recorded.", "20 mg 용량이 기록되었습니까? 아직 아닙니다.", "ko"),
+        ("A 20 mg dose was not recorded.", "No se registró una dosis de 20 mg.", "es"),
+        ("A 20 mg dose was recorded.", "20 mg 용량은 기록되었습니다.", "ko") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, language);
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "ambiguous or unsupported alignment must remain unassessed");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "ambiguous alignment emitted a scope allegation");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcQuotedNegationHolds()
+{
+    foreach (var (source, draft) in new[] {
+        ("The report says \"No proximal clot is visible\".", "보고서에는 근위부 혈전이 없다고 적혀 있습니다."),
+        ("The patient said no proximal clot was visible.", "근위부 혈전은 없습니다."),
+        ("The report states no proximal clot is visible.", "보고서에 근위부 혈전 기록이 있습니다."),
+        ("The record contains “No proximal clot is visible”.", "기록에는 근위부 혈전이 없습니다."),
+        ("The word \"not\" appears in the proximal note.", "근위부 기록에 단어 not이 있습니다."),
+        ("No proximal clot is visible.", "\"근위부 혈전은 없습니다\"라는 기록만 확인했습니다."),
+        ("No proximal clot is visible.", "환자는 근위부 혈전이 없다고 말했습니다."),
+        ("No proximal clot is visible.", "보고서에는 근위부 혈전이 없다고 기재되어 있습니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 없다는 기록을 확인했습니다."),
+        ("No proximal clot is visible.", "\"근위부 혈전은 없습니다."),
+        ("No proximal clot is visible.", "근위부 혈전은 없습니다.\"") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "quoted/reported negative was assessed as direct polarity");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "quoted/reported negative emitted a scope allegation");
+    }
+    var mention = ExcerptQc.Evaluate("The word \"not\" appears in the proximal note.", "근위부 기록에 단어 not이 있습니다.", "ko");
+    Assert(mention.Coverage.Any(item => item.Category == "negation" && item.State == "not assessed"), "literal not mention emitted a predicate comparison");
+    Assert(!mention.Findings.Any(item => item.Category == "negation"), "literal not mention emitted a presence allegation");
+    return Task.CompletedTask;
+}
+
+Task QcQuotedNegationControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 보이지 않습니다."),
+        ("The patient's proximal clot is not visible.", "환자의 근위부 혈전은 보이지 않습니다."),
+        ("The report says \"normal\". No proximal clot is visible.", "보고서에는 정상이라고 적혀 있습니다. 근위부 혈전은 보이지 않습니다."),
+        ("No proximal clot is visible. The distal finding is normal.", "근위부 혈전은 보이지 않습니다. 원위부 소견은 \"정상\"입니다."),
+        ("No proximal clot is visible.", "\"근위부 혈전은 보이지 않습니다.\""),
+        ("The patient’s proximal clot is not visible.", "환자의 근위부 혈전은 보이지 않습니다."),
+        ("No proximal clot is visible. The distal finding is normal.", "\"근위부 혈전은 보이지 않습니다. 원위부 소견은 정상입니다.\"") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "formatting/possessive/unrelated quotation withheld direct negative");
+        Assert(!result.Findings.Any(item => item.Category is "negation" or "negation-scope"), "faithful formatting control emitted a negation allegation");
+    }
+    var omitted = ExcerptQc.Evaluate("No proximal clot is visible.", "근위부 혈전이 보입니다.", "ko");
+    foreach (var category in new[] { "negation", "negation-scope" })
+        Assert(omitted.Coverage.Any(item => item.Category == category && item.State == "warning"), "ordinary omission was suppressed by quotation guard");
+    // Historical entity-gap checks are retained in the frozen before records;
+    // their current scoped withholding is covered by QcClotEntityScopeHolds.
+    return Task.CompletedTask;
+}
+
+Task QcPredicateCoverageHolds()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 보입니다; 기록은 없습니다."),
+        ("No proximal clot is visible.", "근위부 혈전은 보입니다, 기록은 없습니다."),
+        ("No proximal clot is visible.", "근위부 혈전은 보입니다 (기록은 없습니다)."),
+        ("No proximal clot was recorded.", "근위부 혈전은 보이지 않습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 투여되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록물은 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록합계는 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록하드웨어는 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록은 있습니다, 기록물은 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록의 기록은 없습니다."),
+        // A faithful multi-statement draft is deliberately outside coverage.
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았습니다; 확인 절차는 남아 있습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "unsupported predicate correspondence was assessed");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "unsupported predicate correspondence emitted an allegation");
+        Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "checked"), "separate marker-presence coverage changed");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcPredicateCoverageControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 보이지 않습니다."),
+        ("No proximal clot was recorded.", "근위부 혈전은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량의 기록은 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았음."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 기록하지 않았습니다."),
+        ("A 20 mg dose was not recorded. The distal finding is normal.", "20 mg 용량은 기록되지 않았습니다. 원위부 소견은 정상입니다; 기록은 남아 있습니다.") })
+        Assert(ExcerptQc.Evaluate(source, draft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "simple record control or unrelated statement was withheld");
+    foreach (var draft in new[] { "20 mg 용량은 기록되었습니다.", "20 mg 용량입니다." })
+    {
+        var result = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko");
+        var finding = result.Findings.Single(item => item.Category == "negation-scope");
+        Assert(finding.SourceSpan == "A 20 mg dose was not recorded." && finding.DraftSpan == draft, "omission warning lost exact evidence");
+    }
+    // The frozen historical dose-noun false check is now outside coverage.
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "20 mg 측정값은 기록되지 않았습니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "dose-noun coverage limit was bypassed");
+    return Task.CompletedTask;
+}
+
+Task QcRecordedDoseCoverageHolds()
+{
+    foreach (var (source, draft) in new[] {
+        ("A 20 mg dose was not recorded.", "20 mg 측정값은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 측정값은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 기록은 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량표는 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량계는 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 표준용량은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량의 용량표는 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량표의 용량은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량의 용량은 기록되지 않았습니다."),
+        ("The 20 mg dose (first dose) was not recorded.", "20 mg 용량은 기록되지 않았습니다."),
+        // Alternate translations are deliberately outside the literal coverage region.
+        ("A 20 mg dose was not recorded.", "20 mg 투약량은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 투여량은 기록되지 않았습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "unsupported recorded-dose noun was checked");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "unsupported noun emitted a scope allegation");
+        Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "checked"), "separate marker presence changed");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcRecordedDoseCoverageControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았습니다."),
+        ("The 20 mg doses were not recorded.", "20 mg 용량은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량의 기록은 없습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량 은 기록되지 않았습니다."),
+        ("A 20 mg dose was not recorded.", "20 mg 용량에 기록은 없습니다."),
+        ("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량의 기록은 없습니다.") })
+        Assert(ExcerptQc.Evaluate(source, draft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "bounded dose control was withheld");
+    foreach (var draft in new[] { "20 mg 용량은 기록되었습니다.", "20 mg 측정값은 기록되었습니다." })
+    {
+        var result = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko");
+        var finding = result.Findings.Single(item => item.Category == "negation-scope");
+        Assert(finding.SourceSpan == "A 20 mg dose was not recorded." && finding.DraftSpan == draft, "ordinary omission evidence changed");
+    }
+    // Outside source vocabulary remains a diagnostic gap. The incidental dose
+    // phrase is now withheld by the separate bounded interval policy.
+    Assert(ExcerptQc.Evaluate("A 20 mg dosage was not recorded.", "20 mg 측정값은 기록되지 않았습니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "outside vocabulary gap changed; preserve frozen history");
+    return Task.CompletedTask;
+}
+
+Task QcDoseRecordIntervalHolds()
+{
+    foreach (var draft in new[] {
+        "20 mg 용량의 측정값은 기록되지 않았습니다.",
+        "20 mg 용량의 결과는 기록되지 않았습니다.",
+        "20 mg 용량은 측정값의 기록이 없습니다.",
+        // Reverse order, extra relation words and punctuation are deliberately
+        // withheld, including potentially faithful alternate phrasings.
+        "기록은 20 mg 용량에 없습니다.",
+        "20 mg 용량에 대한 기록은 없습니다.",
+        "20 mg 용량, 기록은 없습니다." })
+    {
+        var result = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "intervening noun or reverse record order was checked");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "unsupported interval emitted an allegation");
+        Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "checked"), "separate marker presence changed");
+    }
+    var reordered = ExcerptQc.Evaluate("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량의 측정값은 기록되지 않았습니다.", "ko");
+    Assert(reordered.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "reordered incidental dose phrase was checked");
+    return Task.CompletedTask;
+}
+
+Task QcDoseRecordIntervalControls()
+{
+    foreach (var draft in new[] { "20 mg 용량은 기록되지 않았습니다.", "20 mg 용량의 기록은 없습니다.", "20 mg 용량 은 기록되지 않았습니다.", "20 mg 용량 기록은 없습니다.", "20 mg 용량들은 기록되지 않았습니다.", "20 mg 용량의 기록은 전혀 없습니다." })
+        Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "bounded interval control was withheld");
+    var shared = ExcerptQc.Evaluate("No proximal clot was recorded. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량은 기록되지 않았습니다.", "ko");
+    Assert(shared.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "shared negative interval control was withheld");
+    const string omitted = "20 mg 용량의 측정값은 기록되었습니다.";
+    var warning = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", omitted, "ko").Findings.Single(item => item.Category == "negation-scope");
+    Assert(warning.SourceSpan == "A 20 mg dose was not recorded." && warning.DraftSpan == omitted, "negative-free ordinary omission lost exact spans");
+    // The later record-tail constraint now withholds this historical gap.
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "20 mg 용량의 기록 결과는 없습니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "historical after-record gap was checked");
+    return Task.CompletedTask;
+}
+
+
+Task QcRecordTailHolds()
+{
+    foreach (var draft in new[] { "20 mg 용량의 기록 결과는 없습니다.", "20 mg 용량의 기록 상태는 없습니다.", "20 mg 용량의 기록 사본은 없습니다.", "20 mg 용량의 기록 위치는 없습니다.", "20 mg 용량의 기록 내용은 없습니다.", "20 mg 용량의 기록 여부는 없습니다.", "20 mg 용량의 기록은 존재하지 않습니다.", "20 mg 용량의 기록은 남아 있지 않습니다.", "20 mg 용량의 기록은 하나도 없습니다." })
+    {
+        var result = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko");
+        Assert(result.Coverage.Any(x => x.Category == "negation-scope" && x.State == "not assessed"), "unsupported record tail was checked");
+        Assert(!result.Findings.Any(x => x.Category == "negation-scope"), "record tail hold fabricated scope warning");
+    }
+    var reordered = ExcerptQc.Evaluate("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량의 기록 결과는 없습니다.", "ko");
+    Assert(reordered.Coverage.Any(x => x.Category == "negation-scope" && x.State == "not assessed"), "reordered record tail was checked");
+    return Task.CompletedTask;
+}
+
+Task QcRecordTailControls()
+{
+    foreach (var draft in new[] { "20 mg 용량은 기록되지 않았습니다.", "20 mg 용량은 기록하지 않았습니다.", "20 mg 용량은 기록되지 않습니다.", "20 mg 용량은 기록되지 않음.", "20 mg 용량은 기록되지 않았다.", "20 mg 용량의 기록은 없습니다.", "20 mg 용량의 기록이 없습니다.", "20 mg 용량의 기록도 없습니다.", "20 mg 용량의 기록만 없습니다.", "20 mg 용량의 기록은 전혀 없습니다.", "20 mg 용량의 기록 없음.", "20 mg 용량의 기록 없다.", "20 mg 용량의 기록 은 없습니다." })
+        Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "bounded record tail control was withheld");
+    var shared = ExcerptQc.Evaluate("No proximal clot was recorded. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량의 기록은 없습니다.", "ko");
+    Assert(shared.Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "shared record tail control was withheld");
+    var reordered = ExcerptQc.Evaluate("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량은 기록되지 않았습니다.", "ko");
+    Assert(reordered.Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "reordered record tail control was withheld");
+    foreach (var draft in new[] { "20 mg 용량의 기록 결과는 있습니다.", "20 mg 용량은 기록되었습니다.", "20 mg 용량의 기록은 있습니다." })
+    {
+        var result = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", draft, "ko");
+        var finding = result.Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == "A 20 mg dose was not recorded." && finding.DraftSpan == draft, "record tail omission exact evidence changed");
+    }
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "측정값 관련 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "before-dose residual changed; update history if remedied");
+    return Task.CompletedTask;
+}
+
+
+Task QcSourceDoseSurfaceHolds()
+{
+    foreach (var source in new[] { "A 20 mg dose measurement was not recorded.", "The result for a 20 mg dose was not recorded.", "The calculation for a 20 mg dose was not recorded.", "The measurement for a 20 mg dose was not recorded.", "The log for a 20 mg dose was not recorded.", "A 20 mg dose result was not recorded.", "The 20 mg dose has not been recorded.", "A 20 mg dose was not recorded in the chart.", "An additional 20 mg dose was not recorded.", "Not recorded was a 20 mg dose.", "A 20 mg dose was not recorded..", "The patient's measurement 20 mg dose was not recorded.", "A dose of 20 mg was not recorded.", "No 20 mg dose was not recorded." })
+    {
+        var result = ExcerptQc.Evaluate(source, "20 mg 용량은 기록되지 않았습니다.", "ko");
+        Assert(result.Coverage.Any(x => x.Category == "negation-scope" && x.State == "not assessed"), "unsupported source dose surface was checked");
+        Assert(!result.Findings.Any(x => x.Category == "negation-scope"), "source surface hold fabricated scope warning");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcSourceDoseSurfaceControls()
+{
+    foreach (var source in new[] { "A 20 mg dose was not recorded.", "An intravenous 20 mg dose was not recorded.", "The patient's 20 mg dose was not recorded.", "A prescribed 20 mg dose was not recorded.", "An initial 20 mg dose was not recorded.", "The 20 mg doses were not recorded.", "No 20 mg dose was recorded.", "A\t20 mg\tdose\nwas not recorded.", "The patient’s prescribed initial 20 mg doses were not recorded." })
+        Assert(ExcerptQc.Evaluate(source, "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "source dose surface control was withheld");
+    Assert(ExcerptQc.Evaluate("No 1e3 mg dose was recorded.", "1E+03 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "scientific anchor source control was withheld");
+    Assert(ExcerptQc.Evaluate("No proximal clot was recorded. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "shared source surface control was withheld");
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "reordered source surface control was withheld");
+    foreach (var pair in new[] { ("A 20 mg dose was not recorded.", "20 mg 용량은 기록되었습니다."), ("The measurement for a 20 mg dose was not recorded.", "20 mg 용량의 측정값은 기록되었습니다."), ("The 20 mg dose has not been recorded.", "20 mg 용량은 기록되었습니다.") })
+    {
+        var finding = ExcerptQc.Evaluate(pair.Item1, pair.Item2, "ko").Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == pair.Item1 && finding.DraftSpan == pair.Item2, "source surface omission exact evidence changed");
+    }
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "측정값 관련 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "target-prefix gap changed; preserve history");
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recordedx.", "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "outside recorded vocabulary gap changed; preserve history");
+    return Task.CompletedTask;
+}
+
+Task QcUnitDoseIntervalHolds()
+{
+    foreach (var pair in new[] { ("A 20 mg dose was not recorded.", "20 mg 측정값 관련 용량은 기록되지 않았습니다."), ("A 20 mg dose was not recorded.", "20 mg 결과 관련 용량은 기록되지 않았습니다."), ("A 20 mg dose was not recorded.", "20 mg 계산값 관련 용량은 기록되지 않았습니다."), ("A 20 mg dose was not recorded.", "20 mg의 용량은 기록되지 않았습니다."), ("A 20 mg dose was not recorded.", "(20 mg) 용량은 기록되지 않았습니다."), ("A prescribed 20 mg dose was not recorded.", "20 mg 처방된 용량은 기록되지 않았습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(pair.Item1, pair.Item2, "ko");
+        Assert(result.Coverage.Any(x => x.Category == "negation-scope" && x.State == "not assessed"), "unit-to-dose intervening text was checked");
+        Assert(!result.Findings.Any(x => x.Category == "negation-scope"), "unit-to-dose hold fabricated scope allegation");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcUnitDoseIntervalControls()
+{
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "측정값 관련 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("An intravenous 20 mg dose was not recorded.", "정맥 내 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("The patient's 20 mg dose was not recorded.", "환자의 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("A prescribed 20 mg dose was not recorded.", "처방된 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("An initial 20 mg dose was not recorded.", "초기 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal clot was recorded. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("A 20 mg dose was not recorded. The distal vein measures 2.5 mm.", "원위부 정맥은 2.5 mm입니다. 20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    {
+        var finding = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "20 mg 용량은 기록되었습니다.", "ko").Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == "A 20 mg dose was not recorded." && finding.DraftSpan == "20 mg 용량은 기록되었습니다.", "unit-to-dose omission exact evidence changed");
+    }
+    {
+        var finding = ExcerptQc.Evaluate("The measurement for a 20 mg dose was not recorded.", "20 mg 용량의 측정값은 기록되었습니다.", "ko").Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == "The measurement for a 20 mg dose was not recorded." && finding.DraftSpan == "20 mg 용량의 측정값은 기록되었습니다.", "unit-to-dose omission exact evidence changed");
+    }
+    Assert(ExcerptQc.Evaluate("No proximal thrombus is visible.", "근위부 혈전은 보이지 않습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal thrombus is visible.", "근위부 정맥은 없습니다. 혈전은 보입니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal embolus is visible.", "근위부 색전은 보이지 않습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal embolus is visible.", "근위부 동맥은 없습니다. 혈전은 보입니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal lesion is visible.", "근위부 병변은 보이지 않습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal lesion is visible.", "근위부 정맥은 없습니다. 병변은 보입니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal mass is visible.", "근위부 종괴는 보이지 않습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No proximal mass is visible.", "근위부 동맥은 없습니다. 종괴는 보입니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No 20 mg dose was recorded.", "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("No 1e3 mg dose was recorded.", "1E+03 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("The patient's 20 mg doses were not recorded.", "20 mg 용량들은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    Assert(ExcerptQc.Evaluate("A\t20 mg\tdose\nwas not recorded.", "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    {
+        var finding = ExcerptQc.Evaluate("The 20 mg dose has not been recorded.", "20 mg 용량은 기록되었습니다.", "ko").Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == "The 20 mg dose has not been recorded." && finding.DraftSpan == "20 mg 용량은 기록되었습니다.", "unit-to-dose omission exact evidence changed");
+    }
+    Assert(ExcerptQc.Evaluate("The patient’s prescribed initial 20 mg doses were not recorded.", "20 mg 용량은 기록되지 않았습니다.", "ko").Coverage.Any(x => x.Category == "negation-scope" && x.State == "checked"), "unit-to-dose control or disclosed outside/prefix gap changed");
+    {
+        var finding = ExcerptQc.Evaluate("A 20 mg dose was not recorded.", "측정값 관련 20 mg 용량은 기록되었습니다.", "ko").Findings.Single(x => x.Category == "negation-scope");
+        Assert(finding.SourceSpan == "A 20 mg dose was not recorded." && finding.DraftSpan == "측정값 관련 20 mg 용량은 기록되었습니다.", "unit-to-dose omission exact evidence changed");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcClotEntityScopeHolds()
+{
+    foreach (var draft in new[] {
+        "근위부 정맥은 없습니다. 혈전은 보입니다.",
+        "근위부 동맥은 없습니다. 혈전은 보입니다.",
+        "근위부 정맥은 없습니다; 혈전은 보입니다.",
+        "근위부 혈전은 보입니다; 동맥은 없습니다.",
+        "근위부 혈전은 보입니다 (정맥은 없습니다).",
+        "근위부 정맥의 혈전은 보이지 않습니다.",
+        "근위부 소견은 보이지 않습니다.",
+        "근위부 혈전은 혈전이 아닙니다.",
+        "근위부 혈전용해는 보이지 않습니다.",
+        "근위부 혈전은 보입니다; 혈전용해는 없습니다.",
+        "혈전용해는 없습니다; 근위부 혈전은 보입니다." })
+    {
+        var result = ExcerptQc.Evaluate("No proximal clot is visible.", draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "unsupported clot term correspondence was assessed");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "unsupported entity correspondence emitted a scope allegation");
+    }
+    Assert(ExcerptQc.Evaluate("No proximal vein clot is visible.", "근위부 정맥의 혈전은 보이지 않습니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "multiple source clinical terms were certified as simple clot scope");
+    return Task.CompletedTask;
+}
+
+Task QcClotEntityScopeControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 보이지 않습니다."),
+        ("The patient's proximal clot is not visible.", "환자의 근위부 혈전은 보이지 않습니다."),
+        ("No proximal clots are visible.", "근위부 혈전들은 보이지 않습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "20 mg 용량은 기록되지 않았습니다. 근위부 혈전은 보이지 않습니다."),
+        ("No proximal clot is visible. A 20 mg dose was not recorded.", "근위부 혈전과 20 mg 용량의 기록은 없습니다."),
+        ("The proximal finding is not a clot.", "근위부 소견은 혈전이 아님."),
+        ("No proximal clot is visible.", "\"근위부 혈전은 보이지 않습니다.\""),
+        ("No proximal clot is visible.", "근위부 혈전의 기록은 없습니다.") })
+        Assert(ExcerptQc.Evaluate(source, draft, "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "supported literal clot control was withheld");
+    foreach (var category in new[] { "negation", "negation-scope" })
+        Assert(ExcerptQc.Evaluate("No proximal clot is visible.", "근위부 혈전은 보입니다.", "ko").Coverage.Any(item => item.Category == category && item.State == "warning"), "simple clot omission was suppressed");
+    // These separate old-rule vocabulary gaps remain explicit misses. A pass
+    // here means their frozen accounting is preserved, not that they are safe.
+    foreach (var source in new[] { "No proximal thrombus is visible.", "No proximal embolus is visible." })
+        Assert(ExcerptQc.Evaluate(source, "근위부 정맥은 없습니다. 혈전은 보입니다.", "ko").Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "outside-vocabulary gap changed; retain before evidence and update accounting");
+    return Task.CompletedTask;
+}
+
+Task QcUncertainNegationHolds()
+{
+    foreach (var (source, draft) in new[] {
+        ("Proximal clot is not excluded.", "근위부 혈전의 가능성이 있습니다."),
+        ("No definite proximal clot is visible.", "명확한 근위부 혈전은 보이지 않습니다."),
+        ("A proximal clot may not be visible.", "근위부 혈전이 보이지 않을 수도 있습니다."),
+        ("Not all proximal clots are visible.", "일부 근위부 혈전은 보입니다."),
+        ("No evidence of proximal clot is present.", "근위부 혈전의 증거는 없습니다."),
+        ("Proximal clot is not ruled out.", "근위부 혈전의 가능성이 있습니다."),
+        ("Not every proximal clot is visible.", "모든 근위부 혈전이 보이는 것은 아닙니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 없을 수 있습니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 없을 가능성이 있습니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 없을 것으로 추정됩니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 없을지도 모릅니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 아닐 수 있습니다."),
+        ("No proximal clot is visible.", "근위부 혈전이 안 보일 수 있습니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "unsupported certainty/quantifier scope was assessed");
+        Assert(!result.Findings.Any(item => item.Category == "negation-scope"), "unsupported certainty/quantifier scope emitted an allegation");
+    }
+    foreach (var source in new[] { "Proximal clot is not excluded.", "Proximal clot is not ruled out." })
+    {
+        var result = ExcerptQc.Evaluate(source, "근위부 혈전의 가능성이 있습니다.", "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation" && item.State == "not assessed"), "unsupported source polarity was compared as simple negation");
+        Assert(!result.Findings.Any(item => item.Category == "negation"), "unsupported source polarity emitted a presence allegation");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcUncertainNegationControls()
+{
+    foreach (var (source, draft) in new[] {
+        ("No proximal clot is visible.", "근위부 혈전은 보이지 않습니다."),
+        ("Proximal clot is not visible.", "근위부 혈전은 보이지 않습니다."),
+        ("Not only the distal finding improved. No proximal clot is visible.", "원위부 소견이 개선되었습니다. 근위부 혈전은 보이지 않습니다."),
+        ("No more than 5 mg was recorded. No proximal clot is visible.", "5 mg 이하가 기록되었습니다. 근위부 혈전은 보이지 않습니다."),
+        ("No proximal clot is visible. The distal finding is uncertain.", "근위부 혈전은 보이지 않습니다. 원위부 소견은 불확실합니다.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "supported simple scope or unrelated uncertainty was withheld");
+        Assert(!result.Findings.Any(item => item.Category is "negation" or "negation-scope"), "faithful simple scope produced a negation allegation");
+    }
+    var omitted = ExcerptQc.Evaluate("No proximal clot is visible.", "근위부 혈전이 보입니다.", "ko");
+    foreach (var category in new[] { "negation", "negation-scope" })
+        Assert(omitted.Coverage.Any(item => item.Category == category && item.State == "warning"), "ordinary negation omission was suppressed");
+    return Task.CompletedTask;
+}
+
+Task QcScientificChanges()
+{
+    foreach (var (source, draft) in new[] { ("1e3 mg", "3e1 mg"), ("1e-3 mg", "3e-1 mg"), ("1.5e2 mg", "1.6e2 mg"), ("-1e3 mg", "1e3 mg"), ("1e−3 mg", "1e3 mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        foreach (var category in new[] { "number", "unit" })
+            Assert(result.Coverage.Any(item => item.Category == category && item.State == "warning"), "scientific value/sign change was lost in digit-token counts");
+        var evidence = result.Findings.Single(item => item.Category == "unit");
+        Assert(evidence.SourceSpan == source && evidence.DraftSpan == draft, "scientific pair evidence was truncated to exponent digits");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcScientificControls()
+{
+    foreach (var (source, draft) in new[] { ("1e3 mg", "1E+03 mg"), ("1e3 mg", "10e2 mg"), ("0.50e1 mg", "5e0 mg"), ("-.5e-2 mg", "-5E-03 mg"), ("١٫٥e٢ mg", "1.5e2 mg"), ("1e100 mg", "10e99 mg"), ("Sample1e3", "Sample1e3"), ("1e3mg", "10E2mg"), ("1e3 mg and 500 mg", "10E2 mg and 500 mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "number" && item.State == "checked"), "equivalent scientific notation or unchanged identifier was warned");
+        Assert(!result.Findings.Any(item => item.Category is "number" or "unit"), "equivalent scientific pair triggered an allegation");
+    }
+    var scope = ExcerptQc.Evaluate("No 1e3 mg dose was recorded.", "1E+03 mg 용량은 기록되지 않았습니다.", "ko");
+    Assert(scope.Coverage.Any(item => item.Category == "negation-scope" && item.State == "checked"), "equivalent scientific anchors were not matched");
+    return Task.CompletedTask;
+}
+
+Task QcScientificWithholds()
+{
+    foreach (var (source, draft) in new[] { ("1e3 mg", "1000 mg"), ("1e3 mg", "30 mg"), ("1e101 mg", "1e101 mg"), ("1e999999999999999999 mg", "1e999999999999999999 mg"), ("1e+ mg", "1e- mg"), ("1,5e2 mg", "1,5e2 mg"), ("1e2.3 mg", "1e2.3 mg"), ("1e2,3 mg", "1e2,3 mg"), ("1e3kg", "1e3kg"), ("1e3x", "1e3x"), ("1e3² mg", "1e3² mg"), ("1e3Ⅲ mg", "1e3Ⅲ mg"), ("1e3 mg and 500 mg", "1000 mg and 5e2 mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        foreach (var category in new[] { "number", "unit" })
+            Assert(result.Coverage.Any(item => item.Category == category && item.State == "not assessed"), "unsupported scientific comparison was certified");
+        Assert(!result.Findings.Any(item => item.Category is "number" or "unit"), "unsupported scientific comparison emitted a value allegation");
+    }
+    var scope = ExcerptQc.Evaluate("No 1e101 mg dose was recorded.", "1e101 mg 용량은 기록되지 않았습니다.", "ko");
+    Assert(scope.Coverage.Any(item => item.Category == "negation-scope" && item.State == "not assessed"), "unsupported scientific anchor was certified");
+    Assert(!ExcerptQc.Summarize("1e3 mg", "1000 mg", "ko").Contains("Numeric value/count mismatch", StringComparison.Ordinal), "summary alleged a value change on withheld cross-notation input");
+    return Task.CompletedTask;
+}
+
+Task QcLeadingDecimalChanges()
+{
+    foreach (var (source, draft) in new[] { (".5 mg", "5 mg"), ("-.5 mg", ".5 mg"), ("−.5 mg", ".5 mg"), (".05 mg", "0.5 mg"), ("٫٥ mg", "5 mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "number" && item.State == "warning"), "leading decimal magnitude/sign change was not flagged");
+        Assert(result.Coverage.Any(item => item.Category == "unit" && item.State == "warning"), "leading decimal value-unit pair change was not flagged");
+        var evidence = result.Findings.Single(item => item.Category == "unit");
+        Assert(evidence.SourceSpan == source && evidence.DraftSpan == draft, "leading separator/sign was lost from exact pair evidence");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcLeadingDecimalControls()
+{
+    foreach (var (source, draft) in new[] { (".5 mg", "0.5 mg"), ("-.5 mg", "-0.5 mg"), ("−.5 mg", "-0.5 mg"), (".05 mg", "0.05 mg"), ("٫٥ mg", "0.5 mg"), ("+.5 mg", "+0.5 mg"), ("±.5 mg", "±0.5 mg") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        foreach (var category in new[] { "number", "unit" })
+            Assert(result.Coverage.Any(item => item.Category == category && item.State == "checked"), "equivalent leading-zero notation caused a numeric/pair warning");
+    }
+    Assert(!ExcerptQc.Summarize(".5 mg", "0.5 mg", "ko").Contains("Numeric value", StringComparison.Ordinal), "summary treated a leading zero as a value change");
+    return Task.CompletedTask;
+}
+
+Task QcUnitPairsArePreserved()
+{
+    var result = ExcerptQc.Evaluate("A 5 mg dose uses 10 mL.", "Administrar 5 mL con 10 mg.", "es");
+    Assert(result.Coverage.Any(item => item.Category == "number" && item.State == "checked"), "swapped pair fixture must retain the numbers");
+    Assert(result.Coverage.Any(item => item.Category == "unit" && item.State == "warning"), "swapped value-unit pairs were cleared");
+    var finding = result.Findings.Single(item => item.Category == "unit");
+    Assert(finding.SourceSpan == "5 mg" && finding.DraftSpan == "5 mL", "unit warning must locate exact changed pairs");
+    Assert(finding.Severity == "review", "unit heuristic must request review");
+    return Task.CompletedTask;
+}
+
+Task QcUnitOccurrencesArePreserved()
+{
+    foreach (var (source, draft) in new[] {
+        ("Give 5 mg and 10 mg.", "Administrar 5 mg y 10."),
+        ("Give 5 mg and 10.", "Administrar 5 mg y 10 mg."),
+        ("Give 5 mg.", "Administrar 5 Mg."),
+        ("Record 5.", "Registrar 5 mg.") })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "es");
+        Assert(result.Coverage.Any(item => item.Category == "unit" && item.State == "warning"), $"changed unit occurrence was cleared: {source} / {draft}");
+    }
+    return Task.CompletedTask;
+}
+
+Task QcUnitPairControls()
+{
+    const string source = "Give 2.5 mg and 10 mL; measure -3 mm and 20%.";
+    foreach (var draft in new[] {
+        "Medir −3 mm y 20 %; administrar 10 ml y 2,5 mg.",
+        "٢٫٥ mg 및 ١٠ mL; −٣ mm와 ٢٠%를 기록합니다." })
+    {
+        var result = ExcerptQc.Evaluate(source, draft, "ko");
+        Assert(result.Coverage.Any(item => item.Category == "unit" && item.State == "checked"), "equivalent literal pairs or Korean suffixes caused a unit warning");
+    }
+    var unsupported = ExcerptQc.Evaluate(source, "5 mL", "fr");
+    Assert(unsupported.Coverage.Any(item => item.Category == "unit" && item.State == "not assessed"), "unsupported unit language was assessed");
+    var unrecognized = ExcerptQc.Evaluate("A mass of 5 kg.", "Una masa de 5 kg.", "es");
+    Assert(unrecognized.Coverage.Any(item => item.Category == "unit" && item.State == "not assessed"), "unrecognized units were cleared");
+    return Task.CompletedTask;
+}
+
 Task QcSpanishArabicNegationIsScoped()
 {
     const string source = "A 20 mg dose was not recorded.";
@@ -737,7 +1920,8 @@ async Task UserExcerptRejectsBadInput()
     var unknown = await service.ExecuteAsync(new UserExcerptRequest("Valid English source", "xx"), "judge-a", CancellationToken.None);
     var tooLong = await service.ExecuteAsync(new UserExcerptRequest(new string('A', 3000) + "😀", "ko"), "judge-a", CancellationToken.None);
     var empty = await service.ExecuteAsync(new UserExcerptRequest("   ", "ko"), "judge-a", CancellationToken.None);
-    Assert(unknown.Status == "invalid" && tooLong.Status == "invalid" && empty.Status == "invalid", "invalid excerpt or language accepted");
+    var garbledEquation = await service.ExecuteAsync(new UserExcerptRequest("Equation: α\u0010ψ", "ko"), "judge-a", CancellationToken.None);
+    Assert(unknown.Status == "invalid" && tooLong.Status == "invalid" && empty.Status == "invalid" && garbledEquation.Status == "invalid", "invalid excerpt or language accepted");
     Assert(handler.Calls == 0, "invalid input reached provider");
 }
 
@@ -761,12 +1945,13 @@ async Task UserExcerptRejectsOversizedBody()
 
 async Task ChineseVariantsAreExplicit()
 {
-    var handler = SuccessfulTwoPassHandler("译文");
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("译文"));
     var service = NewUserService(handler, perClientLimit: 2);
-    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-CN", true), "judge-a", CancellationToken.None);
+    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-CN"), "judge-a", CancellationToken.None);
     Assert(handler.Bodies[0].Contains("Simplified Chinese", StringComparison.Ordinal), "zh-CN was not disambiguated");
-    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-TW", true), "judge-a", CancellationToken.None);
-    Assert(handler.Bodies[2].Contains("Traditional Chinese", StringComparison.Ordinal), "zh-TW was not disambiguated");
+    ConfirmTestBilling(handler);
+    await service.ExecuteAsync(new UserExcerptRequest("The artery is proximal.", "zh-TW"), "judge-a", CancellationToken.None);
+    Assert(handler.Bodies[1].Contains("Traditional Chinese", StringComparison.Ordinal), "zh-TW was not disambiguated");
 }
 
 async Task KoreanPromptPinsFemoralTerms()
@@ -785,7 +1970,7 @@ async Task KoreanPromptPinsFemoralTerms()
 
 async Task AllTargetsHaveExplicitNames()
 {
-    var handler = SuccessfulTwoPassHandler("draft");
+    var handler = new FakeProviderHandler(_ => ProviderSuccess("draft"));
     var service = NewUserService(handler, perClientLimit: 18, globalLimit: 18);
     var expected = new (string Code, string Name)[] {
         ("ko", "Korean"), ("es", "Spanish"), ("ar", "Arabic"), ("zh-CN", "Simplified Chinese"),
@@ -796,8 +1981,9 @@ async Task AllTargetsHaveExplicitNames()
     };
     foreach (var (code, name) in expected)
     {
-        await service.ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", code, true), "judge-a", CancellationToken.None);
-        Assert(handler.Bodies[^2].Contains($"Target language: {name}", StringComparison.Ordinal), $"{code} prompt did not name {name}");
+        await service.ExecuteAsync(new UserExcerptRequest("The artery measures 2.5 mm.", code), "judge-a", CancellationToken.None);
+        Assert(handler.Bodies[^1].Contains($"Target language: {name}", StringComparison.Ordinal), $"{code} prompt did not name {name}");
+        ConfirmTestBilling(handler);
     }
 }
 
@@ -846,7 +2032,7 @@ async Task LiveEndpointsShareBudget()
     {
         Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"translated\"}}]}")
     });
-    var options = new LiveOptions(true, "test-key", PerClientLimit: 1);
+    var options = TestLiveOptions(true, "test-key", PerClientLimit: 1);
     var budget = new LiveBudget(options);
     var provider = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
         new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
@@ -859,7 +2045,7 @@ async Task LiveEndpointsShareBudget()
 
 async Task LiveBudgetSerializesUpstream()
 {
-    var budget = new LiveBudget(new LiveOptions(true, "test-key", PerClientLimit: 2));
+    var budget = new LiveBudget(TestLiveOptions(true, "test-key", PerClientLimit: 2));
     using var first = await budget.TryAcquireAsync("judge-a", CancellationToken.None);
     using var blocked = await budget.TryAcquireAsync("judge-b", CancellationToken.None);
     Assert(first is not null && blocked is null, "a concurrent upstream call was admitted");
@@ -873,7 +2059,7 @@ async Task DurableLiveCapSurvivesRestart()
     var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-budget-{Guid.NewGuid():N}.txt");
     try
     {
-        var options = new LiveOptions(true, "test-key", PerClientLimit: 3,
+        var options = TestLiveOptions(true, "test-key", PerClientLimit: 3,
             LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
         var firstBudget = new LiveBudget(options);
         using (var first = await firstBudget.TryAcquireAsync("judge-a", CancellationToken.None))
@@ -898,10 +2084,10 @@ Task LiveStatusReflectsDurableCapacity()
     var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-status-{Guid.NewGuid():N}.txt");
     try
     {
-        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 100, LifetimeLedgerPath: ledger);
+        var options = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 100, LifetimeLedgerPath: ledger);
         var budget = new LiveBudget(options);
         var provider = new NebiusClient(new HttpClient(new FakeProviderHandler(_ =>
-            throw new Exception("status must not call the provider"))), "test-key", "test-model",
+            throw new Exception("status must not call the provider"))), "test-key", LiveMoneyOptions.Model,
             new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
         var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), provider, options, budget);
         Assert(service.DocumentAvailability.Available, "missing ledger must leave initial capacity available");
@@ -931,12 +2117,12 @@ async Task FixedExcerptCanUseLastDurableAttempt()
     try
     {
         File.WriteAllText(ledger, "1");
-        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
+        var options = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
         var handler = new FakeProviderHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"message\":{\"content\":\"관상동맥과 정맥\"}}],\"usage\":{\"prompt_tokens\":88,\"completion_tokens\":15}}")
+            Content = new StringContent("{\"model\":\"nvidia/Nemotron-3_5-Lightning\",\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"관상동맥과 정맥\"}}],\"usage\":{\"prompt_tokens\":88,\"completion_tokens\":15}}")
         });
-        var provider = new NebiusClient(new HttpClient(handler), "test-key", "test-model",
+        var provider = new NebiusClient(new HttpClient(handler), "test-key", LiveMoneyOptions.Model,
             new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
         var service = new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!),
             provider, options, new LiveBudget(options));
@@ -958,7 +2144,7 @@ async Task TwoPassBudgetReservationIsAtomic()
     var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-two-pass-{Guid.NewGuid():N}.txt");
     try
     {
-        var options = new LiveOptions(true, "test-key", PerClientLimit: 4, GlobalHourlyLimit: 4,
+        var options = TestLiveOptions(true, "test-key", PerClientLimit: 4, GlobalHourlyLimit: 4,
             LifetimeAttemptLimit: 3, LifetimeLedgerPath: ledger);
         var budget = new LiveBudget(options);
         using (var first = await ReserveAttempts(budget, "judge-a", 2))
@@ -984,14 +2170,14 @@ async Task TwoPassBudgetFailsClosed()
     {
         var ledger = Path.Combine(folder, "attempts.txt");
         File.WriteAllText(ledger, "corrupt");
-        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 3, LifetimeLedgerPath: ledger);
+        var options = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 3, LifetimeLedgerPath: ledger);
         using var corrupt = await ReserveAttempts(new LiveBudget(options), "judge-a", 2);
         Assert(corrupt is null && File.ReadAllText(ledger) == "corrupt", "corrupt ledger failed open or changed");
         using var zero = await ReserveAttempts(new LiveBudget(options), "judge-b", 0);
         Assert(zero is null, "zero-attempt request was admitted");
         using var excessive = await ReserveAttempts(new LiveBudget(options), "judge-c", 3);
         Assert(excessive is null, "unbounded attempt count was admitted");
-        var unwritable = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 3, LifetimeLedgerPath: folder);
+        var unwritable = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 3, LifetimeLedgerPath: folder);
         using var unavailable = await ReserveAttempts(new LiveBudget(unwritable), "judge-d", 2);
         Assert(unavailable is null, "unwritable ledger path failed open");
     }
@@ -1003,7 +2189,7 @@ async Task ConcurrentTwoPassReservationsStayBounded()
     var ledger = Path.Combine(Path.GetTempPath(), $"medical-qc-concurrent-{Guid.NewGuid():N}.txt");
     try
     {
-        var options = new LiveOptions(true, "test-key", LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
+        var options = TestLiveOptions(true, "test-key", LifetimeAttemptLimit: 2, LifetimeLedgerPath: ledger);
         var attempts = await Task.WhenAll(
             ReserveAttempts(new LiveBudget(options), "judge-a", 2),
             ReserveAttempts(new LiveBudget(options), "judge-b", 2));
@@ -1071,15 +2257,17 @@ LiveExcerptService NewLiveService(FakeProviderHandler handler, int perClientLimi
 {
     var client = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
         new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
-    return new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), client,
-        new LiveOptions(true, "test-key", perClientLimit, globalLimit, maxTrackedClients));
+    var options = TestLiveOptions(true, "test-key", perClientLimit, globalLimit, maxTrackedClients);
+    handler.TestBudgetOptions = options;
+    return new LiveExcerptService(new DemoCaseCatalog(Path.GetDirectoryName(fixtureFile)!), client, options);
 }
 
 UserExcerptService NewUserService(FakeProviderHandler handler, int perClientLimit = 3, int globalLimit = 20)
 {
     var client = new NebiusClient(new HttpClient(handler), "test-key", "nvidia/Nemotron-3_5-Lightning",
         new Uri("https://api.tokenfactory.nebius.com/v1/chat/completions"), TimeSpan.FromSeconds(3));
-    var options = new LiveOptions(true, "test-key", perClientLimit, globalLimit);
+    var options = TestLiveOptions(true, "test-key", perClientLimit, globalLimit);
+    handler.TestBudgetOptions = options;
     return new UserExcerptService(client, options, new LiveBudget(options));
 }
 
@@ -1206,6 +2394,7 @@ sealed class DemoServer : IDisposable
 
 sealed class FakeProviderHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
 {
+    public LiveOptions? TestBudgetOptions { get; set; }
     public int Calls { get; private set; }
     public List<string> Bodies { get; } = [];
     public string? LastBody { get; private set; }
@@ -1221,4 +2410,10 @@ sealed class FakeProviderHandler(Func<HttpRequestMessage, HttpResponseMessage> r
         LastUri = request.RequestUri?.ToString();
         return respond(request);
     }
+}
+
+sealed class MoneyClock(DateTimeOffset now) : TimeProvider
+{
+    public DateTimeOffset Now { get; set; } = now;
+    public override DateTimeOffset GetUtcNow() => Now;
 }

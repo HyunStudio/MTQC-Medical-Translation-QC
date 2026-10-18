@@ -5,17 +5,31 @@ namespace MedicalQcWebDemo;
 
 public sealed class LiveBudget
 {
+    // Local operator API only. Never expose a receipt-writing HTTP route.
+    public bool ReconcileBilling(LiveBillingReceipt receipt) => money?.Reconcile(receipt) == true;
     private readonly LiveOptions options;
     private readonly SemaphoreSlim upstream = new(1, 1);
     private readonly object sync = new();
     private readonly Dictionary<string, (DateTimeOffset Started, int Count)> clients = new(StringComparer.Ordinal);
     private DateTimeOffset globalStarted = DateTimeOffset.MinValue;
     private int globalCount;
+    private readonly LiveMoneyLedger? money;
 
-    public LiveBudget(LiveOptions options) => this.options = options;
+    public LiveBudget(LiveOptions options, TimeProvider? clock = null)
+    {
+        this.options = options;
+        if (options.Money is not null) money = new LiveMoneyLedger(options.Money, clock ?? TimeProvider.System);
+    }
+
+    public LiveCostCall? TryStartCall(IDisposable lease, int index) =>
+        lease is Lease owned && ReferenceEquals(owned.Ledger, money) ? owned.Start(index) : null;
+
+    public decimal? EstimatedCostUsd(IDisposable lease) =>
+        lease is Lease owned && ReferenceEquals(owned.Ledger, money) ? money?.Estimate(owned.RunId) : null;
 
     public bool HasLifetimeCapacity(int attemptCount)
     {
+        if (money is null || !money.HasCapacity(attemptCount)) return false;
         if (attemptCount is < 1 or > 2) return false;
         if (options.LifetimeAttemptLimit is null && options.LifetimeLedgerPath is null) return true;
         if (options.LifetimeAttemptLimit is not int limit || limit is < 1 or > 1000 ||
@@ -43,6 +57,7 @@ public sealed class LiveBudget
 
     public async Task<IDisposable?> TryAcquireAsync(string clientId, int attemptCount, CancellationToken cancellationToken)
     {
+        if (money is null) return null;
         if (attemptCount is < 1 or > 2) return null;
         if (!await upstream.WaitAsync(0, cancellationToken)) return null;
         var allowed = false;
@@ -66,11 +81,17 @@ public sealed class LiveBudget
                 if (!clients.TryGetValue(clientId, out var entry) || now - entry.Started >= TimeSpan.FromHours(1))
                     entry = (now, 0);
                 if (entry.Count >= options.PerClientLimit) return null;
-                if (!ReserveLifetimeAttempts(attemptCount)) return null;
+                var runId = Guid.NewGuid().ToString("N");
+                if (!money.Reserve(runId, attemptCount)) return null;
+                if (!ReserveLifetimeAttempts(attemptCount))
+                {
+                    money.CancelUnstarted(runId);
+                    return null;
+                }
                 clients[clientId] = (entry.Started, entry.Count + 1);
                 globalCount++;
                 allowed = true;
-                return new Lease(upstream);
+                return new Lease(upstream, money, runId, attemptCount);
             }
         }
         finally
@@ -119,12 +140,19 @@ public sealed class LiveBudget
         }
     }
 
-    private sealed class Lease(SemaphoreSlim gate) : IDisposable
+    private sealed class Lease(SemaphoreSlim gate, LiveMoneyLedger ledger, string runId, int attempts) : IDisposable
     {
         private int released;
+        public LiveMoneyLedger Ledger => ledger;
+        public string RunId => runId;
+        public LiveCostCall? Start(int index) => released == 0 && index >= 0 && index < attempts ? ledger.Start(runId, index) : null;
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref released, 1) == 0) gate.Release();
+            if (Interlocked.Exchange(ref released, 1) == 0)
+            {
+                try { ledger.CancelUnstarted(runId); }
+                finally { gate.Release(); }
+            }
         }
     }
 }

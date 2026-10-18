@@ -14,6 +14,7 @@ themeButton.addEventListener('click', () => {
 });
 
 let demoCase;
+let caseRequestId = 0;
 let liveAvailable = false;
 let liveRequestId = 0;
 let liveController = null;
@@ -56,13 +57,16 @@ fetch('/api/cases')
   .catch(showCaseError);
 
 function loadCase(id) {
+  const requestId = ++caseRequestId;
   return fetch(`/api/cases/${encodeURIComponent(id)}`)
     .then(response => {
       if (!response.ok) throw new Error('Recorded case could not be loaded.');
       return response.json();
     })
     .then(data => {
-    if (caseSelect.value !== id) return;
+    if (caseSelect.value !== id || requestId !== caseRequestId) return;
+    $('#case-error').hidden = true;
+    $('#case-error').textContent = '';
     demoCase = data;
     languageSelect.disabled = false;
     const isPaper = data.id === 'mueller-figure1';
@@ -108,7 +112,9 @@ function loadCase(id) {
     renderTranslation(languageSelect.value);
     updateLiveAvailability();
   })
-  .catch(showCaseError);
+  .catch(error => {
+    if (requestId === caseRequestId && caseSelect.value === id) showCaseError(error);
+  });
 }
 
 function showCaseError(error) {
@@ -177,14 +183,16 @@ function locateFinding(finding) {
 }
 
 const liveButton = $('#live-run');
-fetch('/api/live/status')
-  .then(response => response.json())
-  .then(status => {
+const liveAvailability = import('./live-availability.mjs');
+liveAvailability.then(({ subscribeLiveAvailability, refreshLiveAvailability }) => {
+  subscribeLiveAvailability(status => {
     liveAvailable = status.available;
     if (!status.available) $('#live-status').textContent = status.reason;
+    $('#live-saved-examples').hidden = status.available;
     updateLiveAvailability();
-  })
-  .catch(() => { $('#live-status').textContent = 'Live excerpt status is unavailable; the recorded case still works.'; });
+  });
+  return refreshLiveAvailability();
+}).catch(() => { $('#live-status').textContent = 'Live excerpt status is unavailable; the recorded case still works.'; });
 
 liveButton.addEventListener('click', async () => {
   if (!demoCase) return;
@@ -238,6 +246,8 @@ liveButton.addEventListener('click', async () => {
       livePending = false;
       updateLiveAvailability();
     }
+    // Even an invalidated/cancelled view may already have incurred provider usage.
+    void liveAvailability.then(({ refreshLiveAvailability }) => refreshLiveAvailability()).catch(() => {});
   }
 });
 

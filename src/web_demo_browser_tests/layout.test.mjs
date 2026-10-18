@@ -30,6 +30,48 @@ test('single column fragments on the same line join in geometric order', () => {
   assert.equal(result.columns, 1);
   assert.equal(result.text, 'The artery\nNext line');
 });
+test('tightly led stacked prose lines do not merge as superscripts', () => {
+  const result = recoverReadingOrder([
+    word('Dose A', 40, 100, 60), word('Dose B', 40, 109, 60), word('Dose C', 40, 118, 60)
+  ], 600);
+  assert.deepEqual(result.lines.map(line => line.text), ['Dose A', 'Dose B', 'Dose C']);
+});
+test('staggered same-size lines touching at an edge remain separate', () => {
+  const result = recoverReadingOrder([
+    word('Left note', 50, 100, 60), word('Right note', 110, 109, 60)
+  ], 600);
+  assert.deepEqual(result.lines.map(line => line.text), ['Left note', 'Right note']);
+});
+test('full-width prose is not misclassified as columns by later equation glyphs', () => {
+  // A centered one-column medical page can contain many isolated formula
+  // glyphs on both sides of an apparent gutter. Its prose still crosses it.
+  const fragments = [];
+  for (let row = 0; row < 12; row++)
+    fragments.push(word(`Full-width medical paragraph line ${row} continues across the page`, 234, 100 + row * 16, 465));
+  for (let row = 0; row < 30; row++) {
+    fragments.push(word(`L${row}`, 315, 330 + row * 12, 10));
+    fragments.push(word(`R${row}`, 510, 330 + row * 12, 10));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 1);
+  assert(result.text.indexOf('Full-width medical paragraph line 11') < result.text.indexOf('L0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+test('contiguous PDF prose fragments still establish a one-column page around equations', () => {
+  const fragments = [];
+  for (let row = 0; row < 12; row++) {
+    fragments.push(word(`A medical paragraph line ${row} `, 62, 100 + row * 16, 298));
+    fragments.push(word('continues across the page', 360, 100 + row * 16, 300));
+  }
+  for (let row = 0; row < 30; row++) {
+    fragments.push(word(`L${row}`, 315, 330 + row * 12, 10));
+    fragments.push(word(`R${row}`, 510, 330 + row * 12, 10));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.columns, 1);
+  assert(result.lines.some(line => line.text.includes('A medical paragraph line 11 continues across the page')), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
 test('reviewer may choose row-wise order for a table', () => {
   const result = recoverReadingOrder([word('A', 40, 20), word('B', 330, 20), word('C', 40, 40), word('D', 330, 40)], 600, 'single');
   assert.equal(result.text, 'A B\nC D');
@@ -140,6 +182,30 @@ test('long full-width table retains model count slice and voxel values on late r
   assert.equal(result.fragmentCount, fragments.length);
 });
 
+test('wrapped table cells do not terminate later aligned numeric rows', () => {
+  const fragments = [
+    word('TABLE 1', 50, 50, 50),
+    word('Dataset', 50, 80, 60), word('Sequence', 150, 80, 65),
+    word('Model', 260, 80, 55), word('Count', 400, 80, 45), word('Slices', 550, 80, 45),
+    word('A', 50, 110, 18), word('MPRAGE', 150, 110, 48), word('ModelA', 260, 110, 55),
+    word('160', 400, 110, 25), word('208', 550, 110, 25),
+    word('B', 50, 130, 18), word('MPRAGE', 150, 130, 48), word('ModelB', 260, 130, 55),
+    word('383', 400, 130, 25), word('174', 550, 130, 25),
+    word('Whitehall1', 50, 150, 70), word('Multi-', 150, 150, 35),
+    word(' Echo', 185, 150, 32), word('ModelC', 260, 150, 55),
+    word('552', 400, 150, 25), word('176', 550, 150, 25),
+    word('Long', 150, 170, 25), word(' wrapped', 180, 170, 42), word(' name', 225, 170, 28),
+    word('Late', 50, 190, 35), word('MPRAGE', 150, 190, 48), word('ModelD', 260, 190, 55),
+    word('223', 400, 190, 25), word('174', 550, 190, 25),
+    word('3.3 Results', 50, 230, 110)
+  ];
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert(result.lines.some(line => line.column === 'table' && line.text.includes('Late MPRAGE ModelD 223 174')), result.text);
+  assert(result.text.indexOf('Late MPRAGE ModelD 223 174') < result.text.indexOf('3.3 Results'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+
 test('sparse inherited table cells and comma-separated slices stay with later rows', () => {
   const fragments = [word('TABLE 1', 50, 50, 50),
     word('Dataset', 75, 80, 60), word('Model', 356, 80, 70),
@@ -221,9 +287,9 @@ test('real Kalluvila page 8 five-column one-row ratings table stays in header an
   assert.equal(result.fragmentCount, fragments.length);
 });
 
-// Reproduced red on a synthetic dose fragment; neither the six held-out
-// pages nor the earlier twelve-page corpus contains this fragment pattern.
-// Keep it visible as a known risk, not as a passing extraction claim.
+// No visually confirmed lowered-numeric term was found in the prespecified
+// 21-page probe. Keep this known-risk test skipped rather than tuning the
+// row-grouping rule to a synthetic shape and risking real line mergers.
 test.skip('shifted subscript in a medical dose term stays between adjacent baseline fragments', () => {
   const result = recoverReadingOrder([
     { text: 'D', x: 0, y: 90, width: 6, height: 10 },
@@ -248,6 +314,23 @@ test('two-column prose immediately below a numeric table is not swallowed by its
   const result = recoverReadingOrder(fragments, 744);
   assert.equal(result.tableRegions, 1);
   assert.equal(result.lines.find(line => line.text === 'Left prose 0')?.column, 'left');
+  assert(result.text.indexOf('Left prose 5') < result.text.indexOf('Right prose 0'), result.text);
+  assert.equal(result.fragmentCount, fragments.length);
+});
+test('a nearby section heading ends a numeric table before two-column prose', () => {
+  const fragments = [word('TABLE 1', 50, 50, 60),
+    word('Method', 50, 80, 60), word('Metric A', 260, 80, 60), word('Metric B', 460, 80, 60),
+    word('Alpha', 50, 110, 60), word('0.8', 260, 110, 60), word('0.9', 460, 110, 60),
+    word('Beta', 50, 130, 60), word('0.7', 260, 130, 60), word('0.8', 460, 130, 60),
+    word('3.1 Results', 50, 153, 82)];
+  for (let row = 0; row < 6; row++) {
+    fragments.push(word(`Left prose ${row}`, 50, 163 + row * 16, 250));
+    fragments.push(word(`Right prose ${row}`, 390, 163 + row * 16, 250));
+  }
+  const result = recoverReadingOrder(fragments, 744);
+  assert.equal(result.tableRegions, 1);
+  assert.notEqual(result.lines.find(line => line.text === '3.1 Results')?.column, 'table');
+  assert.equal(result.lines.find(line => line.text.includes('Left prose 0'))?.column, 'left');
   assert(result.text.indexOf('Left prose 5') < result.text.indexOf('Right prose 0'), result.text);
   assert.equal(result.fragmentCount, fragments.length);
 });

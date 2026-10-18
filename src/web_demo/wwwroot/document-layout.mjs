@@ -90,12 +90,28 @@ function numericTableBands(items, width) {
     for (const group of groups.filter(group => group.y > numericRows[0].y)) {
       if (group.y - last.y > 45) break;
       const aligned = item => tableColumns.some(x => Math.abs(item.x - x) < width * .03);
-      if (group.items.length < 3 || group.items.filter(item => item.width < width * .25).length < 2 ||
-        !group.items.every(aligned) ||
-        !group.items.some(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()) && aligned(item)) ||
-        Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) <= width * .25) break;
-      last = group;
-      count++;
+      const shortCells = group.items.filter(item => item.width < width * .25).length;
+      const followsCell = group.items.every((item, index) => aligned(item) || (index > 0 &&
+        Math.abs(item.x - group.items[index - 1].x - group.items[index - 1].width) <= Math.max(2, item.height * .3)));
+      const numericCell = group.items.some(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()) && aligned(item));
+      const span = Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x));
+      if (group.items.length >= 3 && shortCells >= 2 && followsCell && numericCell && span > width * .25) {
+        last = group;
+        count++;
+        continue;
+      }
+      // A wrapped table cell can occupy a short line by itself. Keep it
+      // within the table band so the next numeric row remains attached.
+      const compactWrap = group.items.length <= 4 && span < width * .25 &&
+        aligned(group.items[0]) && group.items.every((item, index) => index === 0 || aligned(item) ||
+          Math.abs(item.x - group.items[index - 1].x - group.items[index - 1].width) <= Math.max(6, item.height * .6));
+      const isSectionHeading = /^\s*(?:(?:\d+(?:\.\d+)+\.?|\d+\.)\s+|(?:Results|Discussion|Conclusion|Methods|Introduction)\b)/i
+        .test(group.items.map(item => item.text).join(' '));
+      if (group.y - last.y <= 25 && shortCells === group.items.length && compactWrap && !isSectionHeading) {
+        last = group;
+        continue;
+      }
+      break;
     }
     if (count < 2) continue;
     // End at the last cell's box, not a full blank-row allowance: prose may
@@ -111,6 +127,7 @@ function findGutter(items, width) {
     return sorted[Math.round((sorted.length - 1) * fraction)];
   };
   let best = null;
+  const pageRows = groupedRows(items);
   for (let fraction = .35; fraction <= .65; fraction += .01) {
     const cut = width * fraction;
     const left = items.filter(item => item.x + item.width <= cut);
@@ -124,7 +141,30 @@ function findGutter(items, width) {
     const overlap = Math.min(Math.max(...left.map(i => i.y)), Math.max(...right.map(i => i.y))) -
       Math.max(Math.min(...left.map(i => i.y)), Math.min(...right.map(i => i.y)));
     if (overlap <= 0) continue;
-    const crossing = items.filter(item => item.x < cut && item.x + item.width > cut && item.width < width * .65).length;
+    const crossingItems = items.filter(item => item.x < cut && item.x + item.width > cut && item.width < width * .65);
+    const proseLine = item => item.width > width * .25 && item.text.trim().split(/\s+/).length >= 6;
+    const spanningProse = pageRows.filter(group => {
+      const qualifies = run => run.length && run[0].x < cut &&
+        run.at(-1).x + run.at(-1).width > cut &&
+        run.at(-1).x + run.at(-1).width - run[0].x > width * .4 &&
+        run.reduce((words, item) => words + item.text.trim().split(/\s+/).length, 0) >= 6;
+      let run = [];
+      for (const item of [...group.items].sort((a, b) => a.x - b.x)) {
+        const previous = run.at(-1);
+        if (previous && item.x - previous.x - previous.width > Math.max(2, Math.min(item.height, previous.height) * .3)) {
+          if (qualifies(run)) return true;
+          run = [];
+        }
+        run.push(item);
+      }
+      return qualifies(run);
+    }).length;
+    // Scattered equation glyphs on a one-column page can look like two
+    // columns. Sustained prose crossing the proposed gutter is stronger
+    // evidence than isolated glyph fragments on either side of it.
+    if (spanningProse >= 5 && spanningProse > left.filter(proseLine).length + right.filter(proseLine).length)
+      continue;
+    const crossing = crossingItems.length;
     const score = Math.min(left.length, right.length) * 2 - crossing * 3;
     if (score > 0 && (!best || score > best.score)) best = { score, cut: (gapStart + gapEnd) / 2 };
   }

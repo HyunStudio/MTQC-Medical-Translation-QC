@@ -16,6 +16,7 @@ public sealed class NebiusClient
     private readonly string model;
     private readonly Uri endpoint;
     private readonly TimeSpan timeout;
+    internal string RequestedModel => model;
 
     public NebiusClient(HttpClient http, string apiKey, string model, Uri endpoint, TimeSpan timeout)
     {
@@ -27,7 +28,7 @@ public sealed class NebiusClient
         this.timeout = timeout;
     }
 
-    public async Task<NebiusOutput> TranslateAsync(string source, string language, CancellationToken cancellationToken)
+    public async Task<NebiusOutput> TranslateAsync(string source, string language, CancellationToken cancellationToken, LiveCostCall? cost = null)
     {
         if (source.EnumerateRunes().Count() is < 1 or > 3000) throw new InvalidDataException("Excerpt exceeds limit");
         var targetInstruction = language switch
@@ -85,9 +86,9 @@ public sealed class NebiusClient
         try
         {
             var root = document.RootElement;
+            ObserveCost(root, cost);
             var choice = root.GetProperty("choices")[0];
-            if (choice.TryGetProperty("finish_reason", out var finishReason) &&
-                finishReason.GetString() != "stop")
+            if (choice.GetProperty("finish_reason").GetString() != "stop")
                 throw new InvalidDataException("Provider response unfinished");
             var text = choice.GetProperty("message").GetProperty("content").GetString();
             if (string.IsNullOrWhiteSpace(text) || text.Length > (source.Length <= 640 ? 1800 : 10000)) throw new InvalidDataException("Provider output invalid");
@@ -111,7 +112,10 @@ public sealed class NebiusClient
         }
     }
 
-    public async Task<NebiusCritique> CritiqueAsync(string source, string language, string draft, CancellationToken cancellationToken)
+    public Task<NebiusCritique> CritiqueAsync(string source, string language, string draft, CancellationToken cancellationToken) =>
+        CritiqueAsync(source, language, draft, cancellationToken, null);
+
+    public async Task<NebiusCritique> CritiqueAsync(string source, string language, string draft, CancellationToken cancellationToken, LiveCostCall? cost)
     {
         if (string.IsNullOrWhiteSpace(source) || source.EnumerateRunes().Count() > 3000 ||
             string.IsNullOrWhiteSpace(draft) || draft.Length > 10000 ||
@@ -152,6 +156,7 @@ public sealed class NebiusClient
         try
         {
             var root = document.RootElement;
+            ObserveCost(root, cost);
             var choice = root.GetProperty("choices")[0];
             if (choice.GetProperty("finish_reason").GetString() != "stop")
                 throw new InvalidDataException("Provider critique unfinished");
@@ -190,10 +195,26 @@ public sealed class NebiusClient
                 throw new InvalidDataException("Provider critique usage invalid");
             return new(findings, actualModel, promptTokens, completionTokens);
         }
-        catch (Exception error) when (error is KeyNotFoundException or IndexOutOfRangeException or InvalidOperationException or ArgumentOutOfRangeException)
+        catch (Exception error) when (error is KeyNotFoundException or IndexOutOfRangeException or InvalidOperationException or ArgumentOutOfRangeException or FormatException)
         {
             throw new InvalidDataException("Provider critique schema invalid");
         }
+    }
+
+    private static void ObserveCost(JsonElement root, LiveCostCall? cost)
+    {
+        if (cost is null) return;
+        string? actualModel = null;
+        int? prompt = null, completion = null;
+        if (root.TryGetProperty("model", out var modelField) && modelField.ValueKind == JsonValueKind.String)
+            actualModel = modelField.GetString();
+        if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+        {
+            if (usage.TryGetProperty("prompt_tokens", out var p) && p.TryGetInt32(out var input)) prompt = input;
+            if (usage.TryGetProperty("completion_tokens", out var c) && c.TryGetInt32(out var output)) completion = output;
+        }
+        cost.Observe(actualModel, prompt, completion);
+        if (actualModel != LiveMoneyOptions.Model) throw new InvalidDataException("Provider returned an unapproved model");
     }
 
     private static void RequireKeys(JsonElement element, params string[] keys)

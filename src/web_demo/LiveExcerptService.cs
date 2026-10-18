@@ -7,7 +7,8 @@ public sealed record LiveExcerptResult(string Status, string Message, string? Tr
     string? QcSummary = null, ReviewRun? Review = null);
 public sealed record LiveOptions(bool Enabled, string? ApiKey, int PerClientLimit = 3,
     int GlobalHourlyLimit = 20, int MaxTrackedClients = 4096,
-    int? LifetimeAttemptLimit = null, string? LifetimeLedgerPath = null)
+    int? LifetimeAttemptLimit = null, string? LifetimeLedgerPath = null,
+    LiveMoneyOptions? Money = null)
 {
     public static int ParsePerClientLimit(string? raw) =>
         int.TryParse(raw, out var value) && value is >= 1 and <= 20 ? value : 3;
@@ -39,7 +40,7 @@ public sealed class LiveExcerptService
     public LiveAvailability DocumentAvailability => !Availability.Available
         ? Availability
         : !budget.HasLifetimeCapacity(1)
-            ? new(false, "The live translation attempt limit is reached or its ledger is unavailable. Recorded cases remain available.")
+            ? new(false, "The live budget or attempt limit is reached, or cost accounting is not ready. Recorded cases remain available without a paid call.")
             : Availability;
 
     public async Task<LiveExcerptResult> ExecuteAsync(LiveExcerptRequest request, string clientId, CancellationToken cancellationToken)
@@ -62,13 +63,18 @@ public sealed class LiveExcerptService
             var now = DateTimeOffset.UtcNow;
             var key = $"{request.CaseId}:{request.TargetLanguage}";
             if (cache.TryGetValue(key, out var cached) && cached.Expires > now) return cached.Result;
+            if (provider.RequestedModel != LiveMoneyOptions.Model)
+                return new("rate-limited", "Live model cost is not approved. The recorded case remains available.");
             using var lease = await budget.TryAcquireAsync(clientId, cancellationToken);
             if (lease is null)
-                return new("rate-limited", "Live demo request limit reached. The recorded case remains available.");
+                return new("rate-limited", "Live budget or request limit reached, or cost accounting is not ready. The recorded case remains available without a paid call.");
 
             try
             {
-                var output = await provider.TranslateAsync(caption, request.TargetLanguage, cancellationToken);
+                using var cost = budget.TryStartCall(lease, 0);
+                if (cost is null) return new("rate-limited", "Cost reservation is unavailable. The recorded case remains available.");
+                var output = await provider.TranslateAsync(caption, request.TargetLanguage, cancellationToken, cost);
+                cost.Complete();
                 var qc = output.Text.Contains("2,185", StringComparison.Ordinal) || output.Text.Contains("2.185", StringComparison.Ordinal)
                     ? "Number 2,185 appears in output; independent medical and linguistic review is still required."
                     : "Number 2,185 was not found exactly; review numeric fidelity and all medical terms before use.";
