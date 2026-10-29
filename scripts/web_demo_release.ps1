@@ -52,7 +52,7 @@ $clientRoot = Join-Path $projectRoot 'src/web_demo_client'
 $npmCommand = if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) { 'npm.cmd' } else { 'npm' }
 Push-Location $clientRoot
 try {
-    & $npmCommand ci
+    & $npmCommand ci --ignore-scripts --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
     & $npmCommand run build
     if ($LASTEXITCODE -ne 0) { throw 'Local PDF/OCR worker build failed.' }
@@ -60,14 +60,45 @@ try {
 finally { Pop-Location }
 
 $webProject = Join-Path $projectRoot 'src/web_demo/MedicalQcWebDemo.csproj'
-& dotnet publish $webProject -c Release -o $publish --nologo
+& dotnet build $webProject -c Release --no-incremental -p:DebugType=None -p:DebugSymbols=false --nologo
+if ($LASTEXITCODE -ne 0) { throw 'Symbol-free Release rebuild failed.' }
+& dotnet publish $webProject -c Release --no-build --no-restore -p:DebugType=None -p:DebugSymbols=false -o $publish --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Release publish failed.' }
 & dotnet (Join-Path $publish 'MedicalQcWebDemo.dll') --validate-fixtures
 if ($LASTEXITCODE -ne 0) { throw 'Published fixture validation failed.' }
 
-foreach ($file in @('README.md','RIGHTS.md','THIRD_PARTY_NOTICES.md')) {
+foreach ($file in @('RIGHTS.md','THIRD_PARTY_NOTICES.md')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot "docs/web-demo/$file") -Destination (Join-Path $publish $file)
 }
+$publishedReadme = @'
+# MTQC published web build
+
+This archive is a framework-dependent web application, not the source archive
+or the separate Windows Word installer. It requires the .NET 10 ASP.NET Core
+runtime. Extract the entire archive, then run from this directory in PowerShell:
+
+```powershell
+$env:DEMO_LIVE_ENABLED = 'false'
+$env:MTQC_LOCAL_DOCUMENTS = 'false'
+dotnet MedicalQcWebDemo.dll --urls http://127.0.0.1:5080
+```
+
+Open http://127.0.0.1:5080 . Stop with Ctrl+C. Saved examples and local browser
+PDF/OCR tools need no API key. Word/native tools are disabled and not bundled.
+Live model requests remain disabled; a key alone does not satisfy billing gates.
+
+Current source, source-build instructions and explicit functionality limits:
+https://github.com/HyunStudio/MTQC-Medical-Translation-QC
+
+Latest demonstration (2:49): https://youtu.be/954tVuF-6Qw
+
+Read the included LICENSE, LICENSE-SCOPE.txt, RIGHTS.md and THIRD_PARTY_NOTICES.md.
+This prototype is not a validated general PDF translator or clinical service.
+General complex-layout/scanned-math/figure recovery remains incomplete, and
+clinical expert review is 0/15. No successful automated result is medical approval.
+'@
+[IO.File]::WriteAllText((Join-Path $publish 'README.md'), $publishedReadme, [Text.UTF8Encoding]::new($false))
+Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE-SCOPE.txt') -Destination (Join-Path $publish 'LICENSE-SCOPE.txt')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'src/web_demo/LICENSE') -Destination (Join-Path $publish 'LICENSE')
 
 $httpPortListener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
@@ -101,19 +132,25 @@ finally {
     $env:DEMO_LIVE_ENABLED = $priorLive
 }
 
-$allowedTrees = @('src/web_demo','src/web_demo_client','src/web_demo_tests','src/web_demo_browser_tests','src/web_demo_evaluation','docs/web-demo')
+$allowedTrees = @('src/web_demo','src/web_demo_client','src/web_demo_tests','src/web_demo_browser_tests','src/web_demo_evaluation','src/document_core','docs/web-demo','licenses')
+$registeredVendor = @('src/web_demo/wwwroot/vendor/jszip/jszip.min.mjs','src/web_demo/wwwroot/vendor/jszip/LICENSE.markdown','src/web_demo/wwwroot/vendor/jszip/manifest.json')
 foreach ($tree in $allowedTrees) {
     $folder = Join-Path $projectRoot $tree
     foreach ($file in Get-ChildItem -LiteralPath $folder -File -Recurse) {
-        if ($file.FullName -match '[\\/](bin|obj|node_modules|vendor|__pycache__|\.pytest_cache|\.mypy_cache)[\\/]' -or
-            $file.Extension -in @('.pyc','.pyo')) { continue }
         $relative = $file.FullName.Substring($projectRoot.Length + 1)
+        $normalized = $relative.Replace('\','/')
+        if ($normalized -match '(^|/)(bin|obj|node_modules|__pycache__|\.pytest_cache|\.mypy_cache|\.git|\.codex-run|qa|output|TestResults)/' -or
+            $file.Name -like '.env*' -or $file.Extension -in @('.pyc','.pyo','.pdb','.log','.key','.pem','.pfx','.user','.suo') -or
+            ($normalized.Contains('/vendor/') -and $normalized -notin $registeredVendor)) { continue }
         $destination = Join-Path $source $relative
         New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
         Copy-Item -LiteralPath $file.FullName -Destination $destination
     }
 }
-Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/README.md') -Destination (Join-Path $source 'README.md')
+$sharedHelper = Join-Path $source 'src/status_dashboard/SiblingTempPath.cs'
+New-Item -ItemType Directory -Path (Split-Path $sharedHelper -Parent) -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $projectRoot 'src/status_dashboard/SiblingTempPath.cs') -Destination $sharedHelper
+Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination (Join-Path $source 'README.md')
 $exportReadme = Join-Path $source 'README.md'
 $readmeText = Get-Content -LiteralPath $exportReadme -Raw -Encoding utf8
 foreach ($docName in @('RIGHTS.md','THIRD_PARTY_NOTICES.md','CORPUS_EVALUATION_20260930.md','CORPUS_SOURCES.md','COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md','KNEE_MRI_LAYOUT_AUDIT_20261003.md','REVIEW_EVALUATION_20261001.md')) {
@@ -124,16 +161,17 @@ Set-Content -LiteralPath $exportReadme -Value $readmeText -Encoding utf8 -NoNewl
 if ([System.IO.File]::ReadAllText($exportReadme, [System.Text.Encoding]::UTF8) -cne $readmeText) {
     throw 'Exported README failed its UTF-8 round-trip check.'
 }
-Copy-Item -LiteralPath (Join-Path $projectRoot 'src/web_demo/LICENSE') -Destination (Join-Path $source 'LICENSE')
-Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitignore') -Destination (Join-Path $source '.gitignore')
-Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source.gitattributes') -Destination (Join-Path $source '.gitattributes')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination (Join-Path $source 'LICENSE')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE-SCOPE.txt') -Destination (Join-Path $source 'LICENSE-SCOPE.txt')
+Copy-Item -LiteralPath (Join-Path $projectRoot '.gitignore') -Destination (Join-Path $source '.gitignore')
+Copy-Item -LiteralPath (Join-Path $projectRoot '.gitattributes') -Destination (Join-Path $source '.gitattributes')
 $workflowFolder = Join-Path $source '.github/workflows'
 New-Item -ItemType Directory -Path $workflowFolder -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $projectRoot 'docs/web-demo/public-source-workflows/mtqc.yml') -Destination (Join-Path $workflowFolder 'mtqc.yml')
+Copy-Item -LiteralPath (Join-Path $projectRoot '.github/workflows/mtqc.yml') -Destination (Join-Path $workflowFolder 'mtqc.yml')
 if (-not (Test-Path -LiteralPath (Join-Path $workflowFolder 'mtqc.yml') -PathType Leaf)) { throw 'Public CI workflow missing from source export.' }
 $sourceScripts = Join-Path $source 'scripts'
 New-Item -ItemType Directory -Path $sourceScripts -Force | Out-Null
-foreach ($name in @('web_demo_release.ps1','smoke_18_languages.ps1','build_judge_brief.py','build_video_narration.ps1','compose_professional_video.py')) {
+foreach ($name in @('web_demo_release.ps1','test_public_release.py','smoke_18_languages.ps1','build_judge_brief.py','build_video_narration.ps1','compose_professional_video.py')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot "scripts/$name") -Destination (Join-Path $sourceScripts $name)
 }
 

@@ -270,7 +270,7 @@ test('a visually blank table cell cannot emit a measurement', () => {
 });
 
 test('table dimensions above the editor limit fail before scanning the grid', () => {
-  for (const [rowCount, columnCount] of [[21, 1], [1, 21]]) {
+  for (const [rowCount, columnCount] of [[129, 1], [1, 129], [65, 64], [0, 1], [1.5, 1], [Infinity, 1]]) {
     const source = documentWith(p => {
       p.regions[0] = { ...p.regions[0], type: 'table', table: {
         rowCount, columnCount, reviewed: true, cells: [
@@ -279,6 +279,20 @@ test('table dimensions above the editor limit fail before scanning the grid', ()
       } };
     });
     assert(codes(validateDocumentStructure(source, { scope: 'excerpt', selectedRegionIds: ['r1'] })).includes('invalid-cell'));
+  }
+});
+
+test('table dimensions at the supported axis and position bounds remain valid', () => {
+  for (const [rowCount, columnCount] of [[128, 1], [1, 128], [64, 64]]) {
+    const source = documentWith(p => {
+      p.regions[0] = { ...p.regions[0], type: 'table', table: {
+        rowCount, columnCount, reviewed: true, cells: [
+          { id: 'v', row: 0, column: 0, rowSpan: rowCount, colSpan: columnCount,
+            role: 'value', text: '2 mm', headerCellIds: [] }
+        ]
+      } };
+    });
+    assert.equal(validateDocumentStructure(source, { scope: 'excerpt', selectedRegionIds: ['r1'] }).ok, true);
   }
 });
 

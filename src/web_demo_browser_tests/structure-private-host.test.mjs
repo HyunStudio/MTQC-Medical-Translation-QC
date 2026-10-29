@@ -13,6 +13,23 @@ function snapshot(bootstrap){const journal=createPrivateInteractionJournal({now:
     manualReview:{eventCapture:'unavailable',editCount:null,durationSeconds:null},interactionJournal:journal.snapshot()};}
 async function withHost(run){const host=await startPrivateReviewHost(authoredHostRequest());try{await run(host);}finally{await host.close();}}
 async function bootstrap(host){return (await fetch(host.url+'bootstrap')).json();}
+
+test('private editor serves every transitive module dependency without exposing unrelated files', async () => withHost(async host => {
+  const pending = ['document-private-operator.mjs'], visited = new Set();
+  while (pending.length) {
+    const file = pending.pop();
+    if (visited.has(file)) continue;
+    visited.add(file);
+    const response = await fetch(host.url + file);
+    assert.equal(response.status, 200, `Editor dependency unavailable: ${file}`);
+    assert.match(response.headers.get('content-type'), /javascript/);
+    const source = await response.text();
+    for (const match of source.matchAll(/\b(?:from\s*|import\s*)['"]\.\/([^'"]+)['"]/g))
+      pending.push(match[1]);
+  }
+  for (const file of ['app.js', 'document-workbench.js', '../Program.cs', 'deployment.json'])
+    assert.equal((await fetch(host.url + file)).status, 404);
+}));
 async function post(host,value,headers={}){return fetch(host.url+'export',{method:'POST',headers:{Origin:new URL(host.url).origin,'Content-Type':'application/json',...headers},body:JSON.stringify(value)});}
 async function mappedPost(host,route,value,headers={}){return fetch(host.url+route,{method:'POST',headers:{Origin:new URL(host.url).origin,'Content-Type':'application/json',...headers},body:JSON.stringify(value)});}
 function noArtifact(v){assert.equal(v.status,'ABSTAIN');assert.equal(Object.hasOwn(v,'document'),false);assert.equal(Object.hasOwn(v,'artifact'),false);}

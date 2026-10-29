@@ -63,4 +63,4 @@ jobs:
           ./scripts/web_demo_release.ps1 -SelfCheck
       - name: Build and scan scoped public export and judge package
         shell: pwsh
-        run: ./scripts/web_demo_release.ps1
+        run: python scripts/test_public_release.py

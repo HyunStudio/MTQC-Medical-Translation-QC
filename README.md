@@ -4,7 +4,7 @@ Research prototype for medical excerpt and document-structure review using
 NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
 It is not a clinical translation service or a validated general PDF translator.
 
-## October 29 public source update
+## October 29 public source update and final review
 
 This repository now includes the current reviewed browser/client implementation
 and its shared DOCX package dependencies. The owner has authorized Apache-2.0
@@ -65,25 +65,32 @@ Do not treat a successful build or an automated result as medical approval.
 
 ## Verification and provenance
 
-The product payload is byte-identical to the reviewed 140-file r3 source archive
+The original October 29 publication (`c29cbcf`) was byte-identical to the reviewed 140-file r3 source archive
 (archive SHA-256 `8b52a8b3e9292e856f6cd83c756d40734eec60e20226e7eb49add6240e7898a8`;
 private producer `f26030b55941a2933c18a8831ba7e44dfd8b2386`). The archive includes
 generated documentation as well as code; the manifest lists the product files.
-This public update changes licensing, README and release documentation, not
-product logic. See [source provenance](docs/web-demo/SOURCE_PROVENANCE_20261029.json).
+That publication changed licensing and documentation. Subsequent final-review
+repairs correct JSON media-type admission, invalid Unicode figure targets,
+refused restored-document loading, private editor dependencies and release
+packaging. The original [source provenance](docs/web-demo/SOURCE_PROVENANCE_20261029.json)
+remains a historical baseline, not a hash manifest for the repaired files.
+See the [final validation record](docs/web-demo/FINAL_VALIDATION_20261029.md).
 
 A subsequent independent review reports a fresh extraction of final r3 passed
 npm ci, client build, .NET Release build (0 warnings/errors), offline example
 validation and principal local GET requests (HTTP 200) on the development PC.
 The follow-up inspection found the resulting source and Release outputs and
 matched the source manifest. Command/HTTP outcomes are attributed to that
-supplied review; this publication did not repeat those executions. This is not
+supplied review; the original source publication did not repeat those executions.
+The later [final review](docs/web-demo/FINAL_VALIDATION_20261029.md) ran the full
+available suites and added dirty-input regressions. This is not
 a second-PC installation, complete UI test, general-document or clinical test.
 
 Historical evaluations and tests remain in the repository with their original
 scope. The older broad GitHub matrix is not being rerun for this unchanged
-payload publication; no new CI pass is claimed. This publication uses a skip-ci
-commit rather than replaying the historical browser/OCR suites.
+payload publication; its skip-ci commit did not claim a new CI pass. The later
+repair updates CI to inspect actual generated release archives as well as the
+existing server and browser suites. See the final review for observed outcomes.
 
 ## Rights, model use and safety boundaries
 

@@ -58,7 +58,7 @@ export function parseFootnoteTarget(value) {
     ? {regionId: parts[0], cellId: parts[1] ?? null} : null;
 }
 export function footnoteTargets(values) {
-  const fail = () => { throw new RangeError('Choose at most 128 unique source targets without overlapping region and cell scopes.'); };
+  const fail = () => { throw new RangeError('Choose at most 128 unique target regions or table cells; duplicate and overlapping scopes are not allowed.'); };
   if (!Array.isArray(values)) return fail();
   const size = Object.getOwnPropertyDescriptor(values, 'length')?.value;
   if (!Number.isInteger(size) || size > 128) return fail();
@@ -432,7 +432,7 @@ export function applyStructureEdit(document, edit) {
           return !target || target.id === region.id || target.type === 'footnote' ||
             (ref.cellId !== null && !isVerifiedFootnoteTarget(next, region.id, ref.regionId, ref.cellId));
         })))
-      throw new RangeError('Cell targets need an existing source-reviewed table and its own cell ID.');
+      throw new RangeError('Choose existing target regions other than this footnote; cell targets need a source-reviewed table and its own cell ID.');
     if (edit.decision === 'standalone' && (refs.length || !edit.standaloneReason?.trim()))
       throw new RangeError('A standalone footnote needs a visible reason and no target regions.');
     region.footnoteReview = { sourceChecked: edit.sourceChecked === true, decision: edit.decision,

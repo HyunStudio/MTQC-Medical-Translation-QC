@@ -26,6 +26,18 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function assertPlainExcerptSelection(payload, sourceText, targetLanguage) {
+  assert(payload && Object.keys(payload).sort().join(',') ===
+    'comparisonSource,displaySourceText,includeExperimentalCritique,sourceText,targetLanguage',
+    'Selection contains unexpected source/file fields');
+  assert(payload.sourceText === sourceText && payload.displaySourceText === sourceText &&
+    payload.targetLanguage === targetLanguage && payload.includeExperimentalCritique === false,
+    'Selection altered the reviewed text, language or optional critique choice');
+  assert(payload.comparisonSource?.status === 'not-applicable' &&
+    payload.comparisonSource?.sourceReviewed === false && payload.comparisonSource?.text === null,
+    'Plain prose selection invented structure review or a replacement source');
+}
+
 function geometryPdf(width, height) {
   const content = 'BT /F1 4 Tf 2 2 Td (Artery.) Tj ET';
   const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -79,6 +91,7 @@ const server = spawn('dotnet', [appDll, '--urls', base], {
 });
 let browser;
 let passed = 0;
+let failed = 0;
 
 async function newReadyPage(options) {
   const page = await browser.newPage(options);
@@ -89,9 +102,18 @@ async function newReadyPage(options) {
 }
 async function check(name, test) {
   if (process.env.MTQC_SMOKE_FILTER && !process.env.MTQC_SMOKE_FILTER.split('|').some(filter => name.includes(filter))) return;
-  await test();
-  console.log(`PASS ${name}`);
-  passed++;
+  const priorContexts = new Set(browser.contexts());
+  try {
+    await test();
+    console.log(`PASS ${name}`);
+    passed++;
+  } catch (error) {
+    failed++;
+    console.error(`FAIL ${name}: ${error.stack || error}`);
+  } finally {
+    for (const context of browser.contexts())
+      if (!priorContexts.has(context)) await context.close();
+  }
 }
 
 async function reviewedSourceRegion(page, expectedText) {
@@ -591,7 +613,9 @@ try {
     const page = await newReadyPage();
     await page.goto(base, { waitUntil: 'networkidle' });
     assert(await page.locator('#document-file-trigger').isVisible(), 'English document picker is missing');
-    assert((await page.locator('#document-file-trigger').textContent()).includes('Choose PDF or image'), 'Document picker copy is not English');
+    assert(/Choose.*PDF.*image.*DOCX/i.test(await page.locator('#document-file-trigger').textContent()), 'Document picker does not describe its supported input formats');
+    for (const type of ['.pdf', '.png', '.jpg', '.docx'])
+      assert((await page.locator('#document-file').getAttribute('accept')).split(',').includes(type), `Document picker omits ${type}`);
     await page.locator('#document-file-trigger').focus();
     assert(await page.locator('#document-file-trigger').evaluate(node => node === document.activeElement), 'Document picker is not keyboard focusable');
     await page.close();
@@ -722,7 +746,7 @@ try {
     assert(!(await page.locator('#document-experimental-critique').isChecked()), 'experimental critique was enabled by default');
     await page.locator('#document-translate').click();
     const payload = await page.evaluate(() => window.selectedExcerpt);
-    assert(JSON.stringify(payload) === JSON.stringify({ sourceText: 'The proximal artery measures 2.5 mm.', targetLanguage: 'ar', includeExperimentalCritique: false }), 'Outbound selection includes file content or enables extra inference unexpectedly');
+    assertPlainExcerptSelection(payload, 'The proximal artery measures 2.5 mm.', 'ar');
     assert(externalRequests.length === 0, `Browser requested an external asset: ${externalRequests[0]}`);
     await page.close();
   });
@@ -998,9 +1022,9 @@ try {
     await page.locator('#structure-region-verify').click();
     const before = await page.locator('#document-text').inputValue();
     assert(before.includes('2 mg'), 'Initial reviewed table was not established');
-    await page.locator('#structure-table-rows').fill('21');
+    await page.locator('#structure-table-rows').fill('129');
     await page.locator('#structure-table-apply').click();
-    assert((await page.locator('#structure-status').textContent()).includes('1–20'), 'Save bypassed table dimension limit');
+    assert((await page.locator('#structure-status').textContent()).includes('1–128'), 'Save bypassed table dimension limit');
     assert(await page.locator('#document-text').inputValue() === before, 'Invalid table edit changed the reviewed graph');
     await page.close();
   });
@@ -1212,6 +1236,8 @@ try {
     await page.locator('#structure-region-type').selectOption('caption');
     await page.locator('#structure-region-save').click();
     assert(await page.locator('#structure-caption-editor').isVisible(), 'Caption link editor is missing');
+    await page.locator('#structure-caption-target').selectOption(
+      await page.locator('#structure-review [data-region-id]').nth(1).getAttribute('data-region-id'));
     await page.locator('#structure-caption-link').click();
     await page.locator('#structure-region-verify').click();
     assert((await page.locator('#structure-status').textContent()).includes('cannot be verified'), 'Proposed caption link passed without review');
@@ -1266,7 +1292,7 @@ try {
     await page.locator('#document-reviewed').check();
     await page.locator('#document-translate').click();
     const payload = await page.evaluate(() => window.selectedExcerpt);
-    assert(JSON.stringify(payload) === JSON.stringify({ sourceText: verified, targetLanguage: 'ko', includeExperimentalCritique: false }), 'Live request did not use exact verified graph text');
+    assertPlainExcerptSelection(payload, verified, 'ko');
     await page.locator('#structure-region-text').fill('The distal artery measures 3.5 mm.');
     await page.locator('#structure-region-save').click();
     assert(!await page.locator('#document-reviewed').isChecked(), 'Graph correction retained approval');
@@ -1865,7 +1891,8 @@ try {
     assert(await page.locator('#live-result').isHidden(), 'Stale live result appeared after language change');
     await page.close();
   });
-  console.log(`${passed}/${passed} browser checks passed`);
+  console.log(`${passed}/${passed + failed} browser checks passed; ${failed} failed`);
+  if (failed) process.exitCode = 1;
 } finally {
   await browser?.close();
   server.kill();

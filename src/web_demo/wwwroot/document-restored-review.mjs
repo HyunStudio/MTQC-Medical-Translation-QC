@@ -15,8 +15,9 @@ export async function handoffRestoredReview({bytes, originalBytes, load, audit, 
   };
   // A DOCX loader may expose its layout controls before figure decoding ends.
   // Reserve there once, so a later manual draft choice is never overwritten.
-  await Promise.all([load(restored.slice(), reservePair), audit(restored.slice())]);
+  const [loaded] = await Promise.all([load(restored.slice(), reservePair), audit(restored.slice())]);
   if (!current()) return false;
+  if (loaded !== true) throw Error('Restored draft loading was held; no completed review handoff is available.');
   if (!installed) reservePair();
   return true;
 }

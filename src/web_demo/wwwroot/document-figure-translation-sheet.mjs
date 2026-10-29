@@ -3,7 +3,7 @@ const schema='mtqc-figure-translation-sheet-v1';
 const keys=(value,expected)=>value&&typeof value==='object'&&!Array.isArray(value)&&
  Object.keys(value).length===expected.length&&expected.every(k=>Object.hasOwn(value,k));
 const text=value=>typeof value==='string'&&value.trim().length>0&&Array.from(value).length<=3000&&
- !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(value);
+ !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uD800-\uDFFF]/u.test(value);
 const boxKeys=['x','y','width','height'];
 const box=(b,frame)=>keys(b,boxKeys)&&boxKeys.every(k=>Number.isFinite(b[k]))&&
  b.x>=0&&b.y>=0&&b.width>=1&&b.height>=1&&b.x+b.width<=frame.width&&b.y+b.height<=frame.height;

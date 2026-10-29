@@ -135,6 +135,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("user excerpt rejects unsupported languages and overlong Unicode", UserExcerptRejectsBadInput),
     ("user excerpt route is disabled without a server key", UserExcerptRouteIsDisabled),
     ("user excerpt route rejects a body above 64 KiB", UserExcerptRejectsOversizedBody),
+    ("user excerpt dirty media types and malformed JSON fail without a server error", UserExcerptDirtyRequests),
     ("Chinese target variants are explicit in the provider prompt", ChineseVariantsAreExplicit),
     ("Korean prompt pins femoral vessel terms", KoreanPromptPinsFemoralTerms),
     ("all live targets name the intended language in the provider prompt", AllTargetsHaveExplicitNames),
@@ -1941,6 +1942,32 @@ async Task UserExcerptRejectsOversizedBody()
         new { sourceText = new string('A', 65 * 1024), targetLanguage = "ko" });
     Assert(response.StatusCode == HttpStatusCode.RequestEntityTooLarge,
         $"oversized request body returned {(int)response.StatusCode} instead of 413");
+}
+
+async Task UserExcerptDirtyRequests()
+{
+    using var server = await DemoServer.Start(webProject, null);
+    using var client = new HttpClient { BaseAddress = server.BaseAddress };
+    foreach (var mediaType in new[] { "text/plain", "application/jsonp", "application/json-patch+json" })
+    {
+        using var body = new StringContent("{}", System.Text.Encoding.UTF8, mediaType);
+        using var response = await client.PostAsync("/api/live/document-excerpt", body);
+        Assert(response.StatusCode == HttpStatusCode.UnsupportedMediaType,
+            $"dirty media type {mediaType} returned {(int)response.StatusCode} instead of 415");
+    }
+    foreach (var payload in new[] { "", "{", "null", "[]", "42", "{\"sourceText\":{}}", new string('[', 100) })
+    {
+        using var body = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PostAsync("/api/live/document-excerpt", body);
+        Assert(response.StatusCode == HttpStatusCode.BadRequest,
+            $"malformed JSON returned {(int)response.StatusCode} instead of 400");
+    }
+    using var valid = new StringContent("{\"sourceText\":\"Artery 2 mm.\",\"targetLanguage\":\"ko\"}",
+        System.Text.Encoding.UTF8, "application/json");
+    using var disabled = await client.PostAsync("/api/live/document-excerpt", valid);
+    Assert(disabled.StatusCode == HttpStatusCode.ServiceUnavailable, "valid request bypassed disabled admission");
+    using var health = await client.GetAsync("/api/cases");
+    Assert(health.IsSuccessStatusCode, "dirty input made the server unavailable");
 }
 
 async Task ChineseVariantsAreExplicit()

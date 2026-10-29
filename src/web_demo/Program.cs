@@ -108,7 +108,8 @@ app.MapPost("/api/live/document-excerpt", async (HttpContext context) =>
 {
     const int maxBodyBytes = 64 * 1024;
     if (context.Request.ContentLength > maxBodyBytes) return Results.StatusCode(413);
-    if (context.Request.ContentType?.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) != true)
+    if (!Microsoft.Net.Http.Headers.MediaTypeHeaderValue.TryParse(context.Request.ContentType, out var mediaType) ||
+        !string.Equals(mediaType.MediaType.Value, "application/json", StringComparison.OrdinalIgnoreCase))
         return Results.StatusCode(415);
     var buffer = new byte[maxBodyBytes + 1];
     var total = 0;
