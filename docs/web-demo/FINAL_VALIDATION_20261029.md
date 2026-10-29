@@ -1,5 +1,10 @@
 # Final review and repair: October 29, 2026
 
+Completed October 30 (KST). **The bounded technical regression/release checks
+passed.** This is not unconditional approval of all hackathon requirements or
+clinical validity. Paid inference is still disabled and final Devpost attachment
+saving remains unverified.
+
 This review starts from the published/deployed `c29cbcf` product and documentation
 commit `3640e43`. It is a new user-requested validation and repair, not a change
 to historical results or the immutable r3/r4 judge archives.
@@ -59,11 +64,24 @@ was moved to a separate source copy before the final whole-browser rerun.
 
 ## Release decision boundaries
 
-This validates a bounded research-demo implementation on the development Windows
-machine. It does not prove another-PC installation, Linux execution, clinical
+The exact repair commit `d65e86e703b76a908eb43185e297cdd839772dde` also passed
+the full [clean-clone GitHub CI](https://github.com/HyunStudio/MTQC-Medical-Translation-QC/actions/runs/40897352723)
+on both **windows-latest and ubuntu-latest**, including the actual release ZIP
+checks. These are hosted-runner builds/tests, not the separate Windows installer.
+
+The corrected Azure ZIP received independent exact-artifact GO before one
+deployment. The root returned 200, all **56** selected HTTP assets matched their
+package hashes, two saved cases remained available, paid status was unavailable
+and the native route returned 404. Six desktop/mobile readiness observations
+passed with zero page errors, console errors, failed responses or attempted
+POSTs. The two hosted screenshots were also inspected for visible layout.
+This hosted check did not upload documents or execute OCR, Word or a model call.
+See [the exact deployment record](AZURE_DEPLOYMENT_20261030.json).
+
+This validates a bounded research-demo implementation. It does not prove another-PC installer execution, clinical
 validity, general two-column PDF reconstruction, arbitrary scanned mathematics
 or accepted translated-figure output. Clinical expert review remains **0/15**.
 Synthetic provider-response tests are not fresh Nebius inference or billing
 telemetry. Paid model calls remain disabled. Devpost attachment/save confirmation
-is a separate, still-unverified action. Corrected deployment evidence is recorded
-separately after exact-package review and hosted verification.
+is a separate, still-unverified action. The old r3/r4 archives are preserved;
+use a separately prepared current source package for the corrected code.

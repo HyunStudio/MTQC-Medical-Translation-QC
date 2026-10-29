@@ -1,5 +1,11 @@
 # October 29 public source update
 
+**October 30 follow-up:** The final-review repair commit `d65e86e` passed full
+Windows and Ubuntu CI, was deployed to the existing Azure app with paid calls
+disabled, and passed 56 served-asset hash checks plus desktop/mobile readiness.
+Read [final validation and remaining limits](FINAL_VALIDATION_20261029.md).
+The original publication/deployment history below retains its own scope.
+
 This update publishes the already reviewed current browser/client product
 payload and the minimal shared DOCX dependencies. The owner explicitly approved
 Apache-2.0 coverage for src/document_core's four files and
