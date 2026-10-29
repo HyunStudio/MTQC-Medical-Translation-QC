@@ -1,0 +1,80 @@
+{
+  "deploymentUtc": "2026-10-29T14:09:08.2328530+00:00",
+  "verifiedUtc": "2026-10-29T23:09:19.0806254+09:00",
+  "host": "https://mtqc-nebius-2026-hyunstudio.azurewebsites.net",
+  "sourceCommit": "c29cbcf01f7fc275909b33b03b3178aa35b5d49a",
+  "archiveSha256": "040c15a18bc507b01d53b798fa64172d500e64ff51523c7104c8d565c5b29941",
+  "archiveBytes": 68728740,
+  "files": 501,
+  "rootHttpStatus": 200,
+  "selectedAssetHashesMatched": 9,
+  "selectedAssets": [
+    {
+      "path": "/deployment.json",
+      "sha256": "8399d16ba90230a6088d00611d546efcbc2eaf3746c98179c70f1e4de4bfec98",
+      "bytes": 313,
+      "httpStatus": 200
+    },
+    {
+      "path": "/index.html",
+      "sha256": "2456d94b56457c390ba8ce9abe4de272972ce6ced7a91080687e4b52bf11bf8f",
+      "bytes": 34268,
+      "httpStatus": 200
+    },
+    {
+      "path": "/document-workbench.js",
+      "sha256": "60d8d4e8a42712a0619d7177eabc041472fd48c1eb0dd2095c79d5dc3fa6a0d8",
+      "bytes": 52314,
+      "httpStatus": 200
+    },
+    {
+      "path": "/document-multiple-ruled-tables.mjs",
+      "sha256": "b970dc4c80d8b48cdc8aa1b01fa70a9131ccdad5d3cd8fc05965f0fb570c0cbc",
+      "bytes": 12563,
+      "httpStatus": 200
+    },
+    {
+      "path": "/document-figure-translation-sheet.mjs",
+      "sha256": "7a7b349a8aa4b2a5bfdc8de36eab79f0c895c54292de77ec132fbc3e114b326f",
+      "bytes": 4008,
+      "httpStatus": 200
+    },
+    {
+      "path": "/vendor/jszip/jszip.min.mjs",
+      "sha256": "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e",
+      "bytes": 97630,
+      "httpStatus": 200
+    },
+    {
+      "path": "/vendor/pdfjs/pdf.worker.mjs",
+      "sha256": "f2870db902eaff8397442c912b69459980ac91f6f4b5ed827167b12cf7057930",
+      "bytes": 2228489,
+      "httpStatus": 200
+    },
+    {
+      "path": "/vendor/tesseract/worker.min.js",
+      "sha256": "576b7df7e3393e137e51849357c9adb53fe7ac1bb69bfa06cf3d61520f182c6d",
+      "bytes": 111307,
+      "httpStatus": 200
+    },
+    {
+      "path": "/vendor/tesseract/lang/eng.traineddata.gz",
+      "sha256": "45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91",
+      "bytes": 2952873,
+      "httpStatus": 200
+    }
+  ],
+  "recordedCases": 2,
+  "paidModelEnabled": false,
+  "localNativeHttpStatus": 404,
+  "otherApplicationSettingsPreserved": true,
+  "validationScope": "Publish, offline fixture validation, independent exact ZIP review, hosted GETs and selected asset hashes only",
+  "browserDocumentOcrWordModelExecutionPerformed": false,
+  "clinicalValidation": false,
+  "limitations": [
+    "No hosted end-to-end document-processing or clean-machine test",
+    "General complex-PDF recovery, scanned math and figure relationships remain incomplete",
+    "Separate Word/desktop engine and private installer are not deployed",
+    "Devpost replacement attachment/save remains unverified"
+  ]
+}

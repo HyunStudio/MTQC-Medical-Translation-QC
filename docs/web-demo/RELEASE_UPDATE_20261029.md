@@ -14,9 +14,15 @@ remain historical; their counts are not new accuracy or medical-quality claims.
 ## Functional boundaries
 
 The latest video is https://youtu.be/954tVuF-6Qw (2:49). It identifies historical
-Nemotron inference separately from later local development. The Azure host
-remains the October 19 deployment; publishing this source does not deploy it or
-enable paid model calls. The default source-only quick start explicitly disables
+Nemotron inference separately from later local development. Following source
+publication, the existing Azure host was updated on October 29 from commit
+`c29cbcf01f7fc275909b33b03b3178aa35b5d49a`. The root returned HTTP 200, and nine
+selected assets returned HTTP 200 with hashes matching the reviewed package. The
+recorded-case endpoint returned two cases, live status was unavailable and the
+local native endpoint returned 404. This GET-only check did not execute browser
+OCR, document processing, Word or a model request. See
+[deployment evidence](AZURE_DEPLOYMENT_20261029.json). Paid calls remain disabled.
+The default source-only quick start explicitly disables
 paid and local native routes. Word and the older registered desktop CLI are
 separate optional dependencies and are not included in this repository update.
 
@@ -41,11 +47,16 @@ npm install/client build, .NET Release 0 warnings/errors, example validation and
 principal GET 200 on the development machine. The follow-up inspected the build
 outputs and matched the source manifest; it did not independently rerun command
 outcomes. No new full build, browser/OCR suite or native run is claimed for this
-publication; the broad legacy GitHub matrix is skipped for this commit. A build
+publication. The separate Azure deployment subsequently ran pinned client build,
+a non-incremental Release build with zero warnings/errors, publish and offline
+fixture validation; its exact ZIP received independent read-only review before
+deployment. The broad legacy GitHub matrix was not rerun. A build
 check is not second-PC/clean-machine, complete UI or clinical validation.
 
 The older r3/r4 judge attachments remain frozen evidence of their preparation
 times, including the then-unresolved license scope. This subsequent public grant
-and source publication supersede that licensing/public-source status only.
+and source publication supersede that licensing/public-source status. The later
+Azure deployment supersedes their old hosted-version status for the web subset;
+it does not deploy the separate Windows engine or enable paid calls.
 Devpost replacement-attachment saving is still unconfirmed; this GitHub update
 does not change the Devpost form or certify final submission compliance.
