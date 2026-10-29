@@ -3,3 +3,9 @@
 *.png binary
 *.pptx binary
 *.gz binary
+
+# Preserve the exact reviewed source bytes, including registered vendor digests.
+src/web_demo/** -text
+src/web_demo_client/** -text
+src/document_core/** -text
+src/status_dashboard/SiblingTempPath.cs -text

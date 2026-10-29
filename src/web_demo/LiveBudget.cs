@@ -61,6 +61,7 @@ public sealed class LiveBudget
         if (attemptCount is < 1 or > 2) return null;
         if (!await upstream.WaitAsync(0, cancellationToken)) return null;
         var allowed = false;
+        LiveRunOwnership? ownership = null;
         try
         {
             lock (sync)
@@ -82,7 +83,8 @@ public sealed class LiveBudget
                     entry = (now, 0);
                 if (entry.Count >= options.PerClientLimit) return null;
                 var runId = Guid.NewGuid().ToString("N");
-                if (!money.Reserve(runId, attemptCount)) return null;
+                ownership = money.Reserve(runId, attemptCount);
+                if (ownership is null) return null;
                 if (!ReserveLifetimeAttempts(attemptCount))
                 {
                     money.CancelUnstarted(runId);
@@ -91,12 +93,16 @@ public sealed class LiveBudget
                 clients[clientId] = (entry.Started, entry.Count + 1);
                 globalCount++;
                 allowed = true;
-                return new Lease(upstream, money, runId, attemptCount);
+                return new Lease(upstream, money, runId, attemptCount, ownership);
             }
         }
         finally
         {
-            if (!allowed) upstream.Release();
+            if (!allowed)
+            {
+                ownership?.Dispose();
+                upstream.Release();
+            }
         }
     }
 
@@ -140,18 +146,23 @@ public sealed class LiveBudget
         }
     }
 
-    private sealed class Lease(SemaphoreSlim gate, LiveMoneyLedger ledger, string runId, int attempts) : IDisposable
+    private sealed class Lease(SemaphoreSlim gate, LiveMoneyLedger ledger, string runId, int attempts,
+        LiveRunOwnership ownership) : IDisposable
     {
         private int released;
         public LiveMoneyLedger Ledger => ledger;
         public string RunId => runId;
-        public LiveCostCall? Start(int index) => released == 0 && index >= 0 && index < attempts ? ledger.Start(runId, index) : null;
+        public LiveCostCall? Start(int index) => released == 0 && index >= 0 && index < attempts ? ledger.Start(runId, index, ownership) : null;
         public void Dispose()
         {
             if (Interlocked.Exchange(ref released, 1) == 0)
             {
                 try { ledger.CancelUnstarted(runId); }
-                finally { gate.Release(); }
+                finally
+                {
+                    try { ownership.Dispose(); }
+                    finally { gate.Release(); }
+                }
             }
         }
     }

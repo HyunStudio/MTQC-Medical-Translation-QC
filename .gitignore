@@ -7,7 +7,8 @@
 *.pyo
 output/
 qa/
-src/web_demo/wwwroot/vendor/
+src/web_demo/wwwroot/vendor/*
+!src/web_demo/wwwroot/vendor/jszip/
 .vs/
 .env
 .env.*

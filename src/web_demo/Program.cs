@@ -14,7 +14,7 @@ if (args.Length > 0 && args[0] == "--reconcile-live-cost")
         Console.WriteLine("Billing receipt recorded; future admission still checks all limits.");
         return 0;
     }
-    catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or
+    catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or
         System.Text.Json.JsonException or NotSupportedException)
     {
         Console.Error.WriteLine("Billing receipt rejected; existing reservations remain held.");
@@ -46,7 +46,16 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args,
     ContentRootPath = AppContext.BaseDirectory
 });
+builder.Services.AddSingleton<LocalWordLayoutJobs>();
+builder.Services.AddHostedService<LocalWordLayoutJobs>(services => services.GetRequiredService<LocalWordLayoutJobs>());
+builder.Services.AddSingleton<LocalVisualAuditJobs>();
+builder.Services.AddHostedService<LocalVisualAuditJobs>(services => services.GetRequiredService<LocalVisualAuditJobs>());
+builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromMinutes(12));
 var app = builder.Build();
+LocalDocxDocuments.Map(app);
+LocalDocxRestoration.Map(app);
+LocalWordLayoutReview.Map(app);
+LocalVisualAuditReview.Map(app);
 var liveKey = Environment.GetEnvironmentVariable("NEBIUS_API_KEY");
 var ledgerPath = Environment.GetEnvironmentVariable("DEMO_LIVE_LEDGER_PATH");
 var rawLifetimeLimit = Environment.GetEnvironmentVariable("DEMO_LIVE_TOTAL_ATTEMPTS");
@@ -68,7 +77,9 @@ var budget = new LiveBudget(liveOptions);
 var live = new LiveExcerptService(catalog, provider, liveOptions, budget);
 var userExcerpt = new UserExcerptService(provider, liveOptions, budget);
 app.UseDefaultFiles();
-app.UseStaticFiles();
+var documentContentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+documentContentTypes.Mappings[".bcmap"] = "application/octet-stream";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = documentContentTypes });
 app.MapGet("/api/cases", () => Results.Ok(catalog.All.Select(item => new
 {
     item.Id,

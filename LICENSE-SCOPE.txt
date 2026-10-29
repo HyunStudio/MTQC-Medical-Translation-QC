@@ -1,0 +1,23 @@
+MTQC PUBLIC SOURCE LICENSE SCOPE - 29 OCTOBER 2026
+
+The repository owner's first-party web/client code is distributed under the
+Apache License 2.0 in root LICENSE. On October 29 the owner explicitly confirmed
+the rights to publish the supplemental dependencies below and authorized their
+Apache-2.0 release in this repository:
+- src/document_core/DocxSourceRestoration.cs
+- src/document_core/MedicalQcDocumentCore.csproj
+- src/document_core/PackageDocument.cs
+- src/document_core/RenderedGeometry.cs
+- src/status_dashboard/SiblingTempPath.cs
+
+This grant does not relicense third-party code, scientific figures, fonts,
+recorded documents or other source materials. Retain their applicable notices
+and attribution: docs/web-demo/RIGHTS.md, docs/web-demo/THIRD_PARTY_NOTICES.md,
+the convenience copies in docs/, fixture metadata, and vendor/package notices.
+The complete existing web license is also at src/web_demo/LICENSE and
+licenses/web-demo-Apache-2.0.txt.
+
+The older full Windows Word/PDF engine, private installer and medical manuscript
+drafts are not part of this release or this new supplemental-code grant.
+The license does not establish clinical correctness, privacy approval or any
+institutional endorsement.

@@ -36,20 +36,49 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         !state.Calls.Any(Unresolved) && count * options.MaximumCallUsd <= options.PerRunLimitUsd &&
         WithinLimits(state, count * options.MaximumCallUsd, Day), write: false, admission: true);
 
-    public bool Reserve(string runId, int count) => Transaction(state =>
+    public LiveRunOwnership? Reserve(string runId, int count)
     {
-        var maximum = count * options.MaximumCallUsd;
-        if (state.Calls.Any(Unresolved) || state.Calls.Count + count > 1000 ||
-            maximum > options.PerRunLimitUsd || !WithinLimits(state, maximum, Day)) return false;
-        for (var index = 0; index < count; index++)
-            state.Calls.Add(new($"{runId}-{index}", runId, Day, options.BillingBucket,
-                options.BillingEvidence, options.TaxMultiplier, options.MaximumCallUsd, "reserved",
-                ReservedAtUtc: clock.GetUtcNow()));
-        return true;
-    }, admission: true);
+        LiveRunOwnership? ownership = null;
+        var reserved = Transaction(state =>
+        {
+            var maximum = count * options.MaximumCallUsd;
+            if (state.Calls.Any(Unresolved) || state.Calls.Count + count > 1000 ||
+                maximum > options.PerRunLimitUsd || !WithinLimits(state, maximum, Day)) return false;
+            // Create ownership only for an admitted run, while the ledger is locked.
+            ownership = TryOwnRun(runId);
+            if (ownership is null) return false;
+            for (var index = 0; index < count; index++)
+                state.Calls.Add(new($"{runId}-{index}", runId, Day, options.BillingBucket,
+                    options.BillingEvidence, options.TaxMultiplier, options.MaximumCallUsd, "reserved",
+                    ReservedAtUtc: clock.GetUtcNow()));
+            return true;
+        }, admission: true);
+        if (reserved) return ownership;
+        ownership?.Dispose();
+        return null;
+    }
 
-    public LiveCostCall? Start(string runId, int index)
+    // OS ownership ends on process loss, but its absence never releases a charge.
+    // Keep sidecars in place: unlinking a locked file can split ownership on Unix.
+    internal LiveRunOwnership? TryOwnRun(string runId)
     {
+        if (!options.IsStructurallyValid()) return null;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(options.LedgerPath)!);
+            return new(new FileStream(options.LedgerPath + ".run-" + runId + ".lock",
+                FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    public LiveCostCall? Start(string runId, int index, LiveRunOwnership ownership)
+    {
+        var callOwnership = ownership.Retain();
+        if (callOwnership is null) return null;
         var id = $"{runId}-{index}";
         var started = Transaction(state =>
         {
@@ -66,7 +95,9 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             state.Calls[position] = entry with { Day = Day, State = "started", StartedAtUtc = clock.GetUtcNow() };
             return true;
         }, admission: true);
-        return started ? new LiveCostCall(this, id) : null;
+        if (started) return new LiveCostCall(this, id, callOwnership);
+        callOwnership.Dispose();
+        return null;
     }
 
     public bool Observe(string id, string? model, int? prompt, int? completion) => Transaction(state =>
@@ -111,7 +142,14 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             receipt.ConfirmedAtUtc < (entry.FinishedAtUtc ?? entry.StartedAtUtc ?? entry.ReservedAtUtc)) return false;
         if (entry.State == "reconciled") return entry.BilledCostUsd == receipt.BilledCostUsd &&
             entry.BillingReceipt == receipt.Evidence && entry.BillingConfirmedAtUtc == receipt.ConfirmedAtUtc;
-        if (entry.State is not ("pending-billing" or "failed-cost-held" or "unknown-cost")) return false;
+        if (entry.State is "reserved" or "started")
+        {
+            // Explicit local receipt only, and only after every lease/call owner is gone.
+            // Older binaries predate these locks; stop them before orphan recovery.
+            using var orphanOwnership = TryOwnRun(entry.RunId);
+            if (orphanOwnership is null) return false;
+        }
+        else if (entry.State is not ("pending-billing" or "failed-cost-held" or "unknown-cost")) return false;
         state.Calls[position] = entry with { State = "reconciled", BilledCostUsd = receipt.BilledCostUsd,
             BillingReceipt = receipt.Evidence, BillingConfirmedAtUtc = receipt.ConfirmedAtUtc };
         return true;
@@ -201,12 +239,49 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         evidence.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':');
 }
 
+// A cost call retains the OS lock even if its enclosing lease is disposed early.
+internal sealed class LiveRunOwnership : IDisposable
+{
+    private sealed class Shared(FileStream stream)
+    {
+        public FileStream? Stream = stream;
+        public int Count = 1;
+    }
+    private Shared? shared;
+    internal LiveRunOwnership(FileStream stream) => shared = new(stream);
+    private LiveRunOwnership(Shared shared) => this.shared = shared;
+    internal LiveRunOwnership? Retain()
+    {
+        var current = shared;
+        if (current is null) return null;
+        lock (current)
+        {
+            if (current.Stream is null) return null;
+            current.Count++;
+            return new(current);
+        }
+    }
+    public void Dispose()
+    {
+        var current = Interlocked.Exchange(ref shared, null);
+        if (current is null) return;
+        lock (current)
+        {
+            if (--current.Count != 0) return;
+            current.Stream?.Dispose();
+            current.Stream = null;
+        }
+    }
+}
+
 public sealed class LiveCostCall : IDisposable
 {
     private readonly LiveMoneyLedger ledger;
     private readonly string id;
+    private LiveRunOwnership? ownership;
     private bool finished;
-    internal LiveCostCall(LiveMoneyLedger ledger, string id) => (this.ledger, this.id) = (ledger, id);
+    internal LiveCostCall(LiveMoneyLedger ledger, string id, LiveRunOwnership ownership) =>
+        (this.ledger, this.id, this.ownership) = (ledger, id, ownership);
     internal void Observe(string? model, int? prompt, int? completion)
     {
         if (!ledger.Observe(id, model, prompt, completion)) throw new InvalidDataException("Cost usage could not be recorded");
@@ -218,7 +293,11 @@ public sealed class LiveCostCall : IDisposable
     }
     public void Dispose()
     {
-        if (!finished) ledger.Finish(id, false);
-        finished = true;
+        try
+        {
+            if (!finished) ledger.Finish(id, false);
+            finished = true;
+        }
+        finally { Interlocked.Exchange(ref ownership, null)?.Dispose(); }
     }
 }

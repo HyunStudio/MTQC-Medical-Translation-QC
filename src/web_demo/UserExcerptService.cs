@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using QCStatusBoard;
 
 namespace MedicalQcWebDemo;
 
@@ -27,7 +28,8 @@ public sealed class UserExcerptService
         if (request is null || string.IsNullOrWhiteSpace(request.SourceText) ||
             request.SourceText.EnumerateRunes().Count() > 3000 ||
             request.SourceText.Any(ch => char.IsControl(ch) && ch is not ('\t' or '\n' or '\r')) ||
-            !TargetLanguages.Contains(request.TargetLanguage, StringComparer.Ordinal))
+            !TargetLanguages.Contains(request.TargetLanguage, StringComparer.Ordinal) ||
+            StructureEnvelope.InvalidSource(request.SourceText) || InlineRunContract.InvalidRequest(request.SourceText))
             return new("invalid", "Provide a reviewed English excerpt of 1–3,000 readable characters and a supported target language. Correct any unreadable PDF glyphs against the original.");
         if (provider.RequestedModel != LiveMoneyOptions.Model)
             return new("rate-limited", "Live model cost is not approved. Recorded examples remain available.");
@@ -55,6 +57,8 @@ public sealed class UserExcerptService
             output = await provider.TranslateAsync(source, request.TargetLanguage, cancellationToken, cost);
             cost.Complete();
             identity = ReviewIdentity.Create(source, output.Text, request.TargetLanguage);
+            if (InlineRunContract.HasContract(source))
+                identity = identity with { RuleVersion = identity.RuleVersion + "+docx-inline-prose-v1" };
             translationStage = new("completed", output.Model, output.PromptTokens,
                 output.CompletionTokens, timer.ElapsedMilliseconds - started);
         }
@@ -82,10 +86,16 @@ public sealed class UserExcerptService
         {
             critiqueStage = new("failed", ElapsedMs: timer.ElapsedMilliseconds - translationStage.ElapsedMs.GetValueOrDefault());
         }
+        // The validated desktop run contract describes one continuous visible prose string.
+        // Keep the marked source/draft for provider review, export and identity; metadata
+        // and run boundaries must not become medical numbers or split literal QC tokens.
+        var hasInlineContract = InlineRunContract.HasContract(source);
+        var qcSource = hasInlineContract ? InlineRunContract.Strip(source) : source;
+        var qcDraft = hasInlineContract ? InlineRunContract.Strip(output.Text) : output.Text;
         try
         {
             var started = timer.ElapsedMilliseconds;
-            var rules = ExcerptQc.Evaluate(source, output.Text, request.TargetLanguage);
+            var rules = ExcerptQc.Evaluate(qcSource, qcDraft, request.TargetLanguage);
             ruleFindings = rules.Findings;
             coverage = rules.Coverage;
             rulesStage = new("completed", ElapsedMs: timer.ElapsedMilliseconds - started);
@@ -102,6 +112,6 @@ public sealed class UserExcerptService
                     ? "AI draft — experimental critique is on hold until billing is confirmed. Scoped rule checks are available; human review remains required. Recorded examples remain available."
                     : "AI draft — review incomplete. Human review is required; do not treat this as an approved translation.",
             output.Text, output.Model, output.PromptTokens, output.CompletionTokens,
-            ExcerptQc.Summarize(source, output.Text, request.TargetLanguage), Review());
+            ExcerptQc.Summarize(qcSource, qcDraft, request.TargetLanguage), Review());
     }
 }

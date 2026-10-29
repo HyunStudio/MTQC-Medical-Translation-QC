@@ -1,5 +1,16 @@
+import { partitionQuestionPanels } from './document-panel-order.mjs';
 // Geometric reading-order proposal for English PDF text layers. The reviewer can
 // override column detection: tables and irregular figure labels need visual review.
+import { isTableReferenceText } from './document-table-grid.mjs';
+// Band detection recognizes a common count (percentage) display without
+// changing the text or claiming a cell grid/clinical interpretation. Keep this
+// anchored and percentage-bounded; prose suffixes are not numeric evidence.
+function isNumericBandCell(text) {
+  const value = text.trim();
+  return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(value) ||
+    /^(?:\d+|\d{1,3}(?:,\d{3})+)\s+\((?:100(?:\.0+)?|\d{1,2}(?:\.\d+)?)%\)$/.test(value);
+}
+
 function groupedRows(items) {
   const groups = [];
   for (const item of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
@@ -33,9 +44,10 @@ function rows(items, column) {
 function numericTableBands(items, width) {
   const groups = groupedRows(items);
   const bands = [];
-  for (const marker of items.filter(item => /^TABLE\s+\d+\b/i.test(item.text.trim())).sort((a, b) => a.y - b.y)) {
+  for (const marker of items.filter(item => /^TABLE\s+\d+\b/i.test(item.text.trim()) && !isTableReferenceText(item.text)).sort((a, b) => a.y - b.y)) {
     const markerRow = groups.find(group => group.items.includes(marker));
     if (marker.x > Math.min(...markerRow.items.map(item => item.x)) + 2) continue;
+    if (isTableReferenceText(rows(markerRow.items, 'full')[0].text)) continue;
     if (bands.some(band => marker.y <= band.end)) continue;
     // Some journals center a single wide data row on a prose page. It has
     // too few rows for the ordinary table detector, but five compact header
@@ -50,14 +62,14 @@ function numericTableBands(items, width) {
           group.items.length >= 5 && group.items.every(item => item.width < width * .2 && /[A-Za-z]/.test(item.text)) &&
           Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .5);
         const data = header && groups.find(group => group.y > header.y && group.y - header.y < 35);
-        const numericStarts = data?.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())) ?? [];
+        const numericStarts = data?.items.filter(item => isNumericBandCell(item.text)) ?? [];
         if (data && numericStarts.length >= header.items.length &&
           Math.max(...data.items.map(item => item.x + item.width)) - Math.min(...data.items.map(item => item.x)) > width * .5 &&
           header.items.every(cell => numericStarts.some(value => Math.abs(value.x - cell.x) < width * .03))) {
           let last = data;
           for (const group of groups.filter(group => group.y > data.y)) {
             if (group.y - last.y > 35) break;
-            const values = group.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()));
+            const values = group.items.filter(item => isNumericBandCell(item.text));
             if (values.length < header.items.length ||
               !header.items.every(cell => values.some(value => Math.abs(value.x - cell.x) < width * .03))) break;
             last = group;
@@ -69,14 +81,14 @@ function numericTableBands(items, width) {
       continue;
     }
     const numericRows = groups.filter(group => group.y > marker.y && group.items.length >= 3 &&
-      group.items.filter(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 2 &&
+      group.items.filter(item => isNumericBandCell(item.text)).length >= 2 &&
       Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
     if (numericRows.length < 2 || numericRows[0].y - marker.y > 100) continue;
     // A TABLE caption alone may precede two-column equations. Require a
     // separate, wide, multi-cell header before treating later numbers as rows.
     const header = groups.find(group => group.y > marker.y && group.y < numericRows[0].y &&
       group.items.length >= 3 &&
-      group.items.filter(item => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim())).length >= 3 &&
+      group.items.filter(item => !isNumericBandCell(item.text)).length >= 3 &&
       group.items.every(item => item.width < width * .25) &&
       Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x)) > width * .45);
     if (!header) continue;
@@ -93,9 +105,11 @@ function numericTableBands(items, width) {
       const shortCells = group.items.filter(item => item.width < width * .25).length;
       const followsCell = group.items.every((item, index) => aligned(item) || (index > 0 &&
         Math.abs(item.x - group.items[index - 1].x - group.items[index - 1].width) <= Math.max(2, item.height * .3)));
-      const numericCell = group.items.some(item => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/.test(item.text.trim()) && aligned(item));
+      const numericCell = group.items.some(item => isNumericBandCell(item.text) && aligned(item));
       const span = Math.max(...group.items.map(item => item.x + item.width)) - Math.min(...group.items.map(item => item.x));
-      if (group.items.length >= 3 && shortCells >= 2 && followsCell && numericCell && span > width * .25) {
+      // Keep a contiguous incomplete row in the table too. Discarding it from
+      // the band would turn a missing-value table into a misleading full prefix.
+      if (group.items.length >= 2 && shortCells >= 2 && followsCell && numericCell && span > width * .25) {
         last = group;
         count++;
         continue;
@@ -121,63 +135,101 @@ function numericTableBands(items, width) {
   return bands;
 }
 
-function findGutter(items, width) {
+function findGutter(items, width, preferProse = false) {
   const percentile = (values, fraction) => {
     const sorted = values.sort((a, b) => a - b);
     return sorted[Math.round((sorted.length - 1) * fraction)];
   };
-  let best = null;
   const pageRows = groupedRows(items);
-  for (let fraction = .35; fraction <= .65; fraction += .01) {
-    const cut = width * fraction;
-    const left = items.filter(item => item.x + item.width <= cut);
-    const right = items.filter(item => item.x >= cut);
-    if (left.length < 2 || right.length < 2) continue;
-    // Isolated page numbers and short header fragments must not close a real
-    // body gutter. Journal gutters can be narrower than 2.5% of page width.
-    const gapStart = percentile(left.map(item => item.x + item.width), .9);
-    const gapEnd = percentile(right.map(item => item.x), .1);
-    if (gapEnd - gapStart < width * .015) continue;
-    const overlap = Math.min(Math.max(...left.map(i => i.y)), Math.max(...right.map(i => i.y))) -
-      Math.max(Math.min(...left.map(i => i.y)), Math.min(...right.map(i => i.y)));
-    if (overlap <= 0) continue;
-    const crossingItems = items.filter(item => item.x < cut && item.x + item.width > cut && item.width < width * .65);
-    const proseLine = item => item.width > width * .25 && item.text.trim().split(/\s+/).length >= 6;
-    const spanningProse = pageRows.filter(group => {
-      const qualifies = run => run.length && run[0].x < cut &&
-        run.at(-1).x + run.at(-1).width > cut &&
-        run.at(-1).x + run.at(-1).width - run[0].x > width * .4 &&
-        run.reduce((words, item) => words + item.text.trim().split(/\s+/).length, 0) >= 6;
-      let run = [];
-      for (const item of [...group.items].sort((a, b) => a.x - b.x)) {
-        const previous = run.at(-1);
-        if (previous && item.x - previous.x - previous.width > Math.max(2, Math.min(item.height, previous.height) * .3)) {
-          if (qualifies(run)) return true;
-          run = [];
-        }
-        run.push(item);
+  const search = (start, end, requireProse = false, proseScore = false) => {
+    let best = null;
+    for (let fraction = start; fraction <= end; fraction += .01) {
+      const cut = width * fraction;
+      const left = items.filter(item => item.x + item.width <= cut);
+      const right = items.filter(item => item.x >= cut);
+      if (left.length < 2 || right.length < 2) continue;
+      // Isolated page numbers and short header fragments must not close a real
+      // body gutter. Journal gutters can be narrower than 2.5% of page width.
+      // Dense equation glyphs must not outvote a sustained pair of body
+      // columns. This is still an unverified geometric proposal, not a math
+      // transcription or a semantic table/prose distinction.
+      const bodyProse = item => item.width > width * .25 &&
+        item.text.trim().split(/\s+/).length >= 6;
+      const scoredLeft = proseScore ? left.filter(bodyProse) : left;
+      const scoredRight = proseScore ? right.filter(bodyProse) : right;
+      if (proseScore && (scoredLeft.length < 4 || scoredRight.length < 4)) continue;
+      // The preferred gutter must clear EVERY supporting prose fragment;
+      // percentiles can return a point inside a longer, valid body line.
+      const gapStart = proseScore ? Math.max(...scoredLeft.map(item => item.x + item.width)) :
+        percentile(scoredLeft.map(item => item.x + item.width), .9);
+      const gapEnd = proseScore ? Math.min(...scoredRight.map(item => item.x)) :
+        percentile(scoredRight.map(item => item.x), .1);
+      if (gapEnd - gapStart < width * .015) continue;
+      const overlap = Math.min(Math.max(...left.map(i => i.y)), Math.max(...right.map(i => i.y))) -
+        Math.max(Math.min(...left.map(i => i.y)), Math.min(...right.map(i => i.y)));
+      if (overlap <= 0) continue;
+      if (requireProse) {
+        // Without sustained paragraphs on both sides, the same whitespace can
+        // describe label/value rows. Preserve their old row-wise proposal.
+        const substantialProse = item => item.width > width * .12 &&
+          item.text.trim().split(/\s+/).length >= 6;
+        if (left.filter(substantialProse).length < 4 || right.filter(substantialProse).length < 4) continue;
       }
-      return qualifies(run);
-    }).length;
-    // Scattered equation glyphs on a one-column page can look like two
-    // columns. Sustained prose crossing the proposed gutter is stronger
-    // evidence than isolated glyph fragments on either side of it.
-    if (spanningProse >= 5 && spanningProse > left.filter(proseLine).length + right.filter(proseLine).length)
-      continue;
-    const crossing = crossingItems.length;
-    const score = Math.min(left.length, right.length) * 2 - crossing * 3;
-    if (score > 0 && (!best || score > best.score)) best = { score, cut: (gapStart + gapEnd) / 2 };
-  }
-  return best?.cut;
+      const crossingItems = items.filter(item => item.x < cut && item.x + item.width > cut && item.width < width * .65);
+      const proseLine = item => item.width > width * .25 && item.text.trim().split(/\s+/).length >= 6;
+      const spanningProse = pageRows.filter(group => {
+        const qualifies = run => run.length && run[0].x < cut &&
+          run.at(-1).x + run.at(-1).width > cut &&
+          run.at(-1).x + run.at(-1).width - run[0].x > width * .4 &&
+          run.reduce((words, item) => words + item.text.trim().split(/\s+/).length, 0) >= 6;
+        let run = [];
+        for (const item of [...group.items].sort((a, b) => a.x - b.x)) {
+          const previous = run.at(-1);
+          if (previous && item.x - previous.x - previous.width > Math.max(2, Math.min(item.height, previous.height) * .3)) {
+            if (qualifies(run)) return true;
+            run = [];
+          }
+          run.push(item);
+        }
+        return qualifies(run);
+      }).length;
+      // Scattered equation glyphs on a one-column page can look like two
+      // columns. Sustained prose crossing the proposed gutter is stronger
+      // evidence than isolated glyph fragments on either side of it.
+      if (spanningProse >= 5 && spanningProse > left.filter(proseLine).length + right.filter(proseLine).length)
+        continue;
+      const crossing = proseScore ? crossingItems.filter(bodyProse).length : crossingItems.length;
+      const score = Math.min(scoredLeft.length, scoredRight.length) * 2 - crossing * 3;
+      if (score > 0 && (!best || score > best.score)) best = { score, cut: (gapStart + gapEnd) / 2 };
+    }
+    return best?.cut;
+  };
+  // Keep a valid ordinary-column gutter before considering asymmetric ones:
+  // an internal table-column gap must not outrank the established body split.
+  return (preferProse ? search(.35, .65, false, true) : undefined) ??
+    search(.35, .65) ?? search(.25, .75, true);
 }
 
-export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
+export function recoverReadingOrder(fragments, pageWidth, mode = 'auto', vectorHints = null) {
+  const partition = mode === 'auto' ? partitionQuestionPanels(fragments,pageWidth,vectorHints) : null;
+  if (partition) {
+    const groups = partition.segments.map(segment => {
+      const recovered = recoverReadingOrder(segment.items,pageWidth,'auto');
+      return { ...recovered, lines: recovered.lines.map(line=>({...line,
+        fragmentIds:line.fragmentIds.map(id=>segment.items[id].fragmentId),
+        panelRole:segment.role,panelIndex:segment.panel??null})) };
+    });
+    const lines = groups.flatMap(group=>group.lines);
+    return {columns:Math.max(...groups.map(group=>group.columns)),lines,text:lines.map(line=>line.text).join('\n'),
+      fragmentCount:lines.reduce((n,line)=>n+line.fragmentIds.length,0),tableRegions:groups.reduce((n,g)=>n+g.tableRegions,0),
+      panelDraft:{panels:partition.panels,status:'unverified',occlusion:'unknown'}};
+  }
   const items = fragments.map((item, fragmentId) => ({ ...item, fragmentId })).filter(item => item.text?.trim() &&
     [item.x, item.y, item.width, item.height].every(Number.isFinite))
     .map(item => ({ ...item, height: Math.max(1, item.height) }));
   const tableBands = mode === 'auto' ? numericTableBands(items, pageWidth) : [];
   const bodyItems = items.filter(item => !tableBands.some(band => item.y >= band.start && item.y <= band.end));
-  const detected = mode === 'single' ? null : findGutter(bodyItems, pageWidth);
+  const detected = mode === 'single' ? null : findGutter(bodyItems, pageWidth, mode === 'auto');
   const cut = mode === 'two' ? detected ?? pageWidth / 2 : detected;
   const orderedLines = segment => {
     if (!cut) return rows(segment, 'full');
@@ -205,9 +257,22 @@ export function recoverReadingOrder(fragments, pageWidth, mode = 'auto') {
       lines.push(...rows(band.filter(item => item.x < cut), 'left'), ...rows(band.filter(item => item.x >= cut), 'right'));
     };
     for (const separator of spanning) {
-      appendBand(remaining.filter(item => item.y < separator.y));
-      remaining = remaining.filter(item => item.y >= separator.y);
-      lines.push(separator);
+      // The crossing fragment may be only a row's right-hand suffix. Keep
+      // its same-baseline prefix with that row before dividing prose bands;
+      // the glyph-touching rule above is not a whole-row boundary test.
+      // Reuse the existing row-grouping criterion, without widening gaps.
+      const separatorIds = new Set(separator.fragmentIds);
+      const anchor = segment.filter(item => separatorIds.has(item.fragmentId)).sort((a, b) => a.y - b.y || a.x - b.x)[0];
+      const sameBaseline = item => Math.abs(item.y - anchor.y) < Math.min(item.height, anchor.height) * .45;
+      const peers = remaining.filter(sameBaseline);
+      appendBand(remaining.filter(item => item.y < separator.y && !sameBaseline(item)));
+      remaining = remaining.filter(item => item.y >= separator.y && !sameBaseline(item));
+      // Preserve separate runs (for example metadata beside an abstract).
+      // Correct their order without inventing a shared caption/paragraph box.
+      lines.push(...[
+        ...rows(peers.filter(item => item.x < cut), 'left'), separator,
+        ...rows(peers.filter(item => item.x >= cut), 'right')
+      ].sort((a, b) => a.x - b.x));
     }
     appendBand(remaining);
     return lines;

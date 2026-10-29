@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "build:figure-pdf": "node build.mjs --codec-only"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",
-    "tesseract.js": "7.0.0",
-    "@tesseract.js-data/eng": "1.0.0"
+    "tesseract.js": "7.0.0"
   }
 }

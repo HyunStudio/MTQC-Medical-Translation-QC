@@ -1,88 +1,103 @@
-# MTQC — Medical Document Translation & QC (judge demo)
+# MTQC - Medical Document Translation & QC
 
-> **October 19 update:** [Current changes, controlled results and limits](docs/web-demo/RELEASE_UPDATE_20261019.md). Recorded examples remain available. Live paid requests are held until billing evidence is verified; configuring a key does not enable them. USD0.50/day and USD0.15/run application guards preserve pending-billing reservations. Full-demo actual cost remains unmeasured. The linked video shows historical inference and test counts.
+Research prototype for medical excerpt and document-structure review using
+NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
+It is not a clinical translation service or a validated general PDF translator.
 
+## October 29 public source update
 
-An English-first medical-document **excerpt-review** demo: inspect recorded, rights-cleared diagram translations side by side, or extract a short passage from a PDF/image in the browser and request an **AI draft with scoped deterministic checks** in one of 18 target languages through NVIDIA Nemotron on Nebius Token Factory. A separate AI critique is an opt-in experimental research lane, not the default QC path. It does not output a fully translated or structure-preserved textbook/PDF. The review UI keeps model suggestions, narrow deterministic rules, and unassessed categories distinct. The app is not a clinical translation service. A model response, OCR output, or automated QC warning never substitutes for clinician and native-speaker review.
+This repository now includes the current reviewed browser/client implementation
+and its shared DOCX package dependencies. The owner has authorized Apache-2.0
+for the five supplemental files listed in [LICENSE-SCOPE.txt](LICENSE-SCOPE.txt).
+Existing scientific and third-party licenses/attribution remain distinct.
 
-- [Live judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) (public Azure for Students Free F1 host; live calls have a durable 100-attempt ceiling)
-- [Current public professional 1080p demo](https://youtu.be/L9nkjs8fwi4) (approximately 138.8 seconds; genuine Arabic draft and optional experimental critique, synthetic two-column PDF, captions, explicit limitations, and obscured third-party logos). The refreshed evidence card shows the October 4 clean-clone snapshot of 69 server / 34 browser checks; the recorded inference footage is unchanged.
-- [Public source](https://github.com/HyunStudio/MTQC-Medical-Translation-QC) (this scoped web demo only)
-- [Submitted Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control) (Nebius × NVIDIA Global AI Hackathon)
+- [Latest public video - 2:49](https://youtu.be/954tVuF-6Qw)
+- [Hosted judge demo](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/)
+- [Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control)
+- [Exact update, verification scope and limits](docs/web-demo/RELEASE_UPDATE_20261029.md)
 
-## Quick start
+**Source publication does not deploy the hosted app.** Azure remains the October
+19 deployment; new paid model requests remain held for billing evidence. The
+video identifies historical inference and later local development separately.
+No key or payment is needed for saved examples or local extraction.
 
-Requires the .NET 10 SDK and Node.js 24 LTS (with npm). From the exported web-demo repository root, build the local PDF/OCR workers **before the first app run**:
+| Access | What is available / limits |
+| --- | --- |
+| Existing hosted app | Saved editable visual drafts, source comparison and browser-local short PDF/image extraction. Paid inference remains unavailable. |
+| Build this source locally | Current PDF.js/Tesseract workbench, source-bound draft/review components, bounded multi-table and compound-figure assembly, caption-below controls and unreviewed figure-label translation-sheet handoff. |
+| Optional Word/PDF integration | Requires separately installed Word and the separately configured owned desktop CLI. That older Windows engine/installer is not included here. Keep native routes disabled for this source-only quick start. |
+| Video evidence | 57 publisher-XML-derived Korean reading-PDF pages; bounded 122-cell complex excerpt; 13 imported figure-label translation targets. These are scoped observations, not general reconstruction or clinical acceptance. |
+| Still incomplete | General original two-column PDF recovery, arbitrary scanned mathematics, figure relationships and accepted translated-figure export; clinical expert review 0/15. |
+
+## Build and run without paid calls or Word
+
+Requires .NET 10 SDK and Node.js 24 LTS with npm. Internet is needed once for
+pinned npm dependencies. Run from a fresh clone in PowerShell:
 
 ```powershell
-Push-Location "src/web_demo_client"
-npm ci
+$env:DEMO_LIVE_ENABLED = 'false'
+$env:MTQC_LOCAL_DOCUMENTS = 'false'
+Remove-Item Env:MTQC_WORD_LAYOUT_MANIFEST -ErrorAction SilentlyContinue
+Remove-Item Env:MTQC_VISUAL_AUDIT_MANIFEST -ErrorAction SilentlyContinue
+Push-Location src/web_demo_client
+npm ci --ignore-scripts --no-audit --no-fund
 npm run build
 Pop-Location
-dotnet run --project "src/web_demo/MedicalQcWebDemo.csproj"
+dotnet build src/web_demo/MedicalQcWebDemo.csproj -c Release --nologo
+dotnet src/web_demo/bin/Release/net10.0/MedicalQcWebDemo.dll --validate-fixtures
+dotnet src/web_demo/bin/Release/net10.0/MedicalQcWebDemo.dll --urls http://127.0.0.1:5080
 ```
 
-Without the client build, recorded cases still open, but PDF/OCR worker URLs return 404. The generated workers are deliberately excluded from the source repository. Repeat the client build after changing its dependencies; do not configure an API key merely to use recorded cases or local extraction.
+Open http://127.0.0.1:5080 and inspect recorded examples. Try local extraction
+only with non-sensitive English PDF/image input. Review every result and its
+source correspondence. Stop the server with Ctrl+C. No API key is needed.
+The client build supplies pinned PDF.js, Tesseract and PDF export assets with
+their notices. The registered JSZip source asset is included in Git.
 
-Open the local address printed by ASP.NET Core. The recorded cases require no account, model key, or provider charge. The Servier Medical Art visual-system specimen has an English source and 18 saved, editable draft slides (19 displayed languages). The Müller et al. comparison covers only the Figure 1 title, caption, and four labels in Korean, Spanish, and Arabic; it is **not** a complete translation of the two-column article.
+The web source supports source-linked DOCX draft/review handoff and optional
+native review endpoints; their presence does not bundle Word or demonstrate
+that optional desktop features work on a judge's PC. Caption/structure drafts,
+OCR candidates, numeric warnings and model suggestions remain review aids.
+Do not treat a successful build or an automated result as medical approval.
 
-The Document workbench can accept a user-selected PDF (up to two pages) or image (up to 10 MiB), extract selectable text or perform English OCR in the **browser**, and show an editable excerpt beside the draft. The file is not uploaded. Only the excerpt that the user submits for live translation is sent to the server and onward to Nebius. Do not enter patient-identifiable or other restricted data without appropriate authorization and privacy review. The local PDF.js/Tesseract assets are built from pinned npm packages; there is no runtime CDN dependency.
+## Verification and provenance
 
-The public Servier slide specimens were visually refitted in native PowerPoint after a cross-language audit. The eye illustration and connector endpoints remain editable, while label clouds and title clearance changed to stop clipping and arbitrary word breaks. The published decks and previews remove original master logos and retain text attribution and the CC BY link. This visual repair does not constitute a terminology review.
+The product payload is byte-identical to the reviewed 140-file r3 source archive
+(archive SHA-256 `8b52a8b3e9292e856f6cd83c756d40734eec60e20226e7eb49add6240e7898a8`;
+private producer `f26030b55941a2933c18a8831ba7e44dfd8b2386`). The archive includes
+generated documentation as well as code; the manifest lists the product files.
+This public update changes licensing, README and release documentation, not
+product logic. See [source provenance](docs/web-demo/SOURCE_PROVENANCE_20261029.json).
 
-The bundled anatomy assets can be checked in a clean public clone with `python src/web_demo/tools/build_servier_fixture.py`. Its default mode verifies all published hashes, 18-language metadata, and logo-free/attributed PowerPoint masters without private source files. `--rebuild-from-private-source` is a separate maintainer operation requiring the original working materials; it is not needed to run or verify the public app.
+A subsequent independent review reports a fresh extraction of final r3 passed
+npm ci, client build, .NET Release build (0 warnings/errors), offline example
+validation and principal local GET requests (HTTP 200) on the development PC.
+The follow-up inspection found the resulting source and Release outputs and
+matched the source manifest. Command/HTTP outcomes are attributed to that
+supplied review; this publication did not repeat those executions. This is not
+a second-PC installation, complete UI test, general-document or clinical test.
 
-## Reading-order review
+Historical evaluations and tests remain in the repository with their original
+scope. The older broad GitHub matrix is not being rerun for this unchanged
+payload publication; no new CI pass is claimed. This publication uses a skip-ci
+commit rather than replaying the historical browser/OCR suites.
 
-PDF text layers retain fragment coordinates. The workbench proposes one- or two-column reading order and shows numbered lines over the original page. Choose across-row order for tables or left-then-right order for columns, inspect the overlay, and use **Replace excerpt with this order** to apply it. Previewing another order preserves manual edits; applying it resets source approval. Full-width text separates column bands. A narrowly detected full-width numeric `TABLE n` region is kept in row order even when two-column prose follows; the UI explicitly warns that this is **not verified column semantics**. This is a geometric heuristic, not a learned layout model: irregular figures, rotated text, and complex tables still require correction. Every page without a text layer receives local OCR, including scanned pages inside otherwise searchable PDFs.
+## Rights, model use and safety boundaries
 
-Numeric QC compares complete numeric tokens and occurrence counts, so `2` versus `20`, lost repeated values, added values, and lost minus signs produce findings. Arabic digits and unambiguous comma decimals are normalized for value comparison; exact-format differences remain visible for review. Numeric counts do not prove that each value remains attached to the correct structure or unit.
+First-party source: [Apache-2.0](LICENSE), with the exact supplemental grant in
+[LICENSE-SCOPE.txt](LICENSE-SCOPE.txt). Scientific/visual specimens retain their
+source licenses, attribution and adaptation notices. Read
+[rights inventory](docs/web-demo/RIGHTS.md) and
+[third-party notices](docs/web-demo/THIRD_PARTY_NOTICES.md).
 
-The [2026-09-30 corpus evaluation](docs/web-demo/CORPUS_EVALUATION_20260930.md) adds real two-column medical pages, mixed-width figures, dense/rotated tables, scans and three anatomy charts. Its [provenance and reproduction instructions](docs/web-demo/CORPUS_SOURCES.md) identify reusable sources. Narrow journal gutters and centered footers have dedicated regressions. OCR now uses automatic page segmentation rather than a single text block. Searchable PDFs with embedded images display an explicit warning that image labels are not included in the text layer; enter any required labels manually. These changes do not imply full-page transcription or table-cell reconstruction.
+Earlier genuine Arabic drafting and optional experimental critique used NVIDIA
+Nemotron through Nebius Token Factory. This source publication makes no new
+model call. Historical paired critique results were negative within their
+limited categories; no general accuracy improvement is claimed. Billing and
+budget admission remain held; configuring a key alone does not enable calls.
+Never put a credential or patient-identifiable information in source or a
+public demo. OCR/model output needs native-speaker and clinician review.
 
-The [complex medical image pilot](docs/web-demo/COMPLEX_MEDICAL_IMAGE_PILOT_20260930.md) tests a separately licensed two-column neuroanatomy paper, multi-panel figures and dense anatomy labels. It records a corrected split-glyph reading-order case and the remaining figure OCR misses, with an actual source-review screenshot. A Johns Hopkins Biomedical Engineering coauthor appears on the paper; MTQC has no institutional affiliation or endorsement from Johns Hopkins.
-
-The [knee MRI table/figure audit](docs/web-demo/KNEE_MRI_LAYOUT_AUDIT_20261003.md) adds a CC BY 4.0 medical article with multi-panel MRI figures, architecture diagrams, equations, a full-width numeric table, and following two-column prose. It documents a real table-row reading-order defect, the narrow fix, and remaining limits. The article itself is not bundled with this demo.
-
-The [October 7 published-MRI development retest](https://github.com/HyunStudio/MTQC-Medical-Translation-QC/blob/main/docs/web-demo/HELD_OUT_MRI_DEVELOPMENT_RETEST_20261007.md) records three CC BY articles and six fixed pages. After correcting one observed five-column rating-table split, 23/30 prespecified structural checks and 56/56 visibly readable table-row identities passed on those same pages. Because the pages informed the correction, this is development evidence, **not** an independent accuracy estimate. Additional synthetic regressions protect multirow table continuation and the boundary where two-column prose resumes; the existing 22-input browser corpus retained identical extracted text. Equations, image-internal labels, irregular cells, and visually lowered dose subscripts still need explicit review. Neither these tests nor the video establish medically validated translation or full-page structure preservation.
-
-## Enable live inference deliberately
-
-Live requests are disabled by default and require fresh operator billing evidence and a persistent monetary ledger in addition to the attempt ledger. See the October 19 update. Historical setup guidance below is insufficient by itself to enable live mode. A server operator may set `NEBIUS_API_KEY` and `DEMO_LIVE_ENABLED=true` in the **server process environment**, then restart. Never place the key in a browser bundle, source file, published ZIP, or screenshot. The default model is `nvidia/Nemotron-3_5-Lightning`; `DEMO_NEBIUS_MODEL` can override its ID. The public status reads the durable ledger without spending an attempt and marks the default one-call route unavailable when no lifetime attempts remain or the ledger is invalid. An enabled status still does not prove provider credit, entitlement, quality, or uptime. The optional two-call critique may be unavailable with one remaining attempt even when default live status is available.
-
-The Document workbench supports an English source excerpt to each of these 18 targets: Korean, Spanish, Arabic, Simplified Chinese, Traditional Chinese, Japanese, French, German, Italian, Portuguese, Russian, Hindi, Indonesian, Dutch, Polish, Thai, Turkish, and Vietnamese. It sends at most 3,000 Unicode code points, with a 64 KiB request-body cap. A separate recorded-case button translates only the fixed Müller caption to Korean, Spanish, or Arabic. A default document request atomically reserves **one provider attempt** for the draft, then runs scoped deterministic checks locally on the server. Selecting the explicitly labeled experimental AI critique reserves **two attempts** and makes a second call; a failed requested critique leaves a labeled incomplete draft, never a passed review. The frozen paired pilot found zero additional seeded detections, warnings rising from 7 to 22, and three false positives within limited adjudicated clean categories; the separate negation retest localized 0/2 in both arms. This is not evidence of improved accuracy. Requests time out after 20 seconds per call, are not automatically retried, and share a default three-attempt/client/hour and 20-attempt/global/hour in-process budget with single upstream concurrency. `DEMO_LIVE_PER_CLIENT_LIMIT` can be explicitly set from 1 to 20 for a controlled local 18-language smoke run; invalid values fall back to three. For a public host, set both `DEMO_LIVE_TOTAL_ATTEMPTS` (1–1,000) and an absolute `DEMO_LIVE_LEDGER_PATH` on persistent storage; the server reserves attempts before calling Nebius, survives app restarts, and fails closed if the ledger is unreadable. Missing or invalid paired settings disable live mode. The hourly counters still reset on process restart; neither mechanism is a **monetary hard cap**. Apply a provider-side budget and deployment monitoring before enabling a public instance.
-
-The progress bar is a time-derived **estimate**, not model telemetry or a promised ETA. It remains below 100% while waiting and reaches 100% only after both provider stages and rules complete. Errors/cancellation do not claim completion. Draft outputs display per-stage model/token metadata, unverified AI review suggestions, and scoped rule coverage including `not assessed`. The numeric, directional, narrow Korean `femoral vein`, and Spanish/Arabic negation-marker checks catch some discrepancies but cannot establish medical correctness or correct semantic scope. The terminology check was added after a real hosted model call substituted `대정맥` for `femoral vein`; it is only a review prompt, not a general terminology validator. Arabic uses right-to-left presentation. No content is silently marked medically approved.
-
-## Build, verify, release
-
-Pending document requests lock the submit button. **Cancel request** aborts the browser request and discards late results; it does not guarantee that the provider incurred no usage. Selecting another source, editing text, or changing language also invalidates a pending draft. Scanned PDF pages are rendered at scale 3 (~216 dpi) for local OCR, with a 12-million-pixel per-page bound; searchable pages retain scale 1.25. Larger pages are rejected before canvas allocation. This improves some observed captions but is not complete diagram transcription.
-
-Automatic image OCR insertion resets source approval. Approval of an empty input never approves text that arrives later; reviewers must inspect the recovered text and approve it explicitly.
-
-The corpus runner now permits only individually documented missing anchors/order edges in `src/web_demo_browser_tests/corpus.allowed-failures.json`, not whole-case exemptions. Any new failure, empty extraction or unannotated case fails. Output-line fragment IDs are checked for missing, duplicate and foreign identities, independently of input/output counts. These are engineering retention checks, not semantic or clinical validation.
-
-```powershell
-cd "src/web_demo_client"
-npm ci
-npm run build
-cd ../..
-dotnet run --project "src/web_demo_tests/MedicalQcWebDemoTests.csproj"
-node --test src/web_demo_evaluation/*.test.mjs
-cd "src/web_demo_browser_tests"
-npm ci
-npm test
-cd ../..
-& "scripts/web_demo_release.ps1" -SelfCheck
-& "scripts/web_demo_release.ps1"
-```
-
-Browser tests require Chrome; set `CHROME_PATH` if it is not installed at a usual path. They test actual local PDF extraction/OCR and intercepted model responses; they make **no billable provider call**. The release script validates the specimen hash manifest, publishes a fresh app, checks local workers over HTTP, scans a source-only export for obvious secrets and private-machine paths, then creates separate judge-build and source archives with SHA-256 hashes. The scoped public export contains `.github/workflows/mtqc.yml` for Windows/Linux clean-clone verification. Run the release script after any source or dependency change.
-
-The [bounded paired review evaluation](docs/web-demo/REVIEW_EVALUATION_20261001.md) reports the actual negative pilot: the second model call added no localized detection on three controlled numeric/direction seeds, and a two-seed negation development retest also found no additional localized detection. It increased review-suggestion volume. The synthetic [run records](evaluation/review-runs.json), [separate gold](evaluation/gold-v1.json), and [recomputed report](evaluation/report-v1c.json) are public for audit, with corresponding v2 negation files in the same folder. Model findings remain explicitly labeled **unverified suggestions** and human inspection is mandatory. These records are not an independent 18-language benchmark or a medical-quality claim.
-
-The optional `scripts/smoke_18_languages.ps1` launches only a loopback server, makes one short real request per target with no automatic retry, and records per-call token usage and an estimated cost under a configurable script limit. This spends provider credit and requires a User-scope key. The estimate uses public model rates, not an account billing ledger. A successful API response is only runtime evidence; it is **not** a multilingual medical-quality benchmark.
-
-## Rights and scope
-
-[RIGHTS.md](docs/web-demo/RIGHTS.md) inventories the recorded Servier and Müller source permissions, modifications, and unreviewed status. [THIRD_PARTY_NOTICES.md](docs/web-demo/THIRD_PARTY_NOTICES.md) lists local PDF/OCR dependencies. Users retain responsibility for the rights and privacy of anything they select in the Document workbench. The browser demo is not the older Windows Word/PDF processing engine; the two should not be represented as the same runtime capability. No Harrison textbook page, patient record, private manuscript, or secret belongs in the public release.
+The older Windows engine, private setup package and manuscripts are excluded.
+Public source availability resolves a source-access gap; it does not certify
+all hackathon requirements, full document reconstruction or clinical validity.

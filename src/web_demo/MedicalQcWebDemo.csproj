@@ -16,4 +16,7 @@
     <None Remove="fixtures\assets\**\*" />
     <Content Include="fixtures\assets\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../document_core/MedicalQcDocumentCore.csproj" />
+  </ItemGroup>
 </Project>

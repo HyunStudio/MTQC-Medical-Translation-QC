@@ -1,0 +1,18 @@
+{
+  "name": "jszip",
+  "version": "3.10.1",
+  "source": "Installed bundled workspace dependency, unchanged browser distribution",
+  "licenseChoice": "MIT",
+  "files": {
+    "jszip.min.mjs": {
+      "sourceRelativePath": "dist/jszip.min.js",
+      "sha256": "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e",
+      "bytes": 97630
+    },
+    "LICENSE.markdown": {
+      "sourceRelativePath": "LICENSE.markdown",
+      "sha256": "566c953c6090b1218ca6217dd7359d45dde46581968586dc607d59a78af6a9c4",
+      "bytes": 33753
+    }
+  }
+}

@@ -12,3 +12,10 @@ The app bundles browser-side PDF extraction and English OCR assets for local pro
 The project does not claim authorship of these components. Their original license terms govern them independently of the web-demo code license. Source links above are also the location of full upstream notices. The local `vendor/` directory is generated from the pinned package lock and is excluded from the public source export; rebuild it with `npm ci` and `npm run build` in `src/web_demo_client`.
 
 Servier Medical Art and Müller et al. specimen rights are separate from these software dependencies; see [RIGHTS.md](RIGHTS.md). No third-party specimen or OCR data is relicensed by the project's code license.
+
+PDF figure-label export uses pdf-lib1.17.1 (MIT), with @pdf-lib/standard-fonts1.0.0 (MIT), @pdf-lib/upng1.0.1 (MIT), pako1.0.11 (MIT AND Zlib), and tslib (0BSD). The pinned npm lock supplies the exact dependency versions. Generated `vendor/pdf-lib/notices/` retains the upstream license/copyright files; the standalone ESM bundle and notices are included in runtime packages. This component edits a local derived review copy, without sending PDF contents to a service.
+
+
+## JSZip 3.10.1
+
+The unchanged browser distribution is vendored from the bundled workspace dependency for local DOCX package processing. Used under the MIT option of its MIT/GPLv3 dual license. Full upstream license and bundled dependency notices are retained at src/web_demo/wwwroot/vendor/jszip/LICENSE.markdown. Exact browser bundle and license SHA-256 values are in the adjacent manifest.json. No runtime CDN requests.

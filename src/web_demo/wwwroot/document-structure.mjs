@@ -1,5 +1,9 @@
 // A browser-local description of the source page. Proposal code may populate
 // this graph, but only an explicit reviewer action can mark content verified.
+import { retainTableCellSources } from './document-table-grid.mjs';
+import {validateNativeTableBinding} from './document-table-source.mjs';
+import { validateNativeMathLayout } from './document-native-math.mjs';
+import {nativeTableGroupDataSafe,nativeTableGroupPlan,nativeTableReadingOrder,hasNativeTableGroup,nativeTableGroupReviewReady} from './document-native-table-group.mjs';
 
 /** @typedef {{x:number,y:number,width:number,height:number}} SourceBox */
 /** @typedef {{id:string,row:number,column:number,rowSpan:number,colSpan:number,text:string,role:'header'|'value'|'blank',headerCellIds:string[],blankReason?:string}} TableCell */
@@ -7,7 +11,7 @@
 /** @typedef {'heading'|'paragraph'|'table'|'equation'|'figure'|'caption'|'footnote'|'other'} RegionType */
 /** @typedef {'proposed'|'verified'|'excluded'|'unresolved'} RegionStatus */
 /** @typedef {{id:string,type:RegionType,box:SourceBox,fragmentIds:string[],text:string,provenance:string,status:RegionStatus,exclusionReason?:string,table?:TableGrid,equationReview?:{sourceChecked:boolean},figureReview?:{decision:'labels-transcribed'|'no-internal-text',labels:Array<{id:string,text:string,box?:SourceBox}>,sourceChecked:boolean},footnoteReview?:{decision:'linked'|'standalone',sourceChecked:boolean,standaloneReason:string}}} Region */
-/** @typedef {{id:string,type:'reading-next'|'caption-of'|'footnote-of'|'cell-of'|'label-in-figure',from:string,to:string,status:'proposed'|'verified'}} Edge */
+/** @typedef {{id:string,type:'reading-next'|'caption-of'|'footnote-of'|'cell-of'|'label-in-figure',from:string,to:string,cellId?:string,status:'proposed'|'verified'}} Edge */
 /** @typedef {{code:string,pageId:string,regionId?:string,message:string}} Issue */
 /** @typedef {{sourceChecked:boolean,decision:'regions-recorded'|'no-visible-content',regionIds:string[]}} VisualConcernReview */
 /** @typedef {{id:string,width:number,height:number,fragmentIds:string[],regions:Region[],edges:Edge[],issues:Issue[],visualInventoryConfirmed:boolean,visualConcernReviews?:Object<string,VisualConcernReview>}} Page */
@@ -36,12 +40,65 @@ function visualConcernResolved(page, code) {
     assessment.regionIds.every(id => page.regions.some(region => region.id === id && region.status === 'verified'));
 }
 
-export const MAX_TABLE_DIMENSION = 20;
+export const MAX_TABLE_DIMENSION = 128;
+export const MAX_TABLE_POSITIONS = 4096;
 export function validTableDimensions(rows, columns) {
-  return [rows, columns].every(value => Number.isInteger(value) && value >= 1 && value <= MAX_TABLE_DIMENSION);
+  return [rows, columns].every(value => Number.isInteger(value) && value >= 1 && value <= MAX_TABLE_DIMENSION) &&
+    rows * columns <= MAX_TABLE_POSITIONS;
 }
 
 function copy(value) { return structuredClone(value); }
+
+const noteIdValue = value => typeof value === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(value);
+/** Explicit finite reference, never a visual or semantic association inference. */
+export function parseFootnoteTarget(value) {
+  if (typeof value !== 'string') return null;
+  const parts = value.split('@');
+  return parts.length >= 1 && parts.length <= 2 && parts.every(noteIdValue)
+    ? {regionId: parts[0], cellId: parts[1] ?? null} : null;
+}
+export function footnoteTargets(values) {
+  const fail = () => { throw new RangeError('Choose at most 128 unique source targets without overlapping region and cell scopes.'); };
+  if (!Array.isArray(values)) return fail();
+  const size = Object.getOwnPropertyDescriptor(values, 'length')?.value;
+  if (!Number.isInteger(size) || size > 128) return fail();
+  const refs = [], keys = new Set(), broad = new Set();
+  for (let i = 0; i < size; i++) {
+    const d = Object.getOwnPropertyDescriptor(values, String(i));
+    if (!d || !Object.hasOwn(d, 'value')) return fail();
+    const ref = parseFootnoteTarget(d.value);
+    if (!ref || keys.has(d.value)) return fail();
+    refs.push(ref); keys.add(d.value);
+    if (ref.cellId === null) broad.add(ref.regionId);
+  }
+  if (refs.some(ref => ref.cellId !== null && broad.has(ref.regionId))) return fail();
+  return refs;
+}
+/** Read only committed DATA properties; an accessor is not target evidence. */
+export function footnoteEdgeTarget(edge) {
+  try {
+    const to = Object.getOwnPropertyDescriptor(edge, 'to'), cell = Object.getOwnPropertyDescriptor(edge, 'cellId');
+    if (!to || !Object.hasOwn(to, 'value') || (cell && !Object.hasOwn(cell, 'value'))) return null;
+    const cellId = cell?.value;
+    if (!noteIdValue(to.value) || (cellId !== undefined && !noteIdValue(cellId))) return null;
+    return to.value + (cellId === undefined ? '' : '@' + cellId);
+  } catch { return null; }
+}
+/** Bounded editor choices from already reviewed tables; no review is granted. */
+export function footnoteCellOptions(document, noteId) {
+  const options = [];
+  for (const page of document.pages) for (const region of page.regions) {
+    if (region.type !== 'table' || !isVerifiedFootnoteTarget(document, noteId, region.id)) continue;
+    if (options.length + region.table.cells.length > 400) return {held:true, options:[]};
+    for (const cell of region.table.cells) {
+      const value = region.id + '@' + cell.id;
+      if (!parseFootnoteTarget(value)) return {held:true, options:[]};
+      options.push({value, label:`${page.id} · ${region.id} · row ${cell.row+1}, column ${cell.column+1} · span ${cell.rowSpan}×${cell.colSpan} · ${cell.text.slice(0,60)}`});
+    }
+  }
+  return {held:false, options};
+}
+
 
 /** @param {Page[]} pages @returns {DocumentStructure} */
 export function createDocumentStructure(pages) {
@@ -89,15 +146,15 @@ function invalidateRegionRelationships(document, regionId) {
   }
 }
 
-function replaceTextRegions(document, page, edit) {
+function replaceTextRegions(document, page, edit, nativeEquation = false) {
   const ids = edit.regionIds;
   const replacements = edit.regions;
   if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length ||
       !Array.isArray(replacements) || ![1, 2].includes(replacements.length))
     throw new RangeError('Choose adjacent text regions and one or two replacements.');
   const originals = ids.map(id => findRegion(page, id));
-  const textTypes = ['paragraph', 'heading'];
-  if (originals.some(region => !textTypes.includes(region.type) || region.table || region.figureReview || region.equationReview))
+  const textTypes = nativeEquation ? ['paragraph', 'heading', 'equation'] : ['paragraph', 'heading'];
+  if (originals.some(region => !textTypes.includes(region.type) || region.table || region.figureReview || region.footnoteReview || (!nativeEquation && region.equationReview)))
     throw new RangeError('Only ordinary text regions can be split or merged.');
   const replaced = new Set(ids);
   const affected = page.edges.filter(edge => replaced.has(edge.from) || replaced.has(edge.to));
@@ -161,6 +218,31 @@ function replaceTextRegions(document, page, edit) {
     document.selectedRegionIds = [...document.selectedRegionIds.filter(id => !replaced.has(id)), ...replacementIds];
 }
 
+function groupNativeEquation(document, page, edit) {
+  const ids = edit.regionIds;
+  if (!Array.isArray(ids) || ids.length < 1 || ids.length > 16 || new Set(ids).size !== ids.length)
+    throw new RangeError('Choose at most 16 adjacent native regions.');
+  const originals = ids.map(id => findRegion(page, id));
+  const fragments = originals.flatMap(r => r.fragmentIds || []), selected = new Set(ids);
+  if (originals.some(r => r.provenance !== 'pdf-text' || !Array.isArray(r.fragmentIds) || !r.fragmentIds.length) ||
+      fragments.length > 64 || new Set(fragments).size !== fragments.length ||
+      fragments.some(id => !page.fragmentIds.includes(id)) ||
+      page.regions.some(r => !selected.has(r.id) && r.fragmentIds?.some(id => fragments.includes(id))))
+    throw new RangeError('Preserve exclusively owned current native fragment IDs.');
+  const internalSequence = new Set(ids.slice(1).map((id,index) => ids[index] + '\0' + id));
+  if (page.edges.some(edge => edge.type === 'reading-next' && selected.has(edge.from) && selected.has(edge.to) &&
+      !internalSequence.has(edge.from + '\0' + edge.to)))
+    throw new RangeError('A native math group must be an open adjacent reading chain, not a cycle.');
+  const crop = edit.box;
+  if (!validBox(crop, page) || originals.some(r => !validBox(r.box, page) ||
+      r.box.x < crop.x || r.box.y < crop.y || r.box.x + r.box.width > crop.x + crop.width ||
+      r.box.y + r.box.height > crop.y + crop.height))
+    throw new RangeError('The explicit source crop must contain all original boxes.');
+  replaceTextRegions(document, page, {regionIds: ids, regions: [{id: edit.newRegionId, type: 'equation',
+    text: originals.map(r => r.text).join('\n'), fragmentIds: fragments, box: crop}]}, true);
+  document.selectedRegionIds = [edit.newRegionId];
+}
+
 /**
  * Apply a reviewer edit without mutating the previous graph. Semantic edits
  * clear page inventory and the approval state of the affected relationships.
@@ -169,6 +251,11 @@ function replaceTextRegions(document, page, edit) {
  * @returns {DocumentStructure}
  */
 export function applyStructureEdit(document, edit) {
+  const kindDescriptor = edit && Object.getOwnPropertyDescriptor(edit,'kind');
+  if (!kindDescriptor || !Object.hasOwn(kindDescriptor,'value')) throw new RangeError('Structure edit kind needs own DATA.');
+  const groupKind = kindDescriptor.value;
+  if (['group-native-table','review-table-group-order'].includes(groupKind) && !nativeTableGroupDataSafe(document,edit))
+    throw new RangeError('Native table grouping needs bounded own DATA.');
   if (edit.kind === 'replace-document') return createDocumentStructure(edit.pages);
   const next = copy(document);
   if (edit.kind === 'set-selection') {
@@ -176,6 +263,33 @@ export function applyStructureEdit(document, edit) {
     return next;
   }
   const page = findPage(next, edit.pageId);
+  if (edit.kind === 'group-native-table') {
+    const plan = nativeTableGroupPlan(next, edit), selected = new Set(plan.selected), byId = new Map(page.regions.map(r=>[r.id,r]));
+    page.regions = plan.order.map(id=>id===plan.region.id?plan.region:byId.get(id));
+    page.edges = page.edges.filter(e=>e.type!=='reading-next');
+    const edgeIds = new Set(page.edges.map(e=>e.id));
+    for(let i=1;i<plan.order.length;i++) {
+      const base=`reading-${plan.order[i-1]}-${plan.order[i]}`; let id=base;
+      for(let suffix=1;edgeIds.has(id);suffix++)id=`${base}-${suffix}`;
+      edgeIds.add(id); page.edges.push({id,type:'reading-next',from:plan.order[i-1],to:plan.order[i],status:'proposed'});
+    }
+    for(const r of page.regions)if(hasNativeTableGroup(r)&&r.nativeTableGroup)r.nativeTableGroup.orderReviewed=false;
+    page.issues = (page.issues||[]).map(issue=>selected.has(issue.regionId)?{...issue,regionId:plan.region.id}:issue);
+    invalidatePageReview(page); next.selectedRegionIds=[plan.region.id]; return next;
+  }
+  if (edit.kind === 'review-table-group-order') {
+    if(edit.sourceChecked!==true || !nativeTableReadingOrder(page).length || page.edges.some(e=>e.type==='reading-next'&&e.status!=='verified'))
+      throw new RangeError('Explicit source reading review is required.');
+    const groups=page.regions.filter(hasNativeTableGroup);
+    if(groups.some(r=>!nativeTableGroupReviewReady(r,false))) throw new RangeError('Review current native cell associations before reading order.');
+    for(const r of groups)r.nativeTableGroup.orderReviewed=true;
+    return next;
+  }
+  const groupSemantic = ['add-region','replace-text-regions','group-equation','reorder','set-table-source','set-cells','set-equation','set-figure-labels','set-caption-link','set-footnote-links'].includes(edit.kind) ||
+    (edit.kind==='update-region'&&['text','type','box','fragmentIds','table','equationReview','figureReview','footnoteReview','provenance'].some(k=>Object.hasOwn(edit.changes,k))) ||
+    (edit.kind==='update-edge'&&['type','from','to','cellId'].some(k=>Object.hasOwn(edit.changes,k)));
+  if(groupSemantic) for(const r of page.regions)if(hasNativeTableGroup(r)&&r.nativeTableGroup)r.nativeTableGroup.orderReviewed=false;
+  if (edit.kind === 'group-equation') { groupNativeEquation(next, page, edit); return next; }
   if (edit.kind === 'replace-text-regions') {
     replaceTextRegions(next, page, edit);
     return next;
@@ -203,10 +317,13 @@ export function applyStructureEdit(document, edit) {
     const region = findRegion(page, edit.regionId);
     const semanticKeys = ['text', 'type', 'box', 'fragmentIds', 'table', 'equationReview', 'figureReview', 'footnoteReview', 'provenance'];
     const semanticChange = semanticKeys.some(key => Object.hasOwn(edit.changes, key));
+    if(Object.hasOwn(edit.changes,'nativeTableGroup') || (hasNativeTableGroup(region)&&Object.hasOwn(edit.changes,'type')&&edit.changes.type!=='table')) throw new RangeError('Native table grouping keeps its mandatory source review marker.');
     Object.assign(region, copy(edit.changes));
     if (semanticChange) {
       region.status = 'proposed';
       if (region.footnoteReview) region.footnoteReview.sourceChecked = false;
+      if (region.equationReview?.layout) region.equationReview.layoutChecked = false;
+      if (Object.hasOwn(region.table || {}, 'sourceReview')) region.table.sourceReviewChecked = false;
     }
     if (semanticChange || (Object.hasOwn(edit.changes, 'status') && region.status !== 'verified'))
       invalidateRegionRelationships(next, region.id);
@@ -216,7 +333,7 @@ export function applyStructureEdit(document, edit) {
   if (edit.kind === 'update-edge') {
     const edge = page.edges.find(candidate => candidate.id === edit.edgeId);
     if (!edge) throw new RangeError(`Unknown edge: ${edit.edgeId}`);
-    const semanticChange = ['type', 'from', 'to'].some(key => Object.hasOwn(edit.changes, key));
+    const semanticChange = ['type', 'from', 'to', 'cellId'].some(key => Object.hasOwn(edit.changes, key));
     const origins = new Set([edge.from, edit.changes.from ?? edge.from]);
     Object.assign(edge, copy(edit.changes));
     if (semanticChange) {
@@ -244,15 +361,44 @@ export function applyStructureEdit(document, edit) {
     invalidatePageReview(page);
     return next;
   }
+  if (edit.kind === 'set-table-source') {
+    const region = findRegion(page, edit.regionId);
+    const review = Object.getOwnPropertyDescriptor(edit, 'review'), checked = Object.getOwnPropertyDescriptor(edit, 'sourceChecked');
+    if (region.type !== 'table' || !review || !Object.hasOwn(review, 'value') || checked?.value !== true)
+      throw new RangeError('Explicit native table source review is required.');
+    const result = validateNativeTableBinding(review.value, {region, table:region.table});
+    if (!result.ok) throw new RangeError('Native table source binding is invalid.');
+    region.table.sourceReview = copy(result.review); region.table.sourceReviewChecked = true;
+    const byId = new Map(result.review.cells.map(cell => [cell.cellId, cell.fragmentIds]));
+    for (const cell of region.table.cells) cell.sourceFragmentIds = [...byId.get(cell.id)];
+    region.table.reviewed = false; region.status = 'proposed';
+    invalidateRegionRelationships(next, region.id); invalidatePageReview(page);
+    return next;
+  }
   if (edit.kind === 'set-cells' || edit.kind === 'set-equation' || edit.kind === 'set-figure-labels') {
     const region = findRegion(page, edit.regionId);
     if (edit.kind === 'set-cells') {
       if (region.type !== 'table') throw new RangeError('Cell edits require a table region');
-      region.table = copy(edit.table);
+      const previous = region.table;
+      region.table = retainTableCellSources(previous, edit.table);
+      const source = previous && Object.getOwnPropertyDescriptor(previous, 'sourceReview');
+      if (source && Object.hasOwn(source, 'value')) {
+        const checked = validateNativeTableBinding(source.value, {region, table:region.table});
+        if (checked.ok) {
+          region.table.sourceReview = copy(checked.review);
+          region.table.sourceReviewChecked = Object.getOwnPropertyDescriptor(previous, 'sourceReviewChecked')?.value === true;
+        }
+      }
     } else if (edit.kind === 'set-equation') {
       if (region.type !== 'equation') throw new RangeError('Equation edits require an equation region');
       region.text = edit.transcription;
-      region.equationReview = { sourceChecked: Boolean(edit.sourceChecked) };
+      region.equationReview = { sourceChecked: edit.sourceChecked === true };
+      if (edit.layout !== undefined) {
+        const checked = validateNativeMathLayout(edit.layout, {fragmentIds: region.fragmentIds, text: region.text, box: region.box});
+        if (!checked.ok) throw new RangeError('Math source layout invalid: ' + checked.reason);
+        region.equationReview.layout = copy(checked.layout);
+        region.equationReview.layoutChecked = edit.layoutChecked === true;
+      }
     } else {
       if (region.type !== 'figure') throw new RangeError('Figure labels require a figure region');
       region.figureReview = { decision: edit.decision, labels: copy(edit.labels || []), sourceChecked: Boolean(edit.sourceChecked) };
@@ -276,24 +422,26 @@ export function applyStructureEdit(document, edit) {
   }
   if (edit.kind === 'set-footnote-review') {
     const region = findRegion(page, edit.regionId);
-    const ids = edit.targetRegionIds;
-    if (region.type !== 'footnote' || !['linked', 'standalone'].includes(edit.decision) || !Array.isArray(ids))
+    const descriptor = Object.getOwnPropertyDescriptor(edit, 'targetRegionIds');
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) throw new RangeError('Target DATA is required.');
+    const refs = footnoteTargets(descriptor.value);
+    if (region.type !== 'footnote' || !['linked', 'standalone'].includes(edit.decision))
       throw new RangeError('Choose a footnote and a visual association decision.');
-    if (edit.decision === 'linked' && (!ids.length || new Set(ids).size !== ids.length ||
-        ids.some(id => {
-          const target = sourceRegion(next, id)?.region;
-          return !target || target.id === region.id || target.type === 'footnote';
+    if (edit.decision === 'linked' && (!refs.length || refs.some(ref => {
+          const target = sourceRegion(next, ref.regionId)?.region;
+          return !target || target.id === region.id || target.type === 'footnote' ||
+            (ref.cellId !== null && !isVerifiedFootnoteTarget(next, region.id, ref.regionId, ref.cellId));
         })))
-      throw new RangeError('Footnote target regions must exist and exclude self and duplicates.');
-    if (edit.decision === 'standalone' && (ids.length || !edit.standaloneReason?.trim()))
+      throw new RangeError('Cell targets need an existing source-reviewed table and its own cell ID.');
+    if (edit.decision === 'standalone' && (refs.length || !edit.standaloneReason?.trim()))
       throw new RangeError('A standalone footnote needs a visible reason and no target regions.');
     region.footnoteReview = { sourceChecked: edit.sourceChecked === true, decision: edit.decision,
       standaloneReason: edit.standaloneReason || '' };
     region.status = 'proposed';
     invalidateRegionRelationships(next, region.id);
     page.edges = page.edges.filter(edge => !(edge.type === 'footnote-of' && edge.from === region.id));
-    if (edit.decision === 'linked') for (const id of ids) page.edges.push({ id: `footnote-${region.id}-${id}`,
-      type: 'footnote-of', from: region.id, to: id, status: 'proposed' });
+    if (edit.decision === 'linked') for (const ref of refs) page.edges.push({ id: `footnote-${region.id}-${ref.regionId}${ref.cellId === null ? '' : '@' + ref.cellId}`,
+      type: 'footnote-of', from: region.id, to: ref.regionId, ...(ref.cellId === null ? {} : {cellId:ref.cellId}), status: 'proposed' });
     invalidatePageReview(page);
     return next;
   }
@@ -310,12 +458,22 @@ function validBox(box, page) {
     box.x + box.width <= page.width && box.y + box.height <= page.height;
 }
 
-function validateTable(region, page, issues) {
+function validateTable(region, page, issues, checkSourceBinding = true) {
   if (region.type !== 'table') return;
   const table = region.table;
-  if (!table || !validTableDimensions(table.rowCount, table.columnCount) || !Array.isArray(table.cells) || !table.cells.length) {
+  if (!table || !validTableDimensions(table.rowCount, table.columnCount) || !Array.isArray(table.cells) || !table.cells.length || table.cells.length>table.rowCount*table.columnCount) {
     addIssue(issues, 'invalid-cell', page.id, region.id, 'Table grid is missing or empty.');
     return;
+  }
+  // Validate header lists and reserve bounded graph work before traversing them.
+  let headerReferences=0;
+  for(const cell of table.cells){
+    if(!cell||typeof cell!=='object'){addIssue(issues,'invalid-cell',page.id,region.id,'Table cell data is missing.');return;}
+    const headers=cell.headerCellIds===undefined?[]:cell.headerCellIds;
+    if(!Array.isArray(headers)||headers.length>table.cells.length||headers.some(id=>typeof id!=='string'||!id)||new Set(headers).size!==headers.length||
+      (headerReferences+=headers.length)>40000){
+      addIssue(issues,'invalid-header-binding',page.id,region.id,'Header associations need unique IDs and at most 40,000 total references.');return;
+    }
   }
   const ids = new Set();
   const occupied = new Set();
@@ -351,12 +509,33 @@ function validateTable(region, page, issues) {
     if (!occupied.has(`${row}:${column}`)) addIssue(issues, 'missing-cell', page.id, region.id, `Table cell ${row + 1}:${column + 1} is not represented.`);
   }
   const byId = new Map(table.cells.map(cell => [cell.id, cell]));
+  const incoming=new Map([...byId.keys()].map(id=>[id,0])),children=new Map([...byId.keys()].map(id=>[id,[]]));
   for (const cell of table.cells) {
-    for (const headerId of cell.headerCellIds || []) if (byId.get(headerId)?.role !== 'header')
-      addIssue(issues, 'invalid-header-binding', page.id, region.id, `Cell ${cell.id} has an absent or non-header association.`);
+    for (const headerId of cell.headerCellIds || []) {
+      if(headerId===cell.id||byId.get(headerId)?.role!=='header'){
+        addIssue(issues,'invalid-header-binding',page.id,region.id,`Cell ${cell.id} has a self, absent or non-header association.`);continue;
+      }
+      incoming.set(cell.id,incoming.get(cell.id)+1);children.get(headerId).push(cell.id);
+    }
   }
+  const queue=[...incoming].filter(([,count])=>count===0).map(([id])=>id);let visited=0;
+  for(let index=0;index<queue.length;index++){
+    const id=queue[index];visited++;
+    for(const child of children.get(id)){const count=incoming.get(child)-1;incoming.set(child,count);if(count===0)queue.push(child);}
+  }
+  if(visited!==byId.size)addIssue(issues,'invalid-header-binding',page.id,region.id,'Parent-header associations form a cycle.');
+  if(checkSourceBinding&&hasNativeTableGroup(region)&&!nativeTableGroupReviewReady(region,false))
+    addIssue(issues,'table-source-unreviewed',page.id,region.id,'Grouped native tables require current explicit cell-source review.');
+  const source = Object.getOwnPropertyDescriptor(table, 'sourceReview');
+  if (checkSourceBinding && source &&
+      (!Object.hasOwn(source, 'value') || Object.getOwnPropertyDescriptor(table, 'sourceReviewChecked')?.value !== true ||
+       !validateNativeTableBinding(source.value, {region, table}).ok))
+    addIssue(issues, 'table-source-unreviewed', page.id, region.id, 'Native cell-source associations changed or need a fresh explicit source check.');
   if (!table.reviewed) addIssue(issues, 'table-unreviewed', page.id, region.id, 'Table cell ownership has not been checked against the source.');
 }
+
+/** Logical table DATA validation only; not original/clinical certification. */
+export function validateTableStructure(table){const issues=[];validateTable({id:'table',type:'table',table},{id:'table'},issues,false);return {ok:issues.length===0,issues};}
 
 export function isVerifiedCaptionTarget(region, page) {
   if (region?.status !== 'verified' || !['figure', 'table'].includes(region.type) ||
@@ -370,9 +549,11 @@ export function isVerifiedCaptionTarget(region, page) {
 // Notes may refer to a caption, whose own table/figure relation must be valid.
 // Footnote-to-footnote links are forbidden, so this follows only bounded typed
 // dependencies instead of accepting an otherwise unresolved verified flag.
-export function isVerifiedFootnoteTarget(document, noteId, targetId) {
+export function isVerifiedFootnoteTarget(document, noteId, targetId, cellId) {
   const target = sourceRegion(document, targetId)?.region;
   return Boolean(target && target.id !== noteId && target.type !== 'footnote' &&
+    (cellId === undefined || (noteIdValue(cellId) && target.type === 'table' &&
+      target.table?.cells?.filter(cell => cell.id === cellId).length === 1)) &&
     validateDocumentStructure(document, { scope: 'excerpt', selectedRegionIds: [targetId] }).ok);
 }
 
@@ -393,15 +574,21 @@ function validateSpecialRegion(region, page, issues, edges, document) {
     const review = region.footnoteReview;
     const links = edges.filter(edge => edge.type === 'footnote-of' && edge.from === region.id);
     const standalone = review?.decision === 'standalone' && review.standaloneReason?.trim() && !links.length;
-    const linked = review?.decision === 'linked' && links.length > 0 &&
-      new Set(links.map(edge => edge.to)).size === links.length && links.every(edge => edge.status === 'verified');
+    let validRefs = false;
+    try { footnoteTargets(links.map(footnoteEdgeTarget)); validRefs = true; } catch {}
+    const linked = review?.decision === 'linked' && links.length > 0 && validRefs && links.every(edge => edge.status === 'verified');
     if (review?.sourceChecked !== true || (!standalone && !linked))
       addIssue(issues, 'footnote-unassessed', page.id, region.id, 'Footnote needs source-reviewed target links or an explicit standalone reason.');
     for (const link of links) {
-      if (!isVerifiedFootnoteTarget(document, region.id, link.to))
+      const target = parseFootnoteTarget(footnoteEdgeTarget(link));
+      if (!target || !isVerifiedFootnoteTarget(document, region.id, target.regionId, target.cellId ?? undefined))
         addIssue(issues, 'invalid-footnote-target', page.id, region.id, 'Footnote target is not a verified source region.');
     }
   }
+  if (region.type === 'equation' && region.equationReview?.layout &&
+      (region.equationReview.layoutChecked !== true || !validateNativeMathLayout(region.equationReview.layout,
+        {fragmentIds: region.fragmentIds, text: region.text, box: region.box}).ok))
+    addIssue(issues, 'equation-layout-unreviewed', page.id, region.id, 'Native math relationships need a current source check.');
   if (region.type === 'equation' && (!region.equationReview?.sourceChecked || !region.text?.trim()))
     addIssue(issues, 'equation-unreviewed', page.id, region.id, 'Equation transcription was not checked against its source crop.');
   validateFigure(region, page, issues);
@@ -520,7 +707,13 @@ export function validateDocumentStructure(document, options) {
       if (!validBox(region.box, page)) addIssue(issues, 'invalid-box', page.id, region.id, 'Region bounds are outside the source page.');
       if (unreadableGlyph.test(region.text || '')) addIssue(issues, 'unreadable-glyph', page.id, region.id, 'Unreadable control glyph must be corrected.');
       validateTable(region, page, issues);
+      if(hasNativeTableGroup(region)&&!nativeTableGroupReviewReady(region,true)) addIssue(issues,'table-group-order-unreviewed',page.id,region.id,'Review grouped native sources and this page reading sequence explicitly.');
       validateSpecialRegion(region, page, issues, page.edges || [], document);
+      if (!isPage && region.type === 'footnote' && (page.edges || []).some(edge => {
+        if (edge.type !== 'footnote-of' || edge.from !== region.id) return false;
+        const ref = parseFootnoteTarget(footnoteEdgeTarget(edge));
+        return ref?.cellId !== null && ref?.cellId !== undefined && !selected.has(ref.regionId);
+      })) addIssue(issues, 'footnote-cell-outside-excerpt', page.id, region.id, 'Include the reviewed target table with a cell-scoped note.');
       if (region.status === 'excluded' && !(region.exclusionReason || '').trim())
         addIssue(issues, 'unreasoned-exclusion', page.id, region.id, 'Excluded content needs a visible reason.');
       if (isPage && region.status !== 'verified') addIssue(issues, 'unverified-region', page.id, region.id, 'Region is not verified.');
@@ -555,6 +748,7 @@ export function validateDocumentStructure(document, options) {
       if (issue.code === 'caption-link-unresolved' && region?.type === 'caption' &&
         page.edges.some(edge => edge.type === 'caption-of' && edge.from === region.id && edge.status === 'verified')) continue;
       if (issue.code === 'ocr-order-unverified' && region?.status === 'verified') continue;
+      if (issue.code === 'table-reference-or-caption-unverified' && region?.status === 'verified') continue;
       issues.push(copy(issue));
     }
   }

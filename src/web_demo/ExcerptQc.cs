@@ -5,7 +5,7 @@ namespace MedicalQcWebDemo;
 
 public static class ExcerptQc
 {
-    public const string RuleVersion = "excerpt-qc-20261018d";
+    public const string RuleVersion = "excerpt-qc-20261023-envelope";
     // Bounded literal inventory only: uppercase ASCII codes containing digits,
     // not a medical dictionary or a semantic terminology/omission assessment.
     // Permit Korean particles and Arabic conjunctions around intact Latin codes.
@@ -338,7 +338,10 @@ public static class ExcerptQc
         return (true, mismatch.Source, mismatch.Draft);
     }
 
-    public static RuleEvaluation Evaluate(string source, string translated, string language)
+    public static RuleEvaluation Evaluate(string source, string translated, string language) =>
+        StructureEnvelope.Evaluate(source, translated, language, EvaluateLiteral) ?? EvaluateLiteral(source, translated, language);
+
+    private static RuleEvaluation EvaluateLiteral(string source, string translated, string language)
     {
         var findings = new List<RuleFinding>();
         var coverage = new List<RuleCoverage>();
@@ -352,7 +355,7 @@ public static class ExcerptQc
         var sourceNumbers = Numbers(source);
         var numericDraft = ComparableNumberDraft(source, translated, language);
         var draftNumbers = Numbers(numericDraft);
-        var numericSupported = ScientificComparisonSupported(source, translated);
+        var numericSupported = ScientificComparisonSupported(source, numericDraft);
         var numericMismatch = numericSupported && sourceNumbers.Keys.Union(draftNumbers.Keys)
             .Any(value => sourceNumbers.GetValueOrDefault(value) != draftNumbers.GetValueOrDefault(value));
         var changedDraftNumber = NumberPattern.Matches(numericDraft).Select(match => match.Value)
@@ -426,6 +429,13 @@ public static class ExcerptQc
 
     public static string Summarize(string source, string translated, string language)
     {
+        var scoped = StructureEnvelope.Evaluate(source, translated, language, EvaluateLiteral);
+        if (scoped is null) return SummarizeLiteral(source, translated, language);
+        return string.Join(" ", scoped.Findings.Select(f => f.Message).Distinct(StringComparer.Ordinal).Take(8)) + " Scoped literal checks only; structural correspondence and clinical meaning are not assessed here.";
+    }
+
+    private static string SummarizeLiteral(string source, string translated, string language)
+    {
         var numericDraft = ComparableNumberDraft(source, translated, language);
         var targetTokens = NumberPattern.Matches(numericDraft).Select(match => match.Value).ToHashSet(StringComparer.Ordinal);
         var missing = NumberPattern.Matches(source).Select(match => match.Value)
@@ -434,13 +444,13 @@ public static class ExcerptQc
         if (missing.Length > 0) warnings.Add($"Source number format not found exactly in draft: {string.Join(", ", missing)}. Review numeric fidelity.");
         var sourceNumbers = Numbers(source);
         var targetNumbers = Numbers(numericDraft);
-        var numericSupported = ScientificComparisonSupported(source, translated);
+        var numericSupported = ScientificComparisonSupported(source, numericDraft);
         var changed = sourceNumbers.Keys.Union(targetNumbers.Keys).Where(value => numericSupported &&
             sourceNumbers.GetValueOrDefault(value) != targetNumbers.GetValueOrDefault(value)).ToArray();
         if (changed.Length > 0)
             warnings.Add($"Numeric value/count mismatch: {string.Join("; ", changed.Select(value => $"{value} (source {sourceNumbers.GetValueOrDefault(value)}, draft {targetNumbers.GetValueOrDefault(value)})"))}. Check omissions, additions and substitutions.");
         if (!numericSupported) warnings.Add("Scientific numeric comparison is not assessed; review exponent notation and values manually.");
-        if (language == "ko" && source.Contains("proximal", StringComparison.OrdinalIgnoreCase) &&
+        if (language == "ko" && Regex.IsMatch(source, @"\bproximal\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
             translated.Contains("원위", StringComparison.Ordinal) && !translated.Contains("근위", StringComparison.Ordinal))
             warnings.Add("Possible proximal-to-distal directional mismatch; human review required.");
         if (language == "ko" &&
