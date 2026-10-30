@@ -50,6 +50,13 @@ var tests = new (string Name, Func<Task> Run)[]
     ("money guard holds unknown cost across restart", MoneyGuardHoldsUnknownCost),
     ("money guard fails closed for corrupt durable state", MoneyGuardFailsClosed),
     ("money guard blocks an unconfigured live call before spending", MoneyGuardBlocksUnconfiguredLiveCall),
+    ("money guard promo credit parses a separate truthful funding bucket", PromoCreditParsing),
+    ("money guard promo credit rejects incomplete stale expired and invalid evidence", PromoCreditInvalidEvidence),
+    ("money guard promo credit rejects mixed legacy funding fields", PromoCreditMixedFields),
+    ("money guard promo credit expiry blocks later admission", PromoCreditExpiry),
+    ("money guard promo credit retains pending billing and rejects wrong receipt bucket", PromoCreditPendingAndReceipt),
+    ("money guard promo credit preserves reserve daily run and cumulative ceilings", PromoCreditCeilings),
+    ("money guard promo credit records and settles an outcome after expiry", PromoCreditFinishAfterExpiry),
     ("recorded case works without an API key", RecordedCaseWorksWithoutKey),
     ("missing license rejects the fixture", () => RejectMutation(root => root["source"]!["license"] = "")),
     ("missing source URL rejects the fixture", () => RejectMutation(root => root["source"]!["url"] = "")),
@@ -173,6 +180,157 @@ foreach (var (name, run) in selectedTests)
 
 Console.WriteLine($"{selectedTests.Length - failed}/{selectedTests.Length} passed");
 return failed == 0 ? 0 : 1;
+
+LiveMoneyOptions? ReadPromoMoney(Dictionary<string, string?>? overrides = null, bool requireFresh = true)
+{
+    var now = DateTimeOffset.UtcNow;
+    var values = new Dictionary<string, string?>
+    {
+        ["COST_LEDGER_PATH"] = MoneyTestPath(), ["BILLING_BUCKET"] = "promo",
+        ["BILLING_EVIDENCE"] = "synthetic-builder-grant-proof",
+        ["BILLING_VERIFIED_UTC"] = now.ToString("O"),
+        ["TRIAL_REMAINING_USD"] = null, ["CASH_REMAINING_USD"] = null,
+        ["PROMO_REMAINING_USD"] = "25", ["PROMO_EXPIRES_UTC"] = now.AddDays(60).ToString("O"),
+        ["TAX_MULTIPLIER"] = "1"
+    };
+    if (overrides is not null) foreach (var pair in overrides) values[pair.Key] = pair.Value;
+    var previous = values.Keys.ToDictionary(key => key,
+        key => Environment.GetEnvironmentVariable("DEMO_LIVE_" + key));
+    try
+    {
+        foreach (var pair in values) Environment.SetEnvironmentVariable("DEMO_LIVE_" + pair.Key, pair.Value);
+        return LiveMoneyOptions.FromEnvironment(LiveMoneyOptions.Model, requireFresh);
+    }
+    finally
+    {
+        foreach (var pair in previous) Environment.SetEnvironmentVariable("DEMO_LIVE_" + pair.Key, pair.Value);
+    }
+}
+LiveOptions PromoOptions(LiveMoneyOptions? money)
+{
+    Assert(money is not null, "verified synthetic promo configuration was rejected");
+    return new(true, "test-key", PerClientLimit: 20, Money: money);
+}
+Task PromoCreditParsing()
+{
+    var options = PromoOptions(ReadPromoMoney());
+    Assert(options.Money!.BillingBucket == "promo" &&
+        (object?)options.Money.TrialRemainingUsd is null && (object?)options.Money.CashRemainingUsd is null,
+        "promo grant was relabeled as a fabricated trial or cash balance");
+    Assert(new LiveBudget(options).HasLifetimeCapacity(1), "valid isolated promo funds had no capacity");
+    return Task.CompletedTask;
+}
+Task PromoCreditInvalidEvidence()
+{
+    var now = DateTimeOffset.UtcNow;
+    foreach (var mutation in new[]
+    {
+        new Dictionary<string, string?> { ["PROMO_REMAINING_USD"] = null },
+        new() { ["PROMO_REMAINING_USD"] = "-1" }, new() { ["PROMO_REMAINING_USD"] = "25.01" },
+        new() { ["PROMO_EXPIRES_UTC"] = null }, new() { ["PROMO_EXPIRES_UTC"] = "not-a-date" },
+        new() { ["PROMO_EXPIRES_UTC"] = now.AddMinutes(-1).ToString("O") },
+        new() { ["BILLING_VERIFIED_UTC"] = now.AddHours(-25).ToString("O") },
+        new() { ["BILLING_VERIFIED_UTC"] = now.AddHours(1).ToString("O") },
+        new() { ["BILLING_BUCKET"] = "grant-unknown" }, new() { ["TAX_MULTIPLIER"] = "0" }
+    }) Assert(ReadPromoMoney(mutation) is null, "invalid promo proof permitted paid admission");
+    return Task.CompletedTask;
+}
+Task PromoCreditMixedFields()
+{
+    foreach (var legacy in new[] { "TRIAL_REMAINING_USD", "CASH_REMAINING_USD" })
+        Assert(ReadPromoMoney(new() { [legacy] = "25" }) is null,
+            "ambiguous promo and legacy funding fields were admitted");
+    return Task.CompletedTask;
+}
+Task PromoCreditExpiry()
+{
+    var now = DateTimeOffset.UtcNow;
+    var options = PromoOptions(ReadPromoMoney(new()
+    {
+        ["BILLING_VERIFIED_UTC"] = now.ToString("O"),
+        ["PROMO_EXPIRES_UTC"] = now.AddHours(1).ToString("O")
+    }));
+    var clock = new MoneyClock(now.AddMinutes(1));
+    Assert(new LiveBudget(options, clock).HasLifetimeCapacity(1), "unexpired promo proof rejected");
+    clock.Now = now.AddHours(2);
+    Assert(!new LiveBudget(options, clock).HasLifetimeCapacity(1), "expired promo credit still admitted a call");
+    return Task.CompletedTask;
+}
+async Task PromoCreditPendingAndReceipt()
+{
+    var options = PromoOptions(ReadPromoMoney());
+    var handler = SuccessfulTwoPassHandler("번역");
+    var first = await FundedRun(options, handler, critique: true);
+    var next = await FundedRun(options, handler);
+    Assert(first.Status == "partial" && next.Status == "rate-limited" && handler.Calls == 1,
+        "promo funding removed pending-billing sibling/restart blocking");
+    var entries = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]!.AsArray();
+    var entry = entries[0]!;
+    Assert((string?)entry["Bucket"] == "promo" && (string?)entry["State"] == "pending-billing" &&
+        entry["BilledCostUsd"] is null && (string?)entries[1]!["State"] == "cancelled",
+        "promo provenance or unstarted sibling history was lost");
+    var receipt = new LiveBillingReceipt((string)entry["CallId"]!, "promo", LiveMoneyOptions.Model,
+        .00000234m, "synthetic-promo-billing-receipt", DateTimeOffset.UtcNow);
+    var budget = new LiveBudget(options);
+    Assert(!budget.ReconcileBilling(receipt with { Bucket = "cash" }), "cash receipt cleared a promo charge");
+    Assert(budget.ReconcileBilling(receipt) && budget.ReconcileBilling(receipt), "valid idempotent promo receipt rejected");
+    Assert(!budget.ReconcileBilling(receipt with { BilledCostUsd = 0m }), "conflicting promo receipt replaced history");
+    Assert((await FundedRun(options, handler)).Status == "ok" && handler.Calls == 2,
+        "reconciled promo charge did not allow a bounded later call");
+}
+async Task PromoCreditCeilings()
+{
+    var options = PromoOptions(ReadPromoMoney());
+    foreach (var money in new[]
+    {
+        ReadPromoMoney(new() { ["PROMO_REMAINING_USD"] = "20.03" })!,
+        options.Money! with { DailyLimitUsd = .06m }, options.Money! with { PerRunLimitUsd = .06m }
+    }) Assert(!new LiveBudget(options with { Money = money }).HasLifetimeCapacity(1),
+        "promo reserve/daily/run limit was bypassed");
+    var oneOnly = PromoOptions(ReadPromoMoney(new() { ["PROMO_REMAINING_USD"] = "20.10" }));
+    Assert(new LiveBudget(oneOnly).HasLifetimeCapacity(1) && !new LiveBudget(oneOnly).HasLifetimeCapacity(2),
+        "promo complete-run reservation exceeded funds above the protected reserve");
+    await FundedRun(options, new FakeProviderHandler(_ => ProviderSuccess("번역")));
+    ConfirmBilling(options);
+    var root = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+    var template = root["Calls"]![0]!.DeepClone();
+    var seeded = new JsonArray();
+    var yesterday = DateTimeOffset.UtcNow.AddDays(-1);
+    for (var index = 0; index < 78; index++)
+    {
+        var item = template.DeepClone();
+        var id = Guid.NewGuid().ToString("N");
+        item["RunId"] = id; item["CallId"] = id + "-0";
+        item["Day"] = yesterday.ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");
+        item["BilledCostUsd"] = options.Money.MaximumCallUsd;
+        foreach (var field in new[] { "ReservedAtUtc", "StartedAtUtc", "ObservedAtUtc", "FinishedAtUtc", "BillingConfirmedAtUtc" })
+            item[field] = yesterday;
+        seeded.Add(item);
+    }
+    root["Calls"] = seeded;
+    File.WriteAllText(options.Money.LedgerPath, root.ToJsonString());
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1), "cumulative promo usage exceeded USD5/protected USD20");
+}
+async Task PromoCreditFinishAfterExpiry()
+{
+    var now = DateTimeOffset.UtcNow;
+    var options = PromoOptions(ReadPromoMoney(new()
+    {
+        ["BILLING_VERIFIED_UTC"] = now.ToString("O"),
+        ["PROMO_EXPIRES_UTC"] = now.AddHours(1).ToString("O")
+    }));
+    var clock = new MoneyClock(now.AddMinutes(1));
+    var handler = new FakeProviderHandler(_ => { clock.Now = now.AddHours(2); return ProviderSuccess("번역"); });
+    var provider = new NebiusClient(new HttpClient(handler), "test-key", LiveMoneyOptions.Model,
+        new Uri("https://example.test/v1/chat/completions"), TimeSpan.FromSeconds(2));
+    var result = await new UserExcerptService(provider, options, new LiveBudget(options, clock)).ExecuteAsync(
+        new UserExcerptRequest("Dose 2 mg.", "ko"), "synthetic-client", CancellationToken.None);
+    Assert(result.Status == "ok", "expiry erased a call already started with valid proof");
+    Assert(!new LiveBudget(options, clock).HasLifetimeCapacity(1), "expired promo admitted a follow-up");
+    ConfirmBilling(options, clock);
+    Assert((string?)JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!["State"] == "reconciled",
+        "expired admission proof prevented offline settlement of the retained charge");
+}
 
 async Task ProviderEnvelopeRequiresCompletion()
 {

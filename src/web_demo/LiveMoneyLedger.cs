@@ -25,12 +25,18 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         entry.State == "reconciled" ? entry.BilledCostUsd!.Value : entry.ReservedUsd;
     private static bool Unresolved(CostEntry entry) => entry.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held";
 
-    private bool WithinLimits(CostState state, decimal extra, string day) =>
-        state.Calls.Where(c => c.Day == day).Sum(Committed) + extra <= options.DailyLimitUsd &&
-        state.Calls.Where(c => c.Bucket == "trial").Sum(Committed) + (options.BillingBucket == "trial" ? extra : 0m)
-            <= Math.Min(1m, options.TrialRemainingUsd) &&
-        state.PriorCashHoldUsd + state.Calls.Where(c => c.Bucket == "cash").Sum(Committed) +
-            (options.BillingBucket == "cash" ? extra : 0m) <= Math.Min(5m, options.CashRemainingUsd - 20m);
+    private bool WithinLimits(CostState state, decimal extra, string day)
+    {
+        if (state.Calls.Where(c => c.Day == day).Sum(Committed) + extra > options.DailyLimitUsd) return false;
+        if (options.BillingBucket == "promo")
+            return state.Calls.Where(c => c.Bucket == "promo").Sum(Committed) + extra <=
+                Math.Min(LiveMoneyOptions.PromoExposureLimitUsd,
+                    options.PromoRemainingUsd.GetValueOrDefault() - LiveMoneyOptions.PromoProtectedUsd);
+        return state.Calls.Where(c => c.Bucket == "trial").Sum(Committed) + (options.BillingBucket == "trial" ? extra : 0m)
+                <= Math.Min(1m, options.TrialRemainingUsd.GetValueOrDefault()) &&
+            state.PriorCashHoldUsd + state.Calls.Where(c => c.Bucket == "cash").Sum(Committed) +
+                (options.BillingBucket == "cash" ? extra : 0m) <= Math.Min(5m, options.CashRemainingUsd.GetValueOrDefault() - 20m);
+    }
 
     public bool HasCapacity(int count) => Transaction(state =>
         !state.Calls.Any(Unresolved) && count * options.MaximumCallUsd <= options.PerRunLimitUsd &&
@@ -220,7 +226,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
     private static bool ValidEntry(CostEntry c) => c is not null &&
         c.RunId is { Length: 32 } && c.RunId.All(char.IsAsciiHexDigit) &&
         (c.CallId == c.RunId + "-0" || c.CallId == c.RunId + "-1") &&
-        DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) && c.Bucket is "trial" or "cash" &&
+        DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) && c.Bucket is "trial" or "cash" or "promo" &&
         EvidenceId(c.BillingEvidence) && c.ReservedAtUtc != default &&
         c.InputUsdPerMillion == LiveMoneyOptions.InputUsdPerMillion && c.OutputUsdPerMillion == LiveMoneyOptions.OutputUsdPerMillion &&
         c.PriceVersion == LiveMoneyOptions.PriceVersion &&
