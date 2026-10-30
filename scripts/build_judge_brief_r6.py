@@ -1,7 +1,7 @@
 """Generate the current two-page English judge brief; no provider calls."""
 import argparse
 from pathlib import Path
-from xml.sax.saxutils import escape
+from html import escape
 
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle
