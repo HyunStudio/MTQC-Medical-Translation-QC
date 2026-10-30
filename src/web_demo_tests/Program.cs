@@ -75,6 +75,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("money guard judge v2 retains permanent reserves after genuine smaller receipts", JudgeV2Permanent),
     ("money guard judge v2 daily cumulative run expiry and lifetime caps remain", JudgeV2Caps),
     ("money guard judge v2 successful calls and unstarted cancellation preserve normal access", JudgeV2SuccessAndCancel),
+    ("money guard judge v2 owner five daily hundred cumulative caps require exact explicit settings", JudgeV2OwnerCaps),
     ("money guard promo credit parses a separate truthful funding bucket", PromoCreditParsing),
     ("money guard promo credit rejects incomplete stale expired and invalid evidence", PromoCreditInvalidEvidence),
     ("money guard promo credit rejects mixed legacy funding fields", PromoCreditMixedFields),
@@ -212,7 +213,7 @@ LiveMoneyOptions? ReadJudgeMoney(Dictionary<string, string?>? overrides = null)
     var values = new Dictionary<string, string?>
     {
         ["COST_LEDGER_PATH"] = MoneyTestPath(), ["BILLING_BUCKET"] = "operator-budget",
-        ["ADMISSION_POLICY"] = "reserved-budget-v1", ["BILLING_EVIDENCE"] = "synthetic-operator-authorization",
+        ["ADMISSION_POLICY"] = "reserved-budget-v1", ["DAILY_LIMIT_USD"] = null, ["BILLING_EVIDENCE"] = "synthetic-operator-authorization",
         ["BILLING_VERIFIED_UTC"] = now.AddDays(-2).ToString("O"),
         ["ACCESS_UNTIL_UTC"] = now.AddDays(30).ToString("O"), ["APPROVED_BUDGET_USD"] = "5",
         ["TRIAL_REMAINING_USD"] = null, ["CASH_REMAINING_USD"] = null,
@@ -350,15 +351,55 @@ async Task JudgeBudgetReducedReserve()
     Assert(File.ReadAllText(options.Money.LedgerPath)==before,"invalid state was rewritten automatically");
 }
 
-LiveOptions V2Options() => JudgeOptions(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2"}));
+LiveOptions V2Options() => JudgeOptions(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2",["DAILY_LIMIT_USD"]="5",["APPROVED_BUDGET_USD"]="100"}));
+async Task JudgeV2OwnerCaps()
+{
+    var values=new Dictionary<string,string?>{["ADMISSION_POLICY"]="reserved-budget-v2",["DAILY_LIMIT_USD"]="5",["APPROVED_BUDGET_USD"]="100"};
+    var accepted=ReadJudgeMoney(values);
+    Assert(accepted is not null && accepted.DailyLimitUsd==5m && accepted.AuthorizedBudgetUsd==100m,"explicit owner5/100 caps rejected or ignored");
+    foreach(var (key,value) in new (string,string?)[]{("DAILY_LIMIT_USD",null),("DAILY_LIMIT_USD","5.01"),("DAILY_LIMIT_USD","0"),
+        ("DAILY_LIMIT_USD","-1"),("DAILY_LIMIT_USD","5,0"),("APPROVED_BUDGET_USD","100.01"),("APPROVED_BUDGET_USD","0")})
+    {
+        var bad=new Dictionary<string,string?>(values){[key]=value};
+        Assert(ReadJudgeMoney(bad) is null,"invalid v2 owner cap accepted: "+key+"="+value);
+    }
+    Assert(ReadJudgeMoney(new(){["DAILY_LIMIT_USD"]="5"}) is null,"old v1 silently accepted enlarged cap settings");
+    var options=JudgeOptions(accepted);
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var original=JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+    foreach(var count in new[]{77,78})
+    {
+        var root=original.DeepClone();var entries=new JsonArray();
+        for(var n=0;n<count;n++)
+        {
+            var item=original["Calls"]![0]!.DeepClone();var id=n.ToString("x32");item["RunId"]=id;item["CallId"]=id+"-0";entries.Add(item);
+        }
+        root["Calls"]=entries;File.WriteAllText(options.Money.LedgerPath,root.ToJsonString());
+        Assert(new LiveBudget(options).HasLifetimeCapacity(1)==(count==77),"5USD daily boundary wrong at "+count+" prior reserves");
+    }
+    foreach(var count in new[]{666,667})
+    {
+        var root=original.DeepClone();root["Version"]=2;var entries=new JsonArray();
+        for(var n=0;n<count;n++)
+        {
+            var item=original["Calls"]![0]!.DeepClone();var id=n.ToString("x32");item["RunId"]=id;item["CallId"]=id+"-0";
+            item["AdmissionPolicy"]="settled";item["Bucket"]="cash";item["ReservedUsd"]=.15m;item["State"]="reconciled";
+            item["BilledCostUsd"]=.15m;item["BillingReceipt"]="synthetic-historical-receipt";item["BillingConfirmedAtUtc"]=DateTimeOffset.UtcNow;
+            item["Day"]=DateTimeOffset.UtcNow.AddDays(-1).ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");entries.Add(item);
+        }
+        root["Calls"]=entries;File.WriteAllText(options.Money.LedgerPath,root.ToJsonString());
+        Assert(new LiveBudget(options).HasLifetimeCapacity(1)==(count==666),"100USD historical cumulative boundary wrong at "+count+" settled entries");
+    }
+}
 Task JudgeV2Config()
 {
-    Assert(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2"}) is not null,"explicit v2 authorization missing");
-    foreach(var invalid in new Dictionary<string,string?>[]{new(){["APPROVED_BUDGET_USD"]="5.01"},
+    Assert(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2",["DAILY_LIMIT_USD"]="5"}) is not null,"explicit v2 authorization missing");
+    foreach(var invalid in new Dictionary<string,string?>[]{new(){["APPROVED_BUDGET_USD"]="100.01"},
         new(){["CASH_REMAINING_USD"]="25"},new(){["PROMO_REMAINING_USD"]="25"},new(){["ACCESS_UNTIL_UTC"]=null},
         new(){["TAX_MULTIPLIER"]="0"},new(){["BILLING_BUCKET"]="cash"}})
     {
         invalid["ADMISSION_POLICY"]="reserved-budget-v2";
+        invalid["DAILY_LIMIT_USD"]="5";
         Assert(ReadJudgeMoney(invalid) is null,"v2 accepted unbounded/mixed authorization");
     }
     return Task.CompletedTask;

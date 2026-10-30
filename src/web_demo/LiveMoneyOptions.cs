@@ -37,7 +37,8 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
         BillingEvidence.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':') &&
         (UsesReservationBudget
             ? BillingBucket == "operator-budget" && TrialRemainingUsd is null && CashRemainingUsd is null &&
-              PromoRemainingUsd is null && PromoExpiresAtUtc is null && AuthorizedBudgetUsd is > 0m and <= 5m &&
+              PromoRemainingUsd is null && PromoExpiresAtUtc is null && AuthorizedBudgetUsd is > 0m &&
+              AuthorizedBudgetUsd <= (AdmissionPolicy == PermanentReservationPolicy ? 100m : 5m) &&
               AuthorizedUntilUtc > VerifiedAtUtc && AuthorizedUntilUtc.Value - VerifiedAtUtc <= TimeSpan.FromDays(93)
             : AdmissionPolicy == "settled" && AuthorizedBudgetUsd is null && AuthorizedUntilUtc is null &&
               (BillingBucket == "promo"
@@ -45,7 +46,8 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
               PromoRemainingUsd is >= 0m and <= 25m && PromoExpiresAtUtc > VerifiedAtUtc
             : BillingBucket is "trial" or "cash" && TrialRemainingUsd is >= 0m and <= 1m && CashRemainingUsd is >= 20m and <= 25m &&
               PromoRemainingUsd is null && PromoExpiresAtUtc is null)) &&
-        TaxMultiplier is >= 1m and <= 2m && DailyLimitUsd is > 0m and <= 0.50m &&
+        TaxMultiplier is >= 1m and <= 2m && DailyLimitUsd is > 0m &&
+        DailyLimitUsd <= (AdmissionPolicy == PermanentReservationPolicy ? 5m : 0.50m) &&
         PerRunLimitUsd is > 0m and <= 0.15m;
 
     public static LiveMoneyOptions? FromEnvironment(string model, bool requireFresh = true)
@@ -60,6 +62,12 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
             !Amount("TAX_MULTIPLIER", out var tax)) return null;
         LiveMoneyOptions options;
         var policy = Env("ADMISSION_POLICY") ?? "settled";
+        var dailyLimit = 0.50m;
+        if (policy == PermanentReservationPolicy)
+        {
+            if (!Amount("DAILY_LIMIT_USD", out dailyLimit)) return null;
+        }
+        else if (Env("DAILY_LIMIT_USD") is not null) return null;
         if (IsReservationPolicy(policy))
         {
             if (bucket != "operator-budget" || Env("TRIAL_REMAINING_USD") is not null ||
@@ -67,7 +75,7 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
                 Env("PROMO_EXPIRES_UTC") is not null || !Amount("APPROVED_BUDGET_USD", out var budget) ||
                 !DateTimeOffset.TryParse(Env("ACCESS_UNTIL_UTC"), System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.AssumeUniversal, out var until)) return null;
-            options = new(path, bucket, evidence, verified, null, null, tax,
+            options = new(path, bucket, evidence, verified, null, null, tax, DailyLimitUsd: dailyLimit,
                 AdmissionPolicy: policy, AuthorizedBudgetUsd: budget, AuthorizedUntilUtc: until);
         }
         else if (policy != "settled" || Env("APPROVED_BUDGET_USD") is not null || Env("ACCESS_UNTIL_UTC") is not null)

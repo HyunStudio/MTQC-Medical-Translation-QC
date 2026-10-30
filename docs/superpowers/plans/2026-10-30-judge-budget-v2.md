@@ -16,3 +16,9 @@
 - [x] Minimal options/ledger implementation; no HTTP administration route or provider timeout/retry changes.
 - [x] Focused tests and related money regression; independent source review; Release build.
 - [x] Prepare one combined concrete activation proposal. Do not deploy/import/change settings or send another paid request without its authorization.
+
+## Direct owner revision — October 30 KST
+
+The owner replied to the proposed operating policy: “하루 5달러 100달러 상한 충전 가능”. Proceed with daily USD5 and cumulative USD100 as authorized expenditure ceilings, not as a verified balance or a top-up instruction. No automatic top-up. Keep per-run USD0.15, tax/model/rates, historical calls/prior hold, access expiry, lifetime/hourly/concurrency limits. V1/default limits stay unchanged.
+
+V2 now requires explicit `DEMO_LIVE_DAILY_LIMIT_USD`, positive and at most5; its explicit authorized budget may be at most100. V1 and settled configuration reject that new field. Add a new RED/GREEN boundary test at77/78 full reserves per day and666/667 synthetic historical USD0.15 settlements, plus invalid/missing/oversized values. Review the new delta before publishing/activation. Earlier0.50/5 proposals remain historical local artifacts; they are not the chosen activation values.
