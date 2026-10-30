@@ -1,6 +1,6 @@
 # MTQC - Medical Document Translation & QC
 
-**October 30 live-access update:** Hosted judge drafting is ON under a bounded owner-authorized reservation budget. Read the [current access record and test steps](docs/web-demo/LIVE_ACCESS_20261030.md). Local builds remain OFF by default; the immutable r5 archive is the earlier technical baseline.
+**Latest release: r6 (October 30).** See the [current package and setup guide](docs/web-demo/RELEASE_R6_20261030.md) and [live-access record/test steps](docs/web-demo/LIVE_ACCESS_20261030.md). Hosted judge drafting is ON under a bounded owner-authorized reservation budget. Local builds remain OFF by default; r5 is preserved as the earlier technical baseline.
 
 Research prototype for medical excerpt and document-structure review using
 NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
@@ -21,9 +21,10 @@ Existing scientific and third-party licenses/attribution remain distinct.
 **The frozen r5 deployment baseline was published on October 30** from source commit
 `d65e86e703b76a908eb43185e297cdd839772dde`. The root returned HTTP 200, and
 56 selected assets returned HTTP 200 with hashes matching the reviewed package.
-That baseline had paid model calls disabled. The later hosted code `7f9b0f27`
-now enables bounded live judge access and passed two distinct real requests;
-the linked current access record separates those observations from r5.
+That baseline had paid model calls disabled. Live access was enabled and tested
+with two distinct real requests at `7f9b0f27`. Release r6 retains that application
+code while refreshing package, setup documentation and build identity; it does
+not rerun or relabel those historical model observations.
 The video identifies historical inference and local development separately.
 Judges need no key or payment. The [old deployment record](docs/web-demo/AZURE_DEPLOYMENT_20261030.json)
 retains its original OFF-state evidence.
