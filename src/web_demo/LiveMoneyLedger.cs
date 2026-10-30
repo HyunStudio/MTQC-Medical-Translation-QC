@@ -27,11 +27,28 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
 
     private string Day => clock.GetUtcNow().ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");
     private static decimal Committed(CostEntry entry) => entry.State == "cancelled" ? 0m :
+        entry.AdmissionPolicy == LiveMoneyOptions.PermanentReservationPolicy ? entry.ReservedUsd :
         entry.State == "reconciled" ? entry.BilledCostUsd!.Value : entry.ReservedUsd;
     private static bool Unresolved(CostEntry entry) => entry.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held";
     private bool BlocksAdmission(CostEntry entry) => Unresolved(entry) &&
-        !(options.UsesReservationBudget && entry.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy &&
-          entry.Bucket == "operator-budget" && (entry.State == "pending-billing" || entry.LossAcceptance is not null));
+        !(options.UsesReservationBudget && LiveMoneyOptions.IsReservationPolicy(entry.AdmissionPolicy) &&
+          entry.Bucket == "operator-budget" && (entry.State == "pending-billing" || entry.LossAcceptance is not null)) &&
+        !AdmitsFinishedFailure(entry);
+
+    private bool AdmitsFinishedFailure(CostEntry entry)
+    {
+        if (options.AdmissionPolicy != LiveMoneyOptions.PermanentReservationPolicy ||
+            entry.AdmissionPolicy != LiveMoneyOptions.PermanentReservationPolicy ||
+            entry.Outcome != "failed" || entry.StartedAtUtc is null || entry.FinishedAtUtc < entry.StartedAtUtc ||
+            entry.FinishedAtUtc is null || !(entry.State == "unknown-cost" && entry.ObservedAtUtc is null ||
+                entry.State == "failed-cost-held" && entry.EstimatedCostUsd is not null)) return false;
+        // Even after Finish, the enclosing lease/call can still own the upstream slot.
+        using var ownership = TryOwnRun(entry.RunId);
+        return ownership is not null;
+    }
+
+    private static bool RequiresVersion3(CostEntry entry) => entry.LossAcceptance is not null ||
+        entry.AdmissionPolicy == LiveMoneyOptions.PermanentReservationPolicy;
 
     private bool WithinLimits(CostState state, decimal extra, string day)
     {
@@ -232,13 +249,13 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             var state = JsonSerializer.Deserialize<CostState>(file);
             if (state is null || state.Version is not (2 or 3) || state.PriorCashHoldUsd != 0.015m || state.Calls is null ||
                 state.Calls.Count > 1000 || state.Calls.Any(c => !ValidEntry(c)) ||
-                (state.Version == 3) != state.Calls.Any(c => c.LossAcceptance is not null) ||
+                (state.Version == 3) != state.Calls.Any(RequiresVersion3) ||
                 state.Calls.Select(c => c.CallId).Distinct(StringComparer.Ordinal).Count() != state.Calls.Count) return false;
             if (!action(state)) return false;
             if (write)
             {
                 // Historical v2 tools must reject, rather than erase, explicit loss metadata.
-                if (state.Calls.Any(c => c.LossAcceptance is not null)) state = state with { Version = 3 };
+                if (state.Calls.Any(RequiresVersion3)) state = state with { Version = 3 };
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(state);
                 file.Position = 0;
                 file.SetLength(0);
@@ -268,12 +285,12 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         (c.CallId == c.RunId + "-0" || c.CallId == c.RunId + "-1") &&
         DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) &&
         (c.AdmissionPolicy == "settled" ? c.Bucket is "trial" or "cash" or "promo" :
-            c.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy && c.Bucket == "operator-budget") &&
+            LiveMoneyOptions.IsReservationPolicy(c.AdmissionPolicy) && c.Bucket == "operator-budget") &&
         EvidenceId(c.BillingEvidence) && c.ReservedAtUtc != default &&
         c.InputUsdPerMillion == LiveMoneyOptions.InputUsdPerMillion && c.OutputUsdPerMillion == LiveMoneyOptions.OutputUsdPerMillion &&
         c.PriceVersion == LiveMoneyOptions.PriceVersion &&
         c.TaxMultiplier is >= 1m and <= 2m && c.ReservedUsd is > 0m and <= 0.15m &&
-        (c.AdmissionPolicy != LiveMoneyOptions.ReservationPolicy ||
+        (!LiveMoneyOptions.IsReservationPolicy(c.AdmissionPolicy) ||
             c.ReservedUsd == LiveMoneyOptions.MaximumCallForTax(c.TaxMultiplier)) &&
         c.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held" or "cancelled" or "reconciled" &&
         (c.State == "reconciled" ? c.BilledCostUsd is >= 0m && c.BilledCostUsd <= c.ReservedUsd &&
@@ -281,7 +298,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             c.BilledCostUsd is null && c.BillingReceipt is null && c.BillingConfirmedAtUtc is null) &&
         (c.State != "pending-billing" || c.EstimatedCostUsd is not null) &&
         (c.LossAcceptance is null || ValidLossAcceptance(c, c.LossAcceptance)) &&
-        (c.AdmissionPolicy != LiveMoneyOptions.ReservationPolicy || c.State != "pending-billing" ||
+        (!LiveMoneyOptions.IsReservationPolicy(c.AdmissionPolicy) || c.State != "pending-billing" ||
             c.Outcome == "accepted" && c.StartedAtUtc is not null && c.ObservedAtUtc is not null && c.FinishedAtUtc is not null) &&
         (c.EstimatedCostUsd is null || c.Model == LiveMoneyOptions.Model && c.PromptTokens is >= 0 and <= LiveMoneyOptions.InputTokenBound &&
             c.CompletionTokens is >= 0 and <= LiveMoneyOptions.OutputTokenBound &&

@@ -20,7 +20,9 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
     public const decimal PromoProtectedUsd = 20m;
     public const decimal PromoExposureLimitUsd = 5m;
     public const string ReservationPolicy = "reserved-budget-v1";
-    public bool UsesReservationBudget => AdmissionPolicy == ReservationPolicy;
+    public const string PermanentReservationPolicy = "reserved-budget-v2";
+    internal static bool IsReservationPolicy(string policy) => policy is ReservationPolicy or PermanentReservationPolicy;
+    public bool UsesReservationBudget => IsReservationPolicy(AdmissionPolicy);
     public decimal MaximumCallUsd => MaximumCallForTax(TaxMultiplier);
     internal static decimal MaximumCallForTax(decimal taxMultiplier) => decimal.Ceiling(
         (InputTokenBound * InputUsdPerMillion + OutputTokenBound * OutputUsdPerMillion) / 1_000_000m * taxMultiplier * 100_000_000m) / 100_000_000m;
@@ -58,7 +60,7 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
             !Amount("TAX_MULTIPLIER", out var tax)) return null;
         LiveMoneyOptions options;
         var policy = Env("ADMISSION_POLICY") ?? "settled";
-        if (policy == ReservationPolicy)
+        if (IsReservationPolicy(policy))
         {
             if (bucket != "operator-budget" || Env("TRIAL_REMAINING_USD") is not null ||
                 Env("CASH_REMAINING_USD") is not null || Env("PROMO_REMAINING_USD") is not null ||

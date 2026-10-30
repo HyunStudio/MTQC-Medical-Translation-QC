@@ -67,6 +67,14 @@ var tests = new (string Name, Func<Task> Run)[]
     ("money guard reservation loss leaves later unknown requests blocked", ReservationLossLaterFailure),
     ("money guard reservation loss offline command has no provider or web dependency", ReservationLossOffline),
     ("money guard reservation loss upgrades only accepted ledgers for fail-closed old tools", ReservationLossSchema),
+    ("money guard judge v2 requires explicit bounded unmixed authorization", JudgeV2Config),
+    ("money guard judge v2 finished failures retain reserves without disabling the next caller", JudgeV2Failures),
+    ("money guard judge v2 preserves v1 failure blocking and old ledger holds", JudgeV2Legacy),
+    ("money guard judge v2 active and orphaned requests still block", JudgeV2Active),
+    ("money guard judge v2 invalid observed usage still blocks", JudgeV2ObservedAnomaly),
+    ("money guard judge v2 retains permanent reserves after genuine smaller receipts", JudgeV2Permanent),
+    ("money guard judge v2 daily cumulative run expiry and lifetime caps remain", JudgeV2Caps),
+    ("money guard judge v2 successful calls and unstarted cancellation preserve normal access", JudgeV2SuccessAndCancel),
     ("money guard promo credit parses a separate truthful funding bucket", PromoCreditParsing),
     ("money guard promo credit rejects incomplete stale expired and invalid evidence", PromoCreditInvalidEvidence),
     ("money guard promo credit rejects mixed legacy funding fields", PromoCreditMixedFields),
@@ -340,6 +348,120 @@ async Task JudgeBudgetReducedReserve()
     var before=File.ReadAllText(options.Money.LedgerPath);
     Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"reduced reserve retained nonblocking operator admission");
     Assert(File.ReadAllText(options.Money.LedgerPath)==before,"invalid state was rewritten automatically");
+}
+
+LiveOptions V2Options() => JudgeOptions(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2"}));
+Task JudgeV2Config()
+{
+    Assert(ReadJudgeMoney(new(){["ADMISSION_POLICY"]="reserved-budget-v2"}) is not null,"explicit v2 authorization missing");
+    foreach(var invalid in new Dictionary<string,string?>[]{new(){["APPROVED_BUDGET_USD"]="5.01"},
+        new(){["CASH_REMAINING_USD"]="25"},new(){["PROMO_REMAINING_USD"]="25"},new(){["ACCESS_UNTIL_UTC"]=null},
+        new(){["TAX_MULTIPLIER"]="0"},new(){["BILLING_BUCKET"]="cash"}})
+    {
+        invalid["ADMISSION_POLICY"]="reserved-budget-v2";
+        Assert(ReadJudgeMoney(invalid) is null,"v2 accepted unbounded/mixed authorization");
+    }
+    return Task.CompletedTask;
+}
+async Task JudgeV2Failures()
+{
+    foreach(var unknown in new[]{true,false})
+    {
+        var options=V2Options();
+        for(var n=0;n<2;n++)
+        {
+            var handler=unknown ? new FakeProviderHandler(_=>throw new TaskCanceledException()) :
+                new FakeProviderHandler(_=>ProviderSuccess("<think>invalid draft</think>"));
+            await FundedRun(options,handler);
+            Assert(handler.Calls==1,"failure caused a hidden provider retry");
+            Assert(new LiveBudget(options).HasLifetimeCapacity(1),"finished v2 failure disabled next caller after restart");
+        }
+        var root=JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+        Assert((int?)root["Version"]==3 && root["Calls"]!.AsArray().Count==2,"v2 history/schema missing");
+        Assert(root["Calls"]!.AsArray().All(c=>(string?)c!["State"]==(unknown?"unknown-cost":"failed-cost-held") &&
+            c["BilledCostUsd"] is null && c["BillingReceipt"] is null && c["LossAcceptance"] is null &&
+            (decimal?)c["ReservedUsd"]==options.Money.MaximumCallUsd),"v2 fabricated billing, manual acceptance or reduced reserve");
+    }
+}
+async Task JudgeV2Legacy()
+{
+    var v1=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(v1,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var v2=V2Options();v2=v2 with{Money=v2.Money! with{LedgerPath=v1.Money!.LedgerPath}};
+    Assert(!new LiveBudget(v2).HasLifetimeCapacity(1),"v2 retrospectively waived a v1 failure");
+    Assert(AcceptTestLoss(v2,TestLossFor(v2)),"explicit old-call acceptance unavailable under v2");
+    Assert(new LiveBudget(v2).HasLifetimeCapacity(1),"accepted old-call loss still blocked");
+    var current=V2Options();
+    await FundedRun(current,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var switchedBack=JudgeOptions(ReadJudgeMoney(new(){["COST_LEDGER_PATH"]=current.Money!.LedgerPath}));
+    Assert(!new LiveBudget(switchedBack).HasLifetimeCapacity(1),"v1 silently inherited v2 failure policy");
+}
+async Task JudgeV2Active()
+{
+    var options=V2Options();var owner=new LiveBudget(options);
+    var lease=await owner.TryAcquireAsync("synthetic-v2-active",1,CancellationToken.None);
+    Assert(lease is not null,"v2 lease unavailable");
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"active reservation bypassed");
+    var call=owner.TryStartCall(lease!,0);Assert(call is not null,"v2 call unavailable");
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"active provider call bypassed");
+    call!.Dispose();
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"finished request's enclosing live lease bypassed");
+    lease!.Dispose();Assert(new LiveBudget(options).HasLifetimeCapacity(1),"released finished failure remained blocking");
+    var orphan=V2Options();var ob=new LiveBudget(orphan);
+    using(var l=await ob.TryAcquireAsync("synthetic-v2-orphan",1,CancellationToken.None))
+    {
+        var c=ob.TryStartCall(l!,0);Assert(c is not null,"orphan test call unavailable");c!.Dispose();
+    }
+    var root=JsonNode.Parse(File.ReadAllText(orphan.Money!.LedgerPath))!;
+    root["Calls"]![0]!["State"]="started";root["Calls"]![0]!["FinishedAtUtc"]=null;root["Calls"]![0]!["Outcome"]=null;
+    File.WriteAllText(orphan.Money.LedgerPath,root.ToJsonString());
+    Assert(!new LiveBudget(orphan).HasLifetimeCapacity(1),"owner loss automatically waived unfinished dispatch");
+}
+async Task JudgeV2ObservedAnomaly()
+{
+    var options=V2Options();await FundedRun(options,new FakeProviderHandler(_=>ProviderSuccess("<think>bad</think>")));
+    var root=JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+    var entry=root["Calls"]![0]!;entry["State"]="unknown-cost";entry["Model"]=null;entry["EstimatedCostUsd"]=null;
+    File.WriteAllText(options.Money.LedgerPath,root.ToJsonString());
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"invalid observed usage was treated as a no-response timeout");
+}
+async Task JudgeV2Permanent()
+{
+    var options=V2Options();await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var entry=JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!;
+    Assert(new LiveBudget(options).ReconcileBilling(new((string)entry["CallId"]!,"operator-budget",LiveMoneyOptions.Model,
+        0m,"synthetic-actual-v2-zero-receipt",DateTimeOffset.UtcNow)),"genuine v2 receipt unavailable");
+    var m=options.Money!;
+    Assert(!new LiveBudget(options with{Money=m with{DailyLimitUsd=m.MaximumCallUsd*2-.00000001m}}).HasLifetimeCapacity(1),
+        "genuine smaller bill restored permanently consumed v2 daily budget");
+    Assert(!new LiveBudget(options with{Money=m with{AuthorizedBudgetUsd=.015m+m.MaximumCallUsd*2-.00000001m}}).HasLifetimeCapacity(1),
+        "genuine smaller bill restored cumulative v2 budget/prior hold");
+}
+async Task JudgeV2Caps()
+{
+    var options=V2Options();await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var m=options.Money!;
+    Assert(!new LiveBudget(options with{Money=m with{DailyLimitUsd=m.MaximumCallUsd*2-.00000001m}}).HasLifetimeCapacity(1),"daily cap bypassed");
+    Assert(!new LiveBudget(options with{Money=m with{AuthorizedBudgetUsd=.015m+m.MaximumCallUsd*2-.00000001m}}).HasLifetimeCapacity(1),"history/prior hold bypassed");
+    Assert(!new LiveBudget(options with{Money=m with{PerRunLimitUsd=m.MaximumCallUsd}}).HasLifetimeCapacity(2),"two-call run cap bypassed");
+    Assert(!new LiveBudget(options with{Money=m with{AuthorizedUntilUtc=DateTimeOffset.UtcNow.AddMinutes(-1)}}).HasLifetimeCapacity(1),"expiry bypassed");
+    var attempts=Path.Combine(Path.GetDirectoryName(m.LedgerPath)!,"attempts.txt");File.WriteAllText(attempts,"100");
+    Assert(!new LiveBudget(options with{LifetimeAttemptLimit=100,LifetimeLedgerPath=attempts}).HasLifetimeCapacity(1),"lifetime cap bypassed");
+}
+async Task JudgeV2SuccessAndCancel()
+{
+    var options=V2Options();
+    for(var n=0;n<2;n++)
+    {
+        Assert((await FundedRun(options,new FakeProviderHandler(_=>ProviderSuccess("번역")))).Status=="ok","normal v2 call rejected");
+        Assert(new LiveBudget(options).HasLifetimeCapacity(1),"normal successful v2 reserve blocked next caller");
+    }
+    var cancelled=V2Options();
+    cancelled=cancelled with{Money=cancelled.Money! with{DailyLimitUsd=cancelled.Money.MaximumCallUsd}};
+    using(var lease=await new LiveBudget(cancelled).TryAcquireAsync("synthetic-unstarted-v2",1,CancellationToken.None))
+        Assert(lease is not null,"unstarted lease unavailable");
+    Assert(new LiveBudget(cancelled).HasLifetimeCapacity(1),"unstarted cancelled reservation consumed a provider budget");
+    Assert((string?)JsonNode.Parse(File.ReadAllText(cancelled.Money!.LedgerPath))!["Calls"]![0]!["State"]=="cancelled", "unstarted lease was not cancelled");
 }
 
 bool AcceptTestLoss(LiveOptions options, JsonObject acceptance)
