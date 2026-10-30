@@ -52,12 +52,12 @@ story += [t, p('Try it in three steps', head),
     PageBreak(), p('Evidence, setup and limits', title),
     p('Observed hosted browser result - producer 7f9b0f27', head)]
 image = Image(str(root/'docs/web-demo/evidence/live-access-20261030.png'))
-image.drawHeight = 528 * image.imageHeight / image.imageWidth
-image.drawWidth = 528
+image.drawHeight = 480 * image.imageHeight / image.imageWidth
+image.drawWidth = 480
 story += [image, Spacer(1,5), p('Real Spanish fixed-caption draft, 173 input / 87 output tokens; a separate Korean synthetic excerpt returned 165 / 27. Both full reservations stayed pending and access remained available. No new paid run is claimed for r6.', small),
     p('Source, build and package', head),
     p('Extract MTQC-public-source-20261030-r6.zip and follow its root README with .NET 10 SDK and Node.js 24. Local source builds keep paid/native routes OFF by default. Word and the older Windows installer are not bundled. The package manifest binds current files; r5 is retained as a historical baseline.'),
-    p('Nested source archive SHA-256:', small), p(args.source_zip_sha256, mono),
+    p('Source SHA-256: '+args.source_zip_sha256, mono),
     p('Current deployment and package checks are detailed in DEPLOYMENT-RECORD.json and VALIDATION-REPORT.txt. The 150-test/CI and two-call evidence belongs to the unchanged producer code; r6 packaging is not a new medical evaluation.', small),
     p('Limits and rights', head),
     p('Clinical expert review: <b>0/15</b>. General original-PDF recovery, arbitrary scanned math, figure relationships and accepted translated-figure output remain incomplete. No all-language accuracy, continuous uptime or organizer eligibility is certified. The 2:49 video predates activation and labels historical inference/local artifacts.'),
