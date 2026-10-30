@@ -5,7 +5,9 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
     string BillingEvidence, DateTimeOffset VerifiedAtUtc, decimal? TrialRemainingUsd,
     decimal? CashRemainingUsd, decimal TaxMultiplier,
     decimal DailyLimitUsd = 0.50m, decimal PerRunLimitUsd = 0.15m,
-    decimal? PromoRemainingUsd = null, DateTimeOffset? PromoExpiresAtUtc = null)
+    decimal? PromoRemainingUsd = null, DateTimeOffset? PromoExpiresAtUtc = null,
+    string AdmissionPolicy = "settled", decimal? AuthorizedBudgetUsd = null,
+    DateTimeOffset? AuthorizedUntilUtc = null)
 {
     public const string Model = "nvidia/Nemotron-3_5-Lightning";
     // Deliberately over-reserve input: even a complete 1M-token context is covered.
@@ -17,22 +19,30 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
     public const string PriceVersion = "nebius-standard-2026-08-01";
     public const decimal PromoProtectedUsd = 20m;
     public const decimal PromoExposureLimitUsd = 5m;
-    public decimal MaximumCallUsd => decimal.Ceiling(
-        (InputTokenBound * InputUsdPerMillion + OutputTokenBound * OutputUsdPerMillion) / 1_000_000m * TaxMultiplier * 100_000_000m) / 100_000_000m;
+    public const string ReservationPolicy = "reserved-budget-v1";
+    public bool UsesReservationBudget => AdmissionPolicy == ReservationPolicy;
+    public decimal MaximumCallUsd => MaximumCallForTax(TaxMultiplier);
+    internal static decimal MaximumCallForTax(decimal taxMultiplier) => decimal.Ceiling(
+        (InputTokenBound * InputUsdPerMillion + OutputTokenBound * OutputUsdPerMillion) / 1_000_000m * taxMultiplier * 100_000_000m) / 100_000_000m;
 
     public bool IsValid(DateTimeOffset now) => IsStructurallyValid() &&
-        VerifiedAtUtc <= now && now - VerifiedAtUtc <= TimeSpan.FromHours(24) &&
-        (BillingBucket != "promo" || PromoExpiresAtUtc > now);
+        VerifiedAtUtc <= now && (UsesReservationBudget
+            ? now < AuthorizedUntilUtc
+            : now - VerifiedAtUtc <= TimeSpan.FromHours(24) && (BillingBucket != "promo" || PromoExpiresAtUtc > now));
 
     internal bool IsStructurallyValid() => !string.IsNullOrWhiteSpace(LedgerPath) && Path.IsPathFullyQualified(LedgerPath) &&
-        BillingBucket is "trial" or "cash" or "promo" &&
         !string.IsNullOrWhiteSpace(BillingEvidence) && BillingEvidence.Length <= 160 &&
         BillingEvidence.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':') &&
-        (BillingBucket == "promo"
+        (UsesReservationBudget
+            ? BillingBucket == "operator-budget" && TrialRemainingUsd is null && CashRemainingUsd is null &&
+              PromoRemainingUsd is null && PromoExpiresAtUtc is null && AuthorizedBudgetUsd is > 0m and <= 5m &&
+              AuthorizedUntilUtc > VerifiedAtUtc && AuthorizedUntilUtc.Value - VerifiedAtUtc <= TimeSpan.FromDays(93)
+            : AdmissionPolicy == "settled" && AuthorizedBudgetUsd is null && AuthorizedUntilUtc is null &&
+              (BillingBucket == "promo"
             ? TrialRemainingUsd is null && CashRemainingUsd is null &&
               PromoRemainingUsd is >= 0m and <= 25m && PromoExpiresAtUtc > VerifiedAtUtc
-            : TrialRemainingUsd is >= 0m and <= 1m && CashRemainingUsd is >= 20m and <= 25m &&
-              PromoRemainingUsd is null && PromoExpiresAtUtc is null) &&
+            : BillingBucket is "trial" or "cash" && TrialRemainingUsd is >= 0m and <= 1m && CashRemainingUsd is >= 20m and <= 25m &&
+              PromoRemainingUsd is null && PromoExpiresAtUtc is null)) &&
         TaxMultiplier is >= 1m and <= 2m && DailyLimitUsd is > 0m and <= 0.50m &&
         PerRunLimitUsd is > 0m and <= 0.15m;
 
@@ -47,7 +57,20 @@ public sealed record LiveMoneyOptions(string LedgerPath, string BillingBucket,
                 System.Globalization.DateTimeStyles.AssumeUniversal, out var verified) ||
             !Amount("TAX_MULTIPLIER", out var tax)) return null;
         LiveMoneyOptions options;
-        if (bucket == "promo")
+        var policy = Env("ADMISSION_POLICY") ?? "settled";
+        if (policy == ReservationPolicy)
+        {
+            if (bucket != "operator-budget" || Env("TRIAL_REMAINING_USD") is not null ||
+                Env("CASH_REMAINING_USD") is not null || Env("PROMO_REMAINING_USD") is not null ||
+                Env("PROMO_EXPIRES_UTC") is not null || !Amount("APPROVED_BUDGET_USD", out var budget) ||
+                !DateTimeOffset.TryParse(Env("ACCESS_UNTIL_UTC"), System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AssumeUniversal, out var until)) return null;
+            options = new(path, bucket, evidence, verified, null, null, tax,
+                AdmissionPolicy: policy, AuthorizedBudgetUsd: budget, AuthorizedUntilUtc: until);
+        }
+        else if (policy != "settled" || Env("APPROVED_BUDGET_USD") is not null || Env("ACCESS_UNTIL_UTC") is not null)
+            return null;
+        else if (bucket == "promo")
         {
             // Unknown legacy balances stay unknown; never relabel a Builder grant as cash.
             if (Env("TRIAL_REMAINING_USD") is not null || Env("CASH_REMAINING_USD") is not null ||

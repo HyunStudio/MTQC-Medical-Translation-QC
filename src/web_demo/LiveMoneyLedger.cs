@@ -18,16 +18,22 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         string PriceVersion = LiveMoneyOptions.PriceVersion,
         DateTimeOffset ReservedAtUtc = default, DateTimeOffset? StartedAtUtc = null,
         DateTimeOffset? ObservedAtUtc = null, DateTimeOffset? FinishedAtUtc = null,
-        string? Outcome = null, string? BillingReceipt = null, DateTimeOffset? BillingConfirmedAtUtc = null);
+        string? Outcome = null, string? BillingReceipt = null, DateTimeOffset? BillingConfirmedAtUtc = null,
+        string AdmissionPolicy = "settled");
 
     private string Day => clock.GetUtcNow().ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");
     private static decimal Committed(CostEntry entry) => entry.State == "cancelled" ? 0m :
         entry.State == "reconciled" ? entry.BilledCostUsd!.Value : entry.ReservedUsd;
     private static bool Unresolved(CostEntry entry) => entry.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held";
+    private bool BlocksAdmission(CostEntry entry) => Unresolved(entry) &&
+        !(options.UsesReservationBudget && entry.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy &&
+          entry.Bucket == "operator-budget" && entry.State == "pending-billing");
 
     private bool WithinLimits(CostState state, decimal extra, string day)
     {
         if (state.Calls.Where(c => c.Day == day).Sum(Committed) + extra > options.DailyLimitUsd) return false;
+        if (options.UsesReservationBudget)
+            return state.PriorCashHoldUsd + state.Calls.Sum(Committed) + extra <= options.AuthorizedBudgetUsd;
         if (options.BillingBucket == "promo")
             return state.Calls.Where(c => c.Bucket == "promo").Sum(Committed) + extra <=
                 Math.Min(LiveMoneyOptions.PromoExposureLimitUsd,
@@ -39,7 +45,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
     }
 
     public bool HasCapacity(int count) => Transaction(state =>
-        !state.Calls.Any(Unresolved) && count * options.MaximumCallUsd <= options.PerRunLimitUsd &&
+        !state.Calls.Any(BlocksAdmission) && count * options.MaximumCallUsd <= options.PerRunLimitUsd &&
         WithinLimits(state, count * options.MaximumCallUsd, Day), write: false, admission: true);
 
     public LiveRunOwnership? Reserve(string runId, int count)
@@ -48,7 +54,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         var reserved = Transaction(state =>
         {
             var maximum = count * options.MaximumCallUsd;
-            if (state.Calls.Any(Unresolved) || state.Calls.Count + count > 1000 ||
+            if (state.Calls.Any(BlocksAdmission) || state.Calls.Count + count > 1000 ||
                 maximum > options.PerRunLimitUsd || !WithinLimits(state, maximum, Day)) return false;
             // Create ownership only for an admitted run, while the ledger is locked.
             ownership = TryOwnRun(runId);
@@ -56,7 +62,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             for (var index = 0; index < count; index++)
                 state.Calls.Add(new($"{runId}-{index}", runId, Day, options.BillingBucket,
                     options.BillingEvidence, options.TaxMultiplier, options.MaximumCallUsd, "reserved",
-                    ReservedAtUtc: clock.GetUtcNow()));
+                    ReservedAtUtc: clock.GetUtcNow(), AdmissionPolicy: options.AdmissionPolicy));
             return true;
         }, admission: true);
         if (reserved) return ownership;
@@ -90,7 +96,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         {
             var position = state.Calls.FindIndex(c => c.CallId == id);
             if (position < 0 || state.Calls[position].State != "reserved" ||
-                state.Calls.Any(c => Unresolved(c) && (c.RunId != runId || c.State != "reserved"))) return false;
+                state.Calls.Any(c => BlocksAdmission(c) && (c.RunId != runId || c.State != "reserved"))) return false;
             var entry = state.Calls[position];
             if (entry.Day != Day)
             {
@@ -129,8 +135,9 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         var position = state.Calls.FindIndex(c => c.CallId == id);
         if (position < 0 || state.Calls[position].State != "started") return false;
         var entry = state.Calls[position];
-        // Usage pricing is an estimate. Retain the full reservation and block every
-        // subsequent paid dispatch, including a sibling critique, until actual billing is confirmed.
+        // Usage pricing is an estimate; retain the full reservation. The default
+        // policy blocks the next dispatch. Only explicitly authorized reservation
+        // entries can continue within their cumulative envelope, never as settled charges.
         state.Calls[position] = entry with { State = success && entry.EstimatedCostUsd is not null ? "pending-billing" :
             entry.EstimatedCostUsd is not null ? "failed-cost-held" : "unknown-cost",
             Outcome = success ? "accepted" : "failed", FinishedAtUtc = clock.GetUtcNow() };
@@ -226,16 +233,22 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
     private static bool ValidEntry(CostEntry c) => c is not null &&
         c.RunId is { Length: 32 } && c.RunId.All(char.IsAsciiHexDigit) &&
         (c.CallId == c.RunId + "-0" || c.CallId == c.RunId + "-1") &&
-        DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) && c.Bucket is "trial" or "cash" or "promo" &&
+        DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) &&
+        (c.AdmissionPolicy == "settled" ? c.Bucket is "trial" or "cash" or "promo" :
+            c.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy && c.Bucket == "operator-budget") &&
         EvidenceId(c.BillingEvidence) && c.ReservedAtUtc != default &&
         c.InputUsdPerMillion == LiveMoneyOptions.InputUsdPerMillion && c.OutputUsdPerMillion == LiveMoneyOptions.OutputUsdPerMillion &&
         c.PriceVersion == LiveMoneyOptions.PriceVersion &&
         c.TaxMultiplier is >= 1m and <= 2m && c.ReservedUsd is > 0m and <= 0.15m &&
+        (c.AdmissionPolicy != LiveMoneyOptions.ReservationPolicy ||
+            c.ReservedUsd == LiveMoneyOptions.MaximumCallForTax(c.TaxMultiplier)) &&
         c.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held" or "cancelled" or "reconciled" &&
         (c.State == "reconciled" ? c.BilledCostUsd is >= 0m && c.BilledCostUsd <= c.ReservedUsd &&
             EvidenceId(c.BillingReceipt) && c.BillingConfirmedAtUtc >= (c.FinishedAtUtc ?? c.StartedAtUtc ?? c.ReservedAtUtc) :
             c.BilledCostUsd is null && c.BillingReceipt is null && c.BillingConfirmedAtUtc is null) &&
         (c.State != "pending-billing" || c.EstimatedCostUsd is not null) &&
+        (c.AdmissionPolicy != LiveMoneyOptions.ReservationPolicy || c.State != "pending-billing" ||
+            c.Outcome == "accepted" && c.StartedAtUtc is not null && c.ObservedAtUtc is not null && c.FinishedAtUtc is not null) &&
         (c.EstimatedCostUsd is null || c.Model == LiveMoneyOptions.Model && c.PromptTokens is >= 0 and <= LiveMoneyOptions.InputTokenBound &&
             c.CompletionTokens is >= 0 and <= LiveMoneyOptions.OutputTokenBound &&
             c.EstimatedCostUsd == (c.PromptTokens.Value * c.InputUsdPerMillion + c.CompletionTokens.Value * c.OutputUsdPerMillion) / 1_000_000m * c.TaxMultiplier &&

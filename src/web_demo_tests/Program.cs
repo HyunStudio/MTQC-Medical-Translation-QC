@@ -50,6 +50,15 @@ var tests = new (string Name, Func<Task> Run)[]
     ("money guard holds unknown cost across restart", MoneyGuardHoldsUnknownCost),
     ("money guard fails closed for corrupt durable state", MoneyGuardFailsClosed),
     ("money guard blocks an unconfigured live call before spending", MoneyGuardBlocksUnconfiguredLiveCall),
+    ("money guard judge budget permits repeated calls with full unsettled reserves across restart", JudgeBudgetRepeated),
+    ("money guard judge budget rejects ambiguous missing expired and oversized authorization", JudgeBudgetInvalid),
+    ("money guard judge budget blocks unknown and failed charges", JudgeBudgetFailures),
+    ("money guard judge budget preserves legacy unresolved holds", JudgeBudgetLegacy),
+    ("money guard judge budget enforces cumulative daily and run ceilings", JudgeBudgetCeilings),
+    ("money guard judge budget expires but retains in-flight outcomes", JudgeBudgetExpiry),
+    ("money guard judge budget serializes independently constructed owners", JudgeBudgetOwnership),
+    ("money guard judge budget includes historical spending and prior cash holds", JudgeBudgetHistory),
+    ("money guard judge budget rejects reduced pending reservations", JudgeBudgetReducedReserve),
     ("money guard promo credit parses a separate truthful funding bucket", PromoCreditParsing),
     ("money guard promo credit rejects incomplete stale expired and invalid evidence", PromoCreditInvalidEvidence),
     ("money guard promo credit rejects mixed legacy funding fields", PromoCreditMixedFields),
@@ -180,6 +189,150 @@ foreach (var (name, run) in selectedTests)
 
 Console.WriteLine($"{selectedTests.Length - failed}/{selectedTests.Length} passed");
 return failed == 0 ? 0 : 1;
+
+LiveMoneyOptions? ReadJudgeMoney(Dictionary<string, string?>? overrides = null)
+{
+    var now = DateTimeOffset.UtcNow;
+    var values = new Dictionary<string, string?>
+    {
+        ["COST_LEDGER_PATH"] = MoneyTestPath(), ["BILLING_BUCKET"] = "operator-budget",
+        ["ADMISSION_POLICY"] = "reserved-budget-v1", ["BILLING_EVIDENCE"] = "synthetic-operator-authorization",
+        ["BILLING_VERIFIED_UTC"] = now.AddDays(-2).ToString("O"),
+        ["ACCESS_UNTIL_UTC"] = now.AddDays(30).ToString("O"), ["APPROVED_BUDGET_USD"] = "5",
+        ["TRIAL_REMAINING_USD"] = null, ["CASH_REMAINING_USD"] = null,
+        ["PROMO_REMAINING_USD"] = null, ["PROMO_EXPIRES_UTC"] = null, ["TAX_MULTIPLIER"] = "1"
+    };
+    if (overrides is not null) foreach (var pair in overrides) values[pair.Key] = pair.Value;
+    var previous = values.Keys.ToDictionary(k => k, k => Environment.GetEnvironmentVariable("DEMO_LIVE_" + k));
+    try
+    {
+        foreach (var pair in values) Environment.SetEnvironmentVariable("DEMO_LIVE_" + pair.Key, pair.Value);
+        return LiveMoneyOptions.FromEnvironment(LiveMoneyOptions.Model);
+    }
+    finally { foreach (var pair in previous) Environment.SetEnvironmentVariable("DEMO_LIVE_" + pair.Key, pair.Value); }
+}
+LiveOptions JudgeOptions(LiveMoneyOptions? money)
+{
+    Assert(money is not null, "explicit synthetic operator budget was rejected");
+    return new(true, "test-key", PerClientLimit:20, Money:money);
+}
+async Task JudgeBudgetRepeated()
+{
+    var options = JudgeOptions(ReadJudgeMoney());
+    for (var n = 0; n < 3; n++)
+        Assert((await FundedRun(options, new FakeProviderHandler(_ => ProviderSuccess("번역")))).Status == "ok",
+            "valid next call required manual actual-billing settlement");
+    var calls = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]!.AsArray();
+    Assert(calls.Count == 3 && calls.All(c => (string?)c!["State"] == "pending-billing" && c["BilledCostUsd"] is null &&
+        (decimal?)c["ReservedUsd"] == options.Money.MaximumCallUsd && c["BillingReceipt"] is null),
+        "continuous admission released reserves or fabricated actual settlement");
+}
+Task JudgeBudgetInvalid()
+{
+    var now = DateTimeOffset.UtcNow;
+    foreach (var mutation in new Dictionary<string,string?>[]
+    {
+        new() { ["ADMISSION_POLICY"] = null }, new() { ["ADMISSION_POLICY"] = "unknown" },
+        new() { ["APPROVED_BUDGET_USD"] = null }, new() { ["APPROVED_BUDGET_USD"] = "5.01" },
+        new() { ["APPROVED_BUDGET_USD"] = "0" }, new() { ["ACCESS_UNTIL_UTC"] = null },
+        new() { ["ACCESS_UNTIL_UTC"] = now.AddMinutes(-1).ToString("O") },
+        new() { ["ACCESS_UNTIL_UTC"] = now.AddDays(94).ToString("O") },
+        new() { ["BILLING_VERIFIED_UTC"] = now.AddDays(1).ToString("O") },
+        new() { ["BILLING_BUCKET"] = "cash" }, new() { ["CASH_REMAINING_USD"] = "25" },
+        new() { ["PROMO_EXPIRES_UTC"] = now.AddDays(30).ToString("O") }
+    }) Assert(ReadJudgeMoney(mutation) is null, "ambiguous/invalid operator authorization was accepted");
+    return Task.CompletedTask;
+}
+async Task JudgeBudgetFailures()
+{
+    foreach (var unknown in new[] { true, false })
+    {
+        var options = JudgeOptions(ReadJudgeMoney());
+        var bad = unknown ? new FakeProviderHandler(_ => throw new TaskCanceledException("timeout")) :
+            new FakeProviderHandler(_ => ProviderSuccess("<think>invalid draft</think>"));
+        await FundedRun(options, bad);
+        Assert(!new LiveBudget(options).HasLifetimeCapacity(1), "uncertain or failed charge permitted another call");
+    }
+}
+async Task JudgeBudgetLegacy()
+{
+    var legacy = FundedOptions(MoneyTestPath());
+    await FundedRun(legacy, new FakeProviderHandler(_ => ProviderSuccess("번역")));
+    var judge = JudgeOptions(ReadJudgeMoney(new() { ["COST_LEDGER_PATH"] = legacy.Money!.LedgerPath }));
+    Assert(!new LiveBudget(judge).HasLifetimeCapacity(1), "old actual-billing hold was retrospectively waived");
+    ConfirmBilling(legacy);
+    Assert(new LiveBudget(judge).HasLifetimeCapacity(1), "settled legacy entry prevented an authorized new policy");
+}
+async Task JudgeBudgetCeilings()
+{
+    var options = JudgeOptions(ReadJudgeMoney(new() { ["APPROVED_BUDGET_USD"] = "0.15" }));
+    for (var n = 0; n < 2; n++) Assert((await FundedRun(options,new FakeProviderHandler(_=>ProviderSuccess("번역")))).Status=="ok", "funded call rejected");
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1), "restart freed cumulative unsettled budget");
+    var daily = JudgeOptions(ReadJudgeMoney());
+    daily = daily with { Money = daily.Money! with { DailyLimitUsd = daily.Money.MaximumCallUsd } };
+    await FundedRun(daily,new FakeProviderHandler(_=>ProviderSuccess("번역")));
+    Assert(!new LiveBudget(daily).HasLifetimeCapacity(1), "full reserve did not consume daily allowance");
+    var run = JudgeOptions(ReadJudgeMoney());
+    run = run with { Money = run.Money! with { PerRunLimitUsd = run.Money.MaximumCallUsd } };
+    Assert(!new LiveBudget(run).HasLifetimeCapacity(2), "two-call reservation exceeded run ceiling");
+}
+async Task JudgeBudgetExpiry()
+{
+    var now=DateTimeOffset.UtcNow;
+    var options=JudgeOptions(ReadJudgeMoney(new(){["ACCESS_UNTIL_UTC"]=now.AddHours(1).ToString("O")}));
+    var clock=new MoneyClock(now);
+    var handler=new FakeProviderHandler(_=>{clock.Now=now.AddHours(2);return ProviderSuccess("번역");});
+    var provider=new NebiusClient(new HttpClient(handler),"test-key",LiveMoneyOptions.Model,
+        new Uri("https://example.test/v1/chat/completions"),TimeSpan.FromSeconds(2));
+    var result=await new UserExcerptService(provider,options,new LiveBudget(options,clock)).ExecuteAsync(
+        new UserExcerptRequest("Dose 2 mg.","ko"),"expiry-client",CancellationToken.None);
+    Assert(result.Status=="ok","expiry discarded valid started outcome");
+    Assert(!new LiveBudget(options,clock).HasLifetimeCapacity(1),"operator access end did not close admission");
+    Assert((string?)JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]![0]!["State"]=="pending-billing", "access end erased actual in-flight outcome");
+}
+async Task JudgeBudgetOwnership()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    using var first=await new LiveBudget(options).TryAcquireAsync("owner1",CancellationToken.None);
+    Assert(first is not null,"first owner was not admitted");
+    using var second=await new LiveBudget(options).TryAcquireAsync("owner2",CancellationToken.None);
+    Assert(second is null,"independent owner bypassed active durable reservation");
+}
+
+async Task JudgeBudgetHistory()
+{
+    var legacy=FundedOptions(MoneyTestPath());
+    await FundedRun(legacy,new FakeProviderHandler(_=>ProviderSuccess("번역")));
+    var root=JsonNode.Parse(File.ReadAllText(legacy.Money!.LedgerPath))!;
+    var callId=(string)root["Calls"]![0]!["CallId"]!;
+    Assert(new LiveBudget(legacy).ReconcileBilling(new(callId,"trial",LiveMoneyOptions.Model,.04m,
+        "synthetic-history-receipt",DateTimeOffset.UtcNow)),"synthetic historical bill rejected");
+    root=JsonNode.Parse(File.ReadAllText(legacy.Money.LedgerPath))!;
+    var yesterday=DateTimeOffset.UtcNow.AddDays(-1);
+    root["Calls"]![0]!["Day"]=yesterday.ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");
+    foreach(var field in new[]{"ReservedAtUtc","StartedAtUtc","ObservedAtUtc","FinishedAtUtc","BillingConfirmedAtUtc"})
+        root["Calls"]![0]![field]=yesterday;
+    File.WriteAllText(legacy.Money.LedgerPath,root.ToJsonString());
+    foreach(var ceiling in new[]{"0.10","0.115"})
+    {
+        var options=JudgeOptions(ReadJudgeMoney(new()
+        {
+            ["COST_LEDGER_PATH"]=legacy.Money.LedgerPath,["APPROVED_BUDGET_USD"]=ceiling
+        }));
+        Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"switching policy restored prior-day spending/prior hold capacity");
+    }
+}
+async Task JudgeBudgetReducedReserve()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>ProviderSuccess("번역")));
+    var root=JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+    root["Calls"]![0]!["ReservedUsd"]=root["Calls"]![0]!["EstimatedCostUsd"]!.DeepClone();
+    File.WriteAllText(options.Money.LedgerPath,root.ToJsonString());
+    var before=File.ReadAllText(options.Money.LedgerPath);
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"reduced reserve retained nonblocking operator admission");
+    Assert(File.ReadAllText(options.Money.LedgerPath)==before,"invalid state was rewritten automatically");
+}
 
 LiveMoneyOptions? ReadPromoMoney(Dictionary<string, string?>? overrides = null, bool requireFresh = true)
 {
