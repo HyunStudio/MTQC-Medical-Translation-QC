@@ -25,3 +25,11 @@
 - [ ] Run focused regressions, syntax checks and client build. Reproduce the actual corrected UI path with source Save/Verify, unsaved edit, revert and Save/Verify transitions, and verify zero upstream calls.
 - [ ] Finish new-paper intake, original-page visual comparisons, malformed input checks, table inspection, local figure OCR and at most three approved excerpt model calls.
 - [ ] Review the diff and necessary release/deployment consequence; preserve r6 archive and all original failures. Report exact scopes and remaining limitations.
+
+## Actual deployment follow-up
+
+The first published 7abbba5 served exact new files/DLLs but a new browser tab retained old behavior. `source-editor-hosted-ui-green.json` was misnamed: its actual result is FAILED and remains preserved. Code responses lacked explicit cache revalidation; ZIP local-time entries also produced future Last-Modified headers. Do not claim a sole browser-internal cause.
+
+- [ ] Preserve failing HTTP cache/header checks and two entry/dependency URL regression tests.
+- [ ] Version both changed code URLs, require code/HTML/CSS revalidation, and write the separate deployment ZIP with UTC timestamps. Existing unversioned cached entries are not assumed to disappear automatically; verify a fresh release URL and a normal reload of the old tab.
+- [ ] Review and separately deploy this confirmed correction, then verify actual hosted source-admission behavior before any model requests. Do not rerun the original paid or frozen paper parents to hunt for a pass.

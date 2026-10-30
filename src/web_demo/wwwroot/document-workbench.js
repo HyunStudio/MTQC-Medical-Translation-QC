@@ -12,7 +12,7 @@ import { collectHorizontalRules, collectVerticalRules } from './document-horizon
 import {collectPageCompoundFigureHints,collectPageRasterFigureHints} from './document-additional-structure.mjs';
 import { beginGlyphPaintCapture } from './document-glyph-paint.mjs';
 import { recoverReadingOrder } from './document-layout.mjs';
-import { mountStructureReview } from './document-structure-review.mjs';
+import { mountStructureReview } from './document-structure-review.mjs?v=source-editor-v1';
 import { validRenderDimensions } from './document-render-limits.mjs';
 import { pageHasRasterImages, pdfDocumentOptions, assertPageRasterDecoded } from './document-raster-operators.mjs';
 import { subscribeLiveAvailability, refreshLiveAvailability } from './live-availability.mjs';

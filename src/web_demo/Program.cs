@@ -79,7 +79,15 @@ var userExcerpt = new UserExcerptService(provider, liveOptions, budget);
 app.UseDefaultFiles();
 var documentContentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
 documentContentTypes.Mappings[".bcmap"] = "application/octet-stream";
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = documentContentTypes });
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = documentContentTypes,
+    OnPrepareResponse = context =>
+    {
+        if (Path.GetExtension(context.File.Name).ToLowerInvariant() is ".html" or ".js" or ".mjs" or ".css")
+            context.Context.Response.Headers.CacheControl = "no-cache, must-revalidate";
+    }
+});
 app.MapGet("/api/cases", () => Results.Ok(catalog.All.Select(item => new
 {
     item.Id,
