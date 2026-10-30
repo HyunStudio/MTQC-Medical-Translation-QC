@@ -1,6 +1,6 @@
 # MTQC - Medical Document Translation & QC
 
-**Latest release: r6 (October 30).** See the [current package and setup guide](docs/web-demo/RELEASE_R6_20261030.md) and [live-access record/test steps](docs/web-demo/LIVE_ACCESS_20261030.md). Hosted judge drafting is ON under a bounded owner-authorized reservation budget. Local builds remain OFF by default; r5 is preserved as the earlier technical baseline.
+**Latest release: r7 (October 30).** See the [current source, test results and judge access guide](docs/web-demo/RELEASE_R7_20261030.md). Hosted runtime `710bb1ac` uses the explicitly authorized v2 policy: USD5/day, USD100 cumulative, USD0.15/run, with every dispatched maximum reservation retained. Three additional real-paper tests returned two drafts with quality errors and one failed request; this is not whole-paper or clinical acceptance. Local builds remain OFF by default. Earlier r5/r6 artifacts retain their historical scope.
 
 Research prototype for medical excerpt and document-structure review using
 NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
@@ -23,15 +23,17 @@ Existing scientific and third-party licenses/attribution remain distinct.
 56 selected assets returned HTTP 200 with hashes matching the reviewed package.
 That baseline had paid model calls disabled. Live access was enabled and tested
 with two distinct real requests at `7f9b0f27`. Release r6 retains that application
-code while refreshing package, setup documentation and build identity; it does
-not rerun or relabel those historical model observations.
+code while refreshing package, setup documentation and build identity. That
+statement describes the historical r6 release. R7 separately repairs unsaved
+source admission and deployed-code caching, changes the explicitly authorized
+judge operating policy, and records the additional three-paper study.
 The video identifies historical inference and local development separately.
 Judges need no key or payment. The [old deployment record](docs/web-demo/AZURE_DEPLOYMENT_20261030.json)
 retains its original OFF-state evidence.
 
 | Access | What is available / limits |
 | --- | --- |
-| Current hosted web app | Saved editable drafts, source comparison, local PDF/OCR tools and budgeted short-excerpt Nemotron drafting. Two current real requests succeeded without per-call manual settlement. General document recovery and clinical acceptance remain incomplete; see current limits above. |
+| Current hosted web app | Saved editable drafts, source comparison, local PDF/OCR tools and budgeted short-excerpt Nemotron drafting. R7's additional real-paper requests returned two drafts and one failure; one numeric error was flagged and one terminology error was not assessed. General document recovery and clinical acceptance remain incomplete. |
 | Build this source locally | Current PDF.js/Tesseract workbench, source-bound draft/review components, bounded multi-table and compound-figure assembly, caption-below controls and unreviewed figure-label translation-sheet handoff. |
 | Optional Word/PDF integration | Requires separately installed Word and the separately configured owned desktop CLI. That older Windows engine/installer is not included here. Keep native routes disabled for this source-only quick start. |
 | Video evidence | 57 publisher-XML-derived Korean reading-PDF pages; bounded 122-cell complex excerpt; 13 imported figure-label translation targets. These are scoped observations, not general reconstruction or clinical acceptance. |

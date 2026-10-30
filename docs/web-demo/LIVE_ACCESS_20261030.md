@@ -1,5 +1,7 @@
 # Hosted judge access — October 30, 2026
 
+> Historical activation record at7f9b0f27. The current runtime and v2 operating policy, including the later failed and successful paper tests, are documented in [release r7](RELEASE_R7_20261030.md). The v1 limits and outcomes below retain their original scope.
+
 The existing [public app](https://mtqc-nebius-2026-hyunstudio.azurewebsites.net/) now has live short-excerpt drafting enabled under an explicitly owner-authorized expenditure policy. Judges need no account, API key or payment. This deployment supersedes the previous OFF state; it does not change the immutable r5 archive.
 
 ## Exact software and verification

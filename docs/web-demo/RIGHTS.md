@@ -21,6 +21,10 @@ This inventory covers the two recorded cases in `src/web_demo/fixtures`. Public 
 
 ## Use restrictions for this demo
 
+### Additional October 30 real-paper QA
+
+The r7 study used Songsaeng et al. (2024), DOI [10.3389/fphy.2024.1456478](https://doi.org/10.3389/fphy.2024.1456478); Kokhanovskyi et al. (2025), DOI [10.3389/fcvm.2025.1572318](https://doi.org/10.3389/fcvm.2025.1572318); and Pourmostafa et al. (2024), DOI [10.3389/fbioe.2024.1421592](https://doi.org/10.3389/fbioe.2024.1421592). Each publisher article is CC BY 4.0. The repository's `evidence/three-paper-number-warning-20261030.png` screenshot adapts the last article's selected method text with an unreviewed AI draft and a numeric warning. The separate r7 judge report includes credited original/app comparison screenshots from these three inputs. Original PDF test inputs are not bundled in the source archive. None of these adaptations implies author endorsement or clinical validation; scientific material remains under its applicable license, distinct from first-party Apache-2.0.
+
 The expanded medical-document intake evaluation has a separate [corpus provenance record](CORPUS_SOURCES.md). It links three CC-licensed publisher papers and three Servier charts; originals and local test excerpts are not bundled. The public Liu et al. Figure 1 workbench screenshot is credited there with its source, license and overlay modifications. This evaluation is not a full-paper translation or a medical validation.
 
 The submission walkthrough also uses `docs/web-demo/assets/original-circulation-demo.svg`, an original abstract vessel teaching diagram created for this software demo. It is not a patient image, a clinical reference, or a copied medical illustration. The recording script renders it to a local PNG for the browser OCR demonstration; the PNG is not part of the recorded Servier/Müller specimen set.
