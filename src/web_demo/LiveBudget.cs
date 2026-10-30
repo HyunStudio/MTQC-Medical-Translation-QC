@@ -7,6 +7,7 @@ public sealed class LiveBudget
 {
     // Local operator API only. Never expose a receipt-writing HTTP route.
     public bool ReconcileBilling(LiveBillingReceipt receipt) => money?.Reconcile(receipt) == true;
+    public bool AcceptReservationLoss(LiveReservationLossAcceptance acceptance) => money?.AcceptReservationLoss(acceptance) == true;
     private readonly LiveOptions options;
     private readonly SemaphoreSlim upstream = new(1, 1);
     private readonly object sync = new();

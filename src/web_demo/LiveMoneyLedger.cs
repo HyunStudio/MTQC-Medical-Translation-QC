@@ -6,6 +6,10 @@ namespace MedicalQcWebDemo;
 public sealed record LiveBillingReceipt(string CallId, string Bucket, string Model,
     decimal BilledCostUsd, string Evidence, DateTimeOffset ConfirmedAtUtc);
 
+// An operator's explicit budget loss acceptance is NOT a provider billing receipt.
+public sealed record LiveReservationLossAcceptance(string CallId, decimal ReservedUsd,
+    string Evidence, DateTimeOffset AcceptedAtUtc);
+
 internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clock)
 {
     private sealed record CostState(int Version, decimal PriorCashHoldUsd, List<CostEntry> Calls);
@@ -19,7 +23,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         DateTimeOffset ReservedAtUtc = default, DateTimeOffset? StartedAtUtc = null,
         DateTimeOffset? ObservedAtUtc = null, DateTimeOffset? FinishedAtUtc = null,
         string? Outcome = null, string? BillingReceipt = null, DateTimeOffset? BillingConfirmedAtUtc = null,
-        string AdmissionPolicy = "settled");
+        string AdmissionPolicy = "settled", LiveReservationLossAcceptance? LossAcceptance = null);
 
     private string Day => clock.GetUtcNow().ToOffset(TimeSpan.FromHours(9)).ToString("yyyy-MM-dd");
     private static decimal Committed(CostEntry entry) => entry.State == "cancelled" ? 0m :
@@ -27,7 +31,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
     private static bool Unresolved(CostEntry entry) => entry.State is "reserved" or "started" or "pending-billing" or "unknown-cost" or "failed-cost-held";
     private bool BlocksAdmission(CostEntry entry) => Unresolved(entry) &&
         !(options.UsesReservationBudget && entry.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy &&
-          entry.Bucket == "operator-budget" && entry.State == "pending-billing");
+          entry.Bucket == "operator-budget" && (entry.State == "pending-billing" || entry.LossAcceptance is not null));
 
     private bool WithinLimits(CostState state, decimal extra, string day)
     {
@@ -144,6 +148,21 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         return true;
     });
 
+    public bool AcceptReservationLoss(LiveReservationLossAcceptance acceptance) => Transaction(state =>
+    {
+        if (!options.UsesReservationBudget || acceptance is null) return false;
+        var position = state.Calls.FindIndex(c => c.CallId == acceptance.CallId);
+        if (position < 0) return false;
+        var entry = state.Calls[position];
+        if (!ValidLossAcceptance(entry, acceptance) ||
+            entry.LossAcceptance is not null && entry.LossAcceptance != acceptance) return false;
+        // A finished call can still have an enclosing live lease. Never bypass it.
+        using var ownership = TryOwnRun(entry.RunId);
+        if (ownership is null) return false;
+        state.Calls[position] = entry with { LossAcceptance = acceptance };
+        return true;
+    });
+
     public bool Reconcile(LiveBillingReceipt receipt) => Transaction(state =>
     {
         if (receipt is null || !EvidenceId(receipt.Evidence) || receipt.Model != LiveMoneyOptions.Model ||
@@ -151,6 +170,9 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         var position = state.Calls.FindIndex(c => c.CallId == receipt.CallId);
         if (position < 0) return false;
         var entry = state.Calls[position];
+        // Full loss acceptance is permanent budget consumption, not settlement.
+        // Keep any later actual provider receipt separately; do not reclaim this reserve.
+        if (entry.LossAcceptance is not null) return false;
         if (receipt.Bucket != entry.Bucket || receipt.BilledCostUsd < 0m || receipt.BilledCostUsd > entry.ReservedUsd ||
             receipt.ConfirmedAtUtc < (entry.FinishedAtUtc ?? entry.StartedAtUtc ?? entry.ReservedAtUtc)) return false;
         if (entry.State == "reconciled") return entry.BilledCostUsd == receipt.BilledCostUsd &&
@@ -208,12 +230,15 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             using var file = new FileStream(options.LedgerPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             if (file.Length is < 1 or > 4_000_000) return false;
             var state = JsonSerializer.Deserialize<CostState>(file);
-            if (state is null || state.Version != 2 || state.PriorCashHoldUsd != 0.015m || state.Calls is null ||
+            if (state is null || state.Version is not (2 or 3) || state.PriorCashHoldUsd != 0.015m || state.Calls is null ||
                 state.Calls.Count > 1000 || state.Calls.Any(c => !ValidEntry(c)) ||
+                (state.Version == 3) != state.Calls.Any(c => c.LossAcceptance is not null) ||
                 state.Calls.Select(c => c.CallId).Distinct(StringComparer.Ordinal).Count() != state.Calls.Count) return false;
             if (!action(state)) return false;
             if (write)
             {
+                // Historical v2 tools must reject, rather than erase, explicit loss metadata.
+                if (state.Calls.Any(c => c.LossAcceptance is not null)) state = state with { Version = 3 };
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(state);
                 file.Position = 0;
                 file.SetLength(0);
@@ -230,7 +255,15 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
         }
     }
 
-    private static bool ValidEntry(CostEntry c) => c is not null &&
+    private bool ValidLossAcceptance(CostEntry entry, LiveReservationLossAcceptance acceptance) =>
+        entry.AdmissionPolicy == LiveMoneyOptions.ReservationPolicy && entry.Bucket == "operator-budget" &&
+        entry.State is "unknown-cost" or "failed-cost-held" && entry.Outcome == "failed" &&
+        entry.StartedAtUtc is not null && entry.FinishedAtUtc >= entry.StartedAtUtc &&
+        acceptance.CallId == entry.CallId && acceptance.ReservedUsd == entry.ReservedUsd &&
+        EvidenceId(acceptance.Evidence) && acceptance.AcceptedAtUtc >= entry.FinishedAtUtc &&
+        acceptance.AcceptedAtUtc <= clock.GetUtcNow();
+
+    private bool ValidEntry(CostEntry c) => c is not null &&
         c.RunId is { Length: 32 } && c.RunId.All(char.IsAsciiHexDigit) &&
         (c.CallId == c.RunId + "-0" || c.CallId == c.RunId + "-1") &&
         DateOnly.TryParseExact(c.Day, "yyyy-MM-dd", out _) &&
@@ -247,6 +280,7 @@ internal sealed class LiveMoneyLedger(LiveMoneyOptions options, TimeProvider clo
             EvidenceId(c.BillingReceipt) && c.BillingConfirmedAtUtc >= (c.FinishedAtUtc ?? c.StartedAtUtc ?? c.ReservedAtUtc) :
             c.BilledCostUsd is null && c.BillingReceipt is null && c.BillingConfirmedAtUtc is null) &&
         (c.State != "pending-billing" || c.EstimatedCostUsd is not null) &&
+        (c.LossAcceptance is null || ValidLossAcceptance(c, c.LossAcceptance)) &&
         (c.AdmissionPolicy != LiveMoneyOptions.ReservationPolicy || c.State != "pending-billing" ||
             c.Outcome == "accepted" && c.StartedAtUtc is not null && c.ObservedAtUtc is not null && c.FinishedAtUtc is not null) &&
         (c.EstimatedCostUsd is null || c.Model == LiveMoneyOptions.Model && c.PromptTokens is >= 0 and <= LiveMoneyOptions.InputTokenBound &&

@@ -59,6 +59,14 @@ var tests = new (string Name, Func<Task> Run)[]
     ("money guard judge budget serializes independently constructed owners", JudgeBudgetOwnership),
     ("money guard judge budget includes historical spending and prior cash holds", JudgeBudgetHistory),
     ("money guard judge budget rejects reduced pending reservations", JudgeBudgetReducedReserve),
+    ("money guard reservation loss accepts only an exact finished failure without settlement", ReservationLossExact),
+    ("money guard reservation loss rejects invalid or conflicting operator acceptance", ReservationLossInvalid),
+    ("money guard reservation loss preserves full daily and cumulative commitments", ReservationLossCeilings),
+    ("money guard reservation loss requires released ownership and rejects active or legacy entries", ReservationLossLifecycle),
+    ("money guard reservation loss rejects corrupt metadata without rewriting history", ReservationLossCorruption),
+    ("money guard reservation loss leaves later unknown requests blocked", ReservationLossLaterFailure),
+    ("money guard reservation loss offline command has no provider or web dependency", ReservationLossOffline),
+    ("money guard reservation loss upgrades only accepted ledgers for fail-closed old tools", ReservationLossSchema),
     ("money guard promo credit parses a separate truthful funding bucket", PromoCreditParsing),
     ("money guard promo credit rejects incomplete stale expired and invalid evidence", PromoCreditInvalidEvidence),
     ("money guard promo credit rejects mixed legacy funding fields", PromoCreditMixedFields),
@@ -332,6 +340,176 @@ async Task JudgeBudgetReducedReserve()
     var before=File.ReadAllText(options.Money.LedgerPath);
     Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"reduced reserve retained nonblocking operator admission");
     Assert(File.ReadAllText(options.Money.LedgerPath)==before,"invalid state was rewritten automatically");
+}
+
+bool AcceptTestLoss(LiveOptions options, JsonObject acceptance)
+{
+    var type = typeof(LiveBudget).Assembly.GetType("MedicalQcWebDemo.LiveReservationLossAcceptance");
+    Assert(type is not null, "explicit reservation-loss operator API is missing");
+    var method = typeof(LiveBudget).GetMethod("AcceptReservationLoss");
+    Assert(method is not null, "explicit reservation-loss import method is missing");
+    var input = System.Text.Json.JsonSerializer.Deserialize(acceptance.ToJsonString(), type!);
+    return (bool)method!.Invoke(new LiveBudget(options), new[] { input })!;
+}
+JsonObject TestLossFor(LiveOptions options)
+{
+    var entry = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Calls"]!.AsArray().Last()!;
+    return new JsonObject { ["CallId"] = (string)entry["CallId"]!, ["ReservedUsd"] = (decimal)entry["ReservedUsd"]!,
+        ["Evidence"] = "synthetic-owner-loss-acceptance", ["AcceptedAtUtc"] = DateTimeOffset.UtcNow };
+}
+async Task ReservationLossExact()
+{
+    foreach (var unknown in new[] { true, false })
+    {
+        var options = JudgeOptions(ReadJudgeMoney());
+        await FundedRun(options, unknown ? new FakeProviderHandler(_ => throw new TaskCanceledException()) :
+            new FakeProviderHandler(_ => ProviderSuccess("<think>invalid draft</think>")));
+        var before = JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!;
+        Assert(!new LiveBudget(options).HasLifetimeCapacity(1), "failure did not initially block");
+        var acceptance = TestLossFor(options);
+        Assert(AcceptTestLoss(options, acceptance), "exact finished failure was not accepted");
+        var after = JsonNode.Parse(File.ReadAllText(options.Money.LedgerPath))!;
+        Assert(JsonNode.DeepEquals(after["Calls"]![0]!["LossAcceptance"], acceptance), "acceptance identity/amount was changed");
+        Assert((int?)before["Version"]==2 && (int?)after["Version"]==3,"loss import did not explicitly migrate the schema");
+        after["Version"]=before["Version"]!.DeepClone();
+        after["Calls"]![0]!.AsObject().Remove("LossAcceptance");
+        before["Calls"]![0]!.AsObject().Remove("LossAcceptance");
+        Assert(JsonNode.DeepEquals(before, after), "acceptance changed failure, usage, billed costs or historical commitments");
+        Assert(new LiveBudget(options).HasLifetimeCapacity(1), "exact one-call loss acceptance did not permit bounded admission");
+        Assert(AcceptTestLoss(options, acceptance), "identical explicit acceptance was not idempotent");
+        var legacy = FundedOptions(options.Money.LedgerPath);
+        Assert(!new LiveBudget(legacy).HasLifetimeCapacity(1), "default policy inherited the exception");
+    }
+}
+async Task ReservationLossInvalid()
+{
+    var options = JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options, new FakeProviderHandler(_ => throw new TaskCanceledException()));
+    var basis = TestLossFor(options);
+    foreach (var (field, value) in new (string, JsonNode?)[] {
+        ("CallId", JsonValue.Create(new string('a',32)+"-0")), ("ReservedUsd", JsonValue.Create(0m)),
+        ("ReservedUsd", JsonValue.Create(options.Money!.MaximumCallUsd - .00000001m)),
+        ("ReservedUsd", JsonValue.Create(.15m)), ("Evidence", JsonValue.Create("not an evidence id")),
+        ("AcceptedAtUtc", JsonValue.Create(DateTimeOffset.UtcNow.AddDays(1))),
+        ("AcceptedAtUtc", JsonValue.Create(DateTimeOffset.UtcNow.AddDays(-1))) })
+    {
+        var bad = (JsonObject)basis.DeepClone(); bad[field] = value;
+        var before = File.ReadAllText(options.Money!.LedgerPath);
+        Assert(!AcceptTestLoss(options,bad), "invalid acceptance released the failure: " + field);
+        Assert(File.ReadAllText(options.Money.LedgerPath)==before, "rejected import rewrote history");
+    }
+    Assert(AcceptTestLoss(options,basis), "valid acceptance rejected");
+    var conflict = (JsonObject)basis.DeepClone(); conflict["Evidence"]="different-owner-evidence";
+    Assert(!AcceptTestLoss(options,conflict), "conflicting acceptance replaced audit evidence");
+}
+async Task ReservationLossCeilings()
+{
+    var options = JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var acceptance=TestLossFor(options);
+    Assert(AcceptTestLoss(options,acceptance),"valid acceptance rejected");
+    var m=options.Money!;
+    var daily=options with { Money=m with { DailyLimitUsd=m.MaximumCallUsd*2-.00000001m } };
+    var total=options with { Money=m with { AuthorizedBudgetUsd=.015m+m.MaximumCallUsd*2-.00000001m } };
+    Assert(!new LiveBudget(daily).HasLifetimeCapacity(1),"loss acceptance released daily reservation");
+    Assert(!new LiveBudget(total).HasLifetimeCapacity(1),"loss acceptance released historical budget/prior hold");
+    Assert(!new LiveBudget(options).ReconcileBilling(new((string)acceptance["CallId"]!,"operator-budget",LiveMoneyOptions.Model,
+        0m,"synthetic-actual-zero-bill",DateTimeOffset.UtcNow)),"later receipt released permanently accepted loss");
+    Assert(!new LiveBudget(daily).HasLifetimeCapacity(1) && !new LiveBudget(total).HasLifetimeCapacity(1),
+        "later actual billing returned a permanently accepted reservation to the budget");
+}
+async Task ReservationLossLifecycle()
+{
+    foreach (var success in new[] {true,false})
+    {
+        var options=success ? JudgeOptions(ReadJudgeMoney()) : FundedOptions(MoneyTestPath());
+        await FundedRun(options,success ? new FakeProviderHandler(_=>ProviderSuccess("번역")) :
+            new FakeProviderHandler(_=>throw new TaskCanceledException()));
+        Assert(!AcceptTestLoss(options,TestLossFor(options)),"success or legacy hold was waived");
+    }
+    var judge=JudgeOptions(ReadJudgeMoney()); var budget=new LiveBudget(judge);
+    var lease=await budget.TryAcquireAsync("synthetic-loss-ownership",1,CancellationToken.None);
+    Assert(lease is not null,"test lease unavailable");
+    Assert(!AcceptTestLoss(judge,TestLossFor(judge)),"unstarted reservation accepted");
+    var call=budget.TryStartCall(lease!,0); Assert(call is not null,"test call unavailable");
+    Assert(!AcceptTestLoss(judge,TestLossFor(judge)),"active call accepted");
+    call!.Dispose(); var accepted=TestLossFor(judge);
+    Assert(!AcceptTestLoss(judge,accepted),"retained run ownership was bypassed");
+    lease!.Dispose();
+    Assert(AcceptTestLoss(judge,accepted),"finished released run could not be explicitly accepted");
+}
+async Task ReservationLossCorruption()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    Assert(AcceptTestLoss(options,TestLossFor(options)),"valid acceptance rejected");
+    var original=File.ReadAllText(options.Money!.LedgerPath);
+    foreach(var (field,value) in new (string,JsonNode?)[]{ ("ReservedUsd",JsonValue.Create(0m)),
+        ("Evidence",JsonValue.Create("")),("CallId",JsonValue.Create("wrong")),
+        ("AcceptedAtUtc",JsonValue.Create(DateTimeOffset.UtcNow.AddDays(1))) })
+    {
+        var root=JsonNode.Parse(original)!; root["Calls"]![0]!["LossAcceptance"]![field]=value;
+        File.WriteAllText(options.Money.LedgerPath,root.ToJsonString()); var before=File.ReadAllText(options.Money.LedgerPath);
+        Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"corrupt loss metadata permitted admission");
+        Assert(File.ReadAllText(options.Money.LedgerPath)==before,"corrupt state was silently repaired");
+    }
+}
+async Task ReservationLossLaterFailure()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    Assert(AcceptTestLoss(options,TestLossFor(options)),"valid acceptance rejected");
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"one-call acceptance waived a different unknown request");
+}
+async Task ReservationLossSchema()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    Assert((int?)JsonNode.Parse(File.ReadAllText(options.Money!.LedgerPath))!["Version"]==2,
+        "ordinary unchanged failure ledger was migrated without operator acceptance");
+    Assert(AcceptTestLoss(options,TestLossFor(options)),"valid acceptance rejected");
+    var original=File.ReadAllText(options.Money.LedgerPath);
+    Assert((int?)JsonNode.Parse(original)!["Version"]==3,
+        "accepted ledger still permits historical version2 tools to erase permanent loss");
+    Assert(new LiveBudget(options).HasLifetimeCapacity(1),"version3 accepted ledger was not readable");
+    foreach(var mutation in new[]{"downgrade","missing-acceptance"})
+    {
+        var root=JsonNode.Parse(original)!;
+        if(mutation=="downgrade")root["Version"]=2;
+        else root["Calls"]![0]!.AsObject().Remove("LossAcceptance");
+        File.WriteAllText(options.Money.LedgerPath,root.ToJsonString());
+        var before=File.ReadAllText(options.Money.LedgerPath);
+        Assert(!new LiveBudget(options).HasLifetimeCapacity(1),"inconsistent schema permitted admission");
+        Assert(File.ReadAllText(options.Money.LedgerPath)==before,"invalid schema was rewritten");
+    }
+}
+async Task ReservationLossOffline()
+{
+    var options=JudgeOptions(ReadJudgeMoney());
+    await FundedRun(options,new FakeProviderHandler(_=>throw new TaskCanceledException()));
+    var path=Path.Combine(Path.GetDirectoryName(options.Money!.LedgerPath)!,"loss.json");
+    File.WriteAllText(path,TestLossFor(options).ToJsonString());
+    var dll=Path.Combine(Path.GetDirectoryName(webProject)!,"bin","Debug","net10.0","MedicalQcWebDemo.dll");
+    var start=new ProcessStartInfo("dotnet"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
+    foreach(var arg in new[]{dll,"--accept-live-reservation-loss",path})start.ArgumentList.Add(arg);
+    start.Environment.Remove("NEBIUS_API_KEY");
+    foreach(var field in new[]{"TRIAL_REMAINING_USD","CASH_REMAINING_USD","PROMO_REMAINING_USD","PROMO_EXPIRES_UTC"})
+        start.Environment.Remove("DEMO_LIVE_"+field);
+    start.Environment["DEMO_LIVE_COST_LEDGER_PATH"]=options.Money.LedgerPath;
+    start.Environment["DEMO_LIVE_BILLING_BUCKET"]="operator-budget";
+    start.Environment["DEMO_LIVE_ADMISSION_POLICY"]="reserved-budget-v1";
+    start.Environment["DEMO_LIVE_BILLING_EVIDENCE"]="synthetic-owner-authorization";
+    start.Environment["DEMO_LIVE_BILLING_VERIFIED_UTC"]=DateTimeOffset.UtcNow.AddDays(-2).ToString("O");
+    start.Environment["DEMO_LIVE_ACCESS_UNTIL_UTC"]=DateTimeOffset.UtcNow.AddDays(-1).ToString("O");
+    start.Environment["DEMO_LIVE_APPROVED_BUDGET_USD"]="5";
+    start.Environment["DEMO_LIVE_TAX_MULTIPLIER"]="1";
+    using var process=Process.Start(start)!; using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(15));
+    try { await process.WaitForExitAsync(timeout.Token); }
+    finally { if(!process.HasExited) { process.Kill(entireProcessTree:true); await process.WaitForExitAsync(); } }
+    Assert(process.ExitCode==0,"offline explicit loss command failed or tried to run a web host");
+    Assert(JsonNode.Parse(File.ReadAllText(options.Money.LedgerPath))!["Calls"]![0]!["LossAcceptance"] is not null,
+        "offline command did not retain acceptance");
 }
 
 LiveMoneyOptions? ReadPromoMoney(Dictionary<string, string?>? overrides = null, bool requireFresh = true)

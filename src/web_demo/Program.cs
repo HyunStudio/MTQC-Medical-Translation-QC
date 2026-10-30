@@ -22,6 +22,29 @@ if (args.Length > 0 && args[0] == "--reconcile-live-cost")
     }
 }
 
+// Explicit local-only loss accounting: never a billing receipt or automatic waiver.
+if (args.Length > 0 && args[0] == "--accept-live-reservation-loss")
+{
+    try
+    {
+        if (args.Length != 2 || !Path.IsPathFullyQualified(args[1]) || new FileInfo(args[1]).Length > 4096)
+            throw new InvalidDataException();
+        var acceptance = System.Text.Json.JsonSerializer.Deserialize<LiveReservationLossAcceptance>(File.ReadAllText(args[1]),
+            new System.Text.Json.JsonSerializerOptions { UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow });
+        var money = LiveMoneyOptions.FromEnvironment(LiveMoneyOptions.Model, requireFresh: false);
+        if (acceptance is null || money is null || !new LiveMoneyLedger(money, TimeProvider.System).AcceptReservationLoss(acceptance))
+            throw new InvalidDataException();
+        Console.WriteLine("Explicit reservation loss accepted; full reserve remains spent and actual billing remains unconfirmed.");
+        return 0;
+    }
+    catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or
+        System.Text.Json.JsonException or NotSupportedException)
+    {
+        Console.Error.WriteLine("Reservation loss acceptance rejected; failure and reservation remain unchanged.");
+        return 1;
+    }
+}
+
 var fixtureRoot = Environment.GetEnvironmentVariable("DEMO_FIXTURE_ROOT")
     ?? Path.Combine(AppContext.BaseDirectory, "fixtures");
 DemoCaseCatalog catalog;
