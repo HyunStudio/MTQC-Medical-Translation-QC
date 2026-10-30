@@ -2,6 +2,10 @@
 
 **Latest release: r7 (October 30).** See the [current source, test results and judge access guide](docs/web-demo/RELEASE_R7_20261030.md). Hosted runtime `710bb1ac` uses the explicitly authorized v2 policy: USD5/day, USD100 cumulative, USD0.15/run, with every dispatched maximum reservation retained. Three additional real-paper tests returned two drafts with quality errors and one failed request; this is not whole-paper or clinical acceptance. Local builds remain OFF by default. Earlier r5/r6 artifacts retain their historical scope.
 
+This README clarification is a documentation-only follow-up to the frozen
+`r7-20261030-final` snapshot. That tag and the submitted r7 ZIP remain unchanged;
+the application source and hosted runtime are unchanged by this follow-up.
+
 Research prototype for medical excerpt and document-structure review using
 NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
 It is not a clinical translation service or a validated general PDF translator.
@@ -110,8 +114,12 @@ source licenses, attribution and adaptation notices. Read
 Earlier genuine Arabic drafting and optional experimental critique used NVIDIA
 Nemotron through Nebius Token Factory. This source publication makes no new
 model call. Historical paired critique results were negative within their
-limited categories; no general accuracy improvement is claimed. Billing and
-budget admission remain held; configuring a key alone does not enable calls.
+limited categories; no general accuracy improvement is claimed. Local builds
+remain OFF by default; a key alone does not enable calls. Hosted r7 uses the
+separately owner-authorized `reserved-budget-v2` policy described above;
+availability remains subject to live status and limits. Actual provider billing
+remains unconfirmed without genuine receipts, and these application controls
+are not a provider-enforced billing hard cap.
 Never put a credential or patient-identifiable information in source or a
 public demo. OCR/model output needs native-speaker and clinician review.
 
