@@ -1,5 +1,7 @@
 # MTQC - Medical Document Translation & QC
 
+**October 30 live-access update:** Hosted judge drafting is ON under a bounded owner-authorized reservation budget. Read the [current access record and test steps](docs/web-demo/LIVE_ACCESS_20261030.md). Local builds remain OFF by default; the immutable r5 archive is the earlier technical baseline.
+
 Research prototype for medical excerpt and document-structure review using
 NVIDIA Nemotron through Nebius Token Factory, with browser-local PDF/OCR tools.
 It is not a clinical translation service or a validated general PDF translator.
@@ -16,17 +18,19 @@ Existing scientific and third-party licenses/attribution remain distinct.
 - [Devpost project](https://devpost.com/software/mtqc-medical-textbook-translation-quality-control)
 - [Exact update, verification scope and limits](docs/web-demo/RELEASE_UPDATE_20261029.md)
 
-**The repaired Azure web app was updated on October 30** from source commit
+**The frozen r5 deployment baseline was published on October 30** from source commit
 `d65e86e703b76a908eb43185e297cdd839772dde`. The root returned HTTP 200, and
 56 selected assets returned HTTP 200 with hashes matching the reviewed package.
-Paid model requests remain disabled pending billing evidence. The
-video identifies historical inference and later local development separately.
-No key or payment is needed for saved examples or local extraction.
-See the [deployment record](docs/web-demo/AZURE_DEPLOYMENT_20261030.json).
+That baseline had paid model calls disabled. The later hosted code `7f9b0f27`
+now enables bounded live judge access and passed two distinct real requests;
+the linked current access record separates those observations from r5.
+The video identifies historical inference and local development separately.
+Judges need no key or payment. The [old deployment record](docs/web-demo/AZURE_DEPLOYMENT_20261030.json)
+retains its original OFF-state evidence.
 
 | Access | What is available / limits |
 | --- | --- |
-| Hosted October 30 web app | Repaired browser/client assets, saved editable visual drafts, source comparison and local PDF/OCR tools. Served hashes and desktop/mobile readiness passed; hosted end-to-end document processing was not rerun. Paid inference remains unavailable. |
+| Current hosted web app | Saved editable drafts, source comparison, local PDF/OCR tools and budgeted short-excerpt Nemotron drafting. Two current real requests succeeded without per-call manual settlement. General document recovery and clinical acceptance remain incomplete; see current limits above. |
 | Build this source locally | Current PDF.js/Tesseract workbench, source-bound draft/review components, bounded multi-table and compound-figure assembly, caption-below controls and unreviewed figure-label translation-sheet handoff. |
 | Optional Word/PDF integration | Requires separately installed Word and the separately configured owned desktop CLI. That older Windows engine/installer is not included here. Keep native routes disabled for this source-only quick start. |
 | Video evidence | 57 publisher-XML-derived Korean reading-PDF pages; bounded 122-cell complex excerpt; 13 imported figure-label translation targets. These are scoped observations, not general reconstruction or clinical acceptance. |
