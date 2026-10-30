@@ -12,6 +12,12 @@ import { createRasterSourceDraftSession } from './document-raster-regions.mjs';
 
 const boxText = box => `${Math.round(box.x)}, ${Math.round(box.y)}, ${Math.round(box.width)}, ${Math.round(box.height)}`;
 
+export function sourceRegionEditorMatches(region, editor) {
+  return Boolean(region && editor && editor.type === region.type &&
+    editor.text === region.text.replace(/\r\n?/g, '\n') &&
+    editor.box === [region.box.x, region.box.y, region.box.width, region.box.height].join(', '));
+}
+
 function parseBox(value) {
   const numbers = value.split(',').map(part => Number(part.trim()));
   if (numbers.length !== 4 || numbers.some(number => !Number.isFinite(number))) return null;
@@ -25,7 +31,7 @@ function validBox(box, page) {
 }
 
 /** Keep source geometry and reviewer decisions in one browser-local graph. */
-export function mountStructureReview({ host, preview, onChange = () => {} }) {
+export function mountStructureReview({ host, preview, onChange = () => {}, onDraftChange = () => {} }) {
   let graph = createDocumentStructure([]);
   let sourcePages = null;
   let sourceGeneration = 0;
@@ -198,6 +204,10 @@ export function mountStructureReview({ host, preview, onChange = () => {} }) {
   }
 
   function getVerifiedExcerpt() {
+    const active = currentRegion();
+    if (active && !sourceRegionEditorMatches(active, {
+      text: regionText.value, type: regionType.value, box: regionBox.value
+    })) return null;
     const selected = graph.selectedRegionIds;
     if (!selected?.length) return null;
     // Typed caption/note dependencies may be outside the selected excerpt.
@@ -804,6 +814,16 @@ export function mountStructureReview({ host, preview, onChange = () => {} }) {
   host.addEventListener('input', event => {
     if (event.target.id === 'structure-page' || regionList.contains(event.target)) return;
     glyphDirty = true; renderGlyphDiagnostic(); renderRaster();
+    if ([regionText, regionType, regionBox].includes(event.target)) {
+      const current = sourceRegionEditorMatches(currentRegion(), {
+        text: regionText.value, type: regionType.value, box: regionBox.value
+      });
+      regionVerify.disabled = !current;
+      status.textContent = current
+        ? 'Editor matches the saved source. Review the excerpt and confirm consent again.'
+        : 'Unsaved source edits. Save correction and verify the source again before translation.';
+      onDraftChange();
+    }
   });
   host.addEventListener('click', event => {
     if (event.target.closest('#structure-add-region, #structure-table-build, #structure-split-text')) {
@@ -1014,6 +1034,12 @@ export function mountStructureReview({ host, preview, onChange = () => {} }) {
   });
   regionVerify.addEventListener('click', () => {
     const region = currentRegion();
+    if (region && !sourceRegionEditorMatches(region, {
+      text: regionText.value, type: regionType.value, box: regionBox.value
+    })) {
+      status.textContent = 'Save correction before verifying the source.';
+      return;
+    }
     if (!region || (region.type !== 'figure' && !region.text.trim()) || !validBox(region.box, currentPage())) {
       status.textContent = 'Correct the source text and box before verification.';
       return;

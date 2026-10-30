@@ -504,6 +504,13 @@ export function mountDocumentWorkbench({ onTranslate }) {
   let sourceRevision = 0;
   const structureHost = document.querySelector('#structure-review');
   const structure = mountStructureReview({ host: structureHost, preview,
+    onDraftChange: () => {
+      // Pending edits revoke consent without cancelling a paid request already
+      // in flight. A future request still needs saved, verified source text.
+      text.value = structureController?.getVerifiedExcerpt()?.sourceText || '';
+      reviewed.checked = false;
+      refreshButton(text, reviewed, translate);
+    },
     onChange: ({ excerpt }) => {
       sourceRevision++;
       text.value = excerpt?.sourceText || '';
